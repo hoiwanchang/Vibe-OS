@@ -1,0 +1,70 @@
+name: CI
+
+on:
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'refactor/**']
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie-slim
+    steps:
+      - name: 安装系统依赖
+        run: |
+          apt-get update && apt-get install -y curl git
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+          apt-get install -y nodejs
+          corepack enable
+
+      - uses: actions/checkout@v4
+
+      - name: 安装项目依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: ESLint 检查
+        run: pnpm lint
+
+  build:
+    needs: lint
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie-slim
+    steps:
+      - name: 安装系统依赖
+        run: |
+          apt-get update && apt-get install -y curl git
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+          apt-get install -y nodejs
+          corepack enable
+
+      - uses: actions/checkout@v4
+
+      - name: 安装项目依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: TypeScript 编译
+        run: pnpm build
+
+  test:
+    needs: build
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie-slim
+    steps:
+      - name: 安装系统依赖
+        run: |
+          apt-get update && apt-get install -y curl git
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+          apt-get install -y nodejs
+          corepack enable
+
+      - uses: actions/checkout@v4
+
+      - name: 安装项目依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 运行测试（覆盖率 ≥ 80%）
+        run: pnpm test

@@ -1,0 +1,646 @@
+openapi: 3.1.0
+info:
+  title: NAISys Backend API
+  description: 开源私有 AI NAS 系统后端服务接口文档
+  version: 0.1.0
+  contact:
+    email: icm@sustech.edu.cn
+
+servers:
+  - url: http://127.0.0.1:3000
+    description: 本地开发服务器
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/health:
+    get:
+      summary: 健康检查
+      description: 无需认证，返回服务运行状态
+      security: []
+      tags: [系统]
+      responses:
+        '200':
+          description: 服务正常
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /api/system/init-data:
+    post:
+      summary: 初始化数据目录
+      description: 首次启动时创建 /data/ 完整目录结构并校验权限
+      tags: [系统初始化]
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  description: 是否强制重建已存在的目录
+                  default: false
+      responses:
+        '201':
+          description: 初始化成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/InitDataResult'
+        '403':
+          description: 以 root 运行被拒绝
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/{uid}/quota:
+    get:
+      summary: 查询用户配额
+      description: 获取指定 UID 用户的磁盘配额与使用量
+      tags: [系统初始化]
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema:
+            type: integer
+            minimum: 0
+          description: 用户 UID
+      responses:
+        '200':
+          description: 配额信息
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/UserQuotaInfo'
+        '404':
+          description: 用户或数据目录不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/user/{uid}/init:
+    post:
+      summary: 初始化用户数据空间
+      description: 创建用户数据目录并设置磁盘配额
+      tags: [系统初始化]
+      parameters:
+        - name: uid
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                quotaBytes:
+                  type: string
+                  description: 配额（字节，字符串形式）
+      responses:
+        '201':
+          description: 用户空间初始化成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/UserQuotaInfo'
+
+  /api/hardware/disk-health:
+    get:
+      summary: 磁盘健康状态
+      description: 获取所有磁盘的 SMART 健康数据
+      tags: [硬件监控]
+      responses:
+        '200':
+          description: 磁盘健康报告
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/DiskHealthResponse'
+
+  /api/hardware/network-drivers:
+    get:
+      summary: 网卡驱动状态
+      description: 检测主流消费级网卡驱动加载状态（RTL8125/8156, i225/i226, ConnectX）
+      tags: [硬件监控]
+      responses:
+        '200':
+          description: 网卡驱动报告
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/NetworkDriversResponse'
+
+  /api/container/deploy:
+    post:
+      summary: 部署 AI 应用容器
+      description: 通过 Docker 部署容器化 AI 应用，卷挂载路径必须在 /data/ 内
+      tags: [容器编排]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ContainerDeployRequest'
+      responses:
+        '201':
+          description: 部署成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/ContainerDeployResponse'
+        '400':
+          description: 参数校验失败
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/container/list:
+    get:
+      summary: 容器列表
+      tags: [容器编排]
+      parameters:
+        - name: all
+          in: query
+          schema:
+            type: boolean
+            default: true
+          description: 是否包含已停止容器
+      responses:
+        '200':
+          description: 容器列表
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/ContainerInfo'
+
+  /api/container/{name}/restart:
+    post:
+      summary: 重启容器
+      tags: [容器编排]
+      parameters:
+        - $ref: '#/components/parameters/containerName'
+      responses:
+        '200':
+          description: 重启成功
+
+  /api/container/{name}/stop:
+    post:
+      summary: 停止容器
+      tags: [容器编排]
+      parameters:
+        - $ref: '#/components/parameters/containerName'
+      responses:
+        '200':
+          description: 停止成功
+
+  /api/container/{name}:
+    delete:
+      summary: 删除容器
+      tags: [容器编排]
+      parameters:
+        - $ref: '#/components/parameters/containerName'
+        - name: force
+          in: query
+          schema:
+            type: boolean
+            default: false
+      responses:
+        '200':
+          description: 删除成功
+
+  /api/container/{name}/logs:
+    get:
+      summary: 读取容器日志
+      tags: [容器编排]
+      parameters:
+        - $ref: '#/components/parameters/containerName'
+        - name: tail
+          in: query
+          schema:
+            type: integer
+            default: 100
+        - name: since
+          in: query
+          schema:
+            type: string
+          description: 起始时间（ISO 8601）
+      responses:
+        '200':
+          description: 容器日志
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      stdout:
+                        type: string
+                      stderr:
+                        type: string
+                      exitCode:
+                        type: integer
+
+  /api/tailscale/status:
+    get:
+      summary: Tailscale 节点状态
+      description: 查询 Tailscale 运行状态、对等节点、Subnet Router 配置
+      tags: [Tailscale]
+      responses:
+        '200':
+          description: Tailscale 状态
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: '#/components/schemas/TailscaleStatusResponse'
+
+  /api/tailscale/subnet-router:
+    post:
+      summary: 配置 Subnet Router
+      tags: [Tailscale]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [subnets]
+              properties:
+                subnets:
+                  type: array
+                  items:
+                    type: string
+                  description: 子网 CIDR 列表
+                  example: ['192.168.1.0/24']
+      responses:
+        '200':
+          description: 配置成功
+
+  /api/tailscale/acl:
+    post:
+      summary: 下发 ACL 策略
+      tags: [Tailscale]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              description: Tailscale ACL 策略 JSON
+      responses:
+        '200':
+          description: 策略已应用
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: API Token 认证（开发模式可留空跳过）
+
+  parameters:
+    containerName:
+      name: name
+      in: path
+      required: true
+      schema:
+        type: string
+      description: 容器名称
+
+  schemas:
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          const: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    InitDataResult:
+      type: object
+      properties:
+        dataRoot:
+          type: string
+        createdDirs:
+          type: array
+          items:
+            type: string
+        existingDirs:
+          type: array
+          items:
+            type: string
+        permissionCheck:
+          type: object
+          properties:
+            dataRootWritable:
+              type: boolean
+            secretsDirSecure:
+              type: boolean
+            currentUser:
+              type: string
+            isRoot:
+              type: boolean
+        success:
+          type: boolean
+
+    UserQuotaInfo:
+      type: object
+      properties:
+        uid:
+          type: integer
+        dataDir:
+          type: string
+        usedBytes:
+          type: string
+        quotaBytes:
+          type: string
+        usagePercent:
+          type: number
+        subdirs:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              usedBytes:
+                type: string
+
+    DiskHealthResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        totalDisks:
+          type: integer
+        healthyDisks:
+          type: integer
+        disks:
+          type: array
+          items:
+            type: object
+            properties:
+              device:
+                type: string
+              healthy:
+                type: boolean
+              temperature:
+                type: [integer, 'null']
+              powerOnHours:
+                type: [integer, 'null']
+              model:
+                type: [string, 'null']
+              serial:
+                type: [string, 'null']
+              transport:
+                type: [string, 'null']
+              sizeBytes:
+                type: string
+
+    NetworkDriversResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        drivers:
+          type: array
+          items:
+            type: object
+            properties:
+              driver:
+                type: string
+              vendor:
+                type: string
+              product:
+                type: string
+              loaded:
+                type: boolean
+              version:
+                type: [string, 'null']
+              firmware:
+                type: [string, 'null']
+              pciDevices:
+                type: array
+                items:
+                  type: string
+        loadedCount:
+          type: integer
+        interfaces:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+              linkDetected:
+                type: boolean
+              speed:
+                type: [string, 'null']
+              duplex:
+                type: [string, 'null']
+              driver:
+                type: [string, 'null']
+
+    ContainerDeployRequest:
+      type: object
+      required: [name, image]
+      properties:
+        name:
+          type: string
+          maxLength: 128
+        image:
+          type: string
+          maxLength: 512
+        ports:
+          type: array
+          items:
+            type: object
+            properties:
+              host:
+                type: integer
+              container:
+                type: integer
+        env:
+          type: object
+          additionalProperties:
+            type: string
+        volumes:
+          type: array
+          items:
+            type: object
+            properties:
+              host:
+                type: string
+                description: 必须在 /data/ 内
+              container:
+                type: string
+              readonly:
+                type: boolean
+        memoryLimit:
+          type: string
+        cpuLimit:
+          type: number
+        restartPolicy:
+          type: string
+          enum: [no, always, unless-stopped, on-failure]
+        network:
+          type: string
+
+    ContainerDeployResponse:
+      type: object
+      properties:
+        containerId:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+        status:
+          type: string
+
+    ContainerInfo:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        image:
+          type: string
+        status:
+          type: string
+        state:
+          type: string
+        ports:
+          type: string
+        createdAt:
+          type: string
+
+    TailscaleStatusResponse:
+      type: object
+      properties:
+        timestamp:
+          type: string
+          format: date-time
+        available:
+          type: boolean
+        status:
+          type: object
+          properties:
+            backendState:
+              type: string
+            self:
+              type: [object, 'null']
+              properties:
+                hostname:
+                  type: string
+                ips:
+                  type: array
+                  items:
+                    type: string
+                os:
+                  type: string
+                online:
+                  type: boolean
+            peers:
+              type: array
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                  hostname:
+                    type: string
+                  ips:
+                    type: array
+                    items:
+                      type: string
+                  os:
+                    type: string
+                  online:
+                    type: boolean
+                  active:
+                    type: boolean
+            error:
+              type: [string, 'null']
+        subnetRoutes:
+          type: array
+          items:
+            type: object
+            properties:
+              cidr:
+                type: string
+              advertised:
+                type: boolean
+              approved:
+                type: boolean
