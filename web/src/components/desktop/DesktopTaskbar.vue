@@ -11,6 +11,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { demoActive } from '@/api/state';
+import NotificationBell from '@/components/desktop/NotificationBell.vue';
 import { useSystemStore } from '@/stores/system';
 import { useWmStore } from '@/stores/wm';
 import type { DesktopAppId } from '@/stores/wm';
@@ -119,6 +120,9 @@ watch(now, tick, { immediate: true });
       >
         MEM {{ (overview?.memory.usedPercent ?? 0).toFixed(0) }}%
       </button>
+
+      <!-- 通知铃铛（未读角标 + popover 面板） -->
+      <NotificationBell />
     </div>
 
     <!-- 时钟 -->

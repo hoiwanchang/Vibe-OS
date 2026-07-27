@@ -12,7 +12,14 @@ export type DesktopAppId =
   | 'apps'
   | 'settings'
   | 'tailscale'
-  | 'monitor';
+  | 'monitor'
+  | 'files'
+  | 'storage'
+  | 'sharing'
+  | 'backup'
+  | 'download'
+  | 'network'
+  | 'scheduler';
 
 /** 窗口几何 */
 export interface WindowRect {
@@ -42,6 +49,13 @@ const DEFAULT_SIZE: Record<DesktopAppId, { w: number; h: number }> = {
   settings: { w: 900, h: 600 },
   tailscale: { w: 980, h: 640 },
   monitor: { w: 860, h: 560 },
+  files: { w: 900, h: 600 },
+  storage: { w: 860, h: 580 },
+  sharing: { w: 800, h: 520 },
+  backup: { w: 820, h: 560 },
+  download: { w: 780, h: 560 },
+  network: { w: 840, h: 560 },
+  scheduler: { w: 800, h: 520 },
 };
 
 /** 应用标题（中英文） */
@@ -51,6 +65,13 @@ const APP_TITLE: Record<DesktopAppId, string> = {
   settings: '系统设置',
   tailscale: 'Tailscale 网络',
   monitor: '资源监视器',
+  files: '文件管理',
+  storage: '存储池',
+  sharing: '共享文件夹',
+  backup: '备份中心',
+  download: '下载中心',
+  network: '网络配置',
+  scheduler: '计划任务',
 };
 
 /** 窗口最小尺寸 */

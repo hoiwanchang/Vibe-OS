@@ -105,7 +105,8 @@ export const useNotificationStore = defineStore('notification', () => {
   /** 更新通知设置 */
   async function updateSettings(payload: NotificationSettings): Promise<boolean> {
     try {
-      settings.value = await notificationApi.updateSettings(payload);
+      await notificationApi.updateSettings(payload);
+      settings.value = payload;
       return true;
     } catch (err) {
       lastError.value = err instanceof Error ? err.message : String(err);

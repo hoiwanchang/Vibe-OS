@@ -13,6 +13,7 @@ import type {
   SystemOverview,
   TailscaleStatusResponse,
 } from '@/api/types';
+import { useNotificationStore } from '@/stores/notification';
 
 /** 硬件告警条目 */
 export interface HardwareAlert {
@@ -100,6 +101,9 @@ export const useSystemStore = defineStore('system', () => {
       if (nw.status === 'fulfilled') network.value = nw.value;
       if (ct.status === 'fulfilled') containers.value = ct.value;
       if (ts.status === 'fulfilled') tailscale.value = ts.value;
+
+      // 通知未读计数（任务栏铃铛角标，轻量请求，失败静默）
+      await useNotificationStore().fetchUnreadCount();
 
       const firstError = [ov, dh, nw, ct, ts].find(
         (r): r is PromiseRejectedResult => r.status === 'rejected',

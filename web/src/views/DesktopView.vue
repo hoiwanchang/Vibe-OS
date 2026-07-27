@@ -21,9 +21,16 @@ import DesktopTaskbar from '@/components/desktop/DesktopTaskbar.vue';
 import DesktopWidgets from '@/components/desktop/DesktopWidgets.vue';
 import StartMenu from '@/components/desktop/StartMenu.vue';
 import AppsView from '@/views/AppsView.vue';
+import BackupView from '@/views/BackupView.vue';
 import DashboardView from '@/views/DashboardView.vue';
+import DownloadView from '@/views/DownloadView.vue';
+import FilesView from '@/views/FilesView.vue';
 import MonitorView from '@/views/MonitorView.vue';
+import NetworkView from '@/views/NetworkView.vue';
+import SchedulerView from '@/views/SchedulerView.vue';
 import SettingsView from '@/views/SettingsView.vue';
+import SharingView from '@/views/SharingView.vue';
+import StorageView from '@/views/StorageView.vue';
 import TailscaleView from '@/views/TailscaleView.vue';
 import { useSystemStore, POLL_INTERVAL_MS } from '@/stores/system';
 import { useWmStore } from '@/stores/wm';
@@ -131,6 +138,13 @@ onBeforeUnmount(() => {
         <AppsView v-else-if="win.id === 'apps'" />
         <SettingsView v-else-if="win.id === 'settings'" />
         <TailscaleView v-else-if="win.id === 'tailscale'" />
+        <FilesView v-else-if="win.id === 'files'" />
+        <StorageView v-else-if="win.id === 'storage'" />
+        <SharingView v-else-if="win.id === 'sharing'" />
+        <BackupView v-else-if="win.id === 'backup'" />
+        <DownloadView v-else-if="win.id === 'download'" />
+        <NetworkView v-else-if="win.id === 'network'" />
+        <SchedulerView v-else-if="win.id === 'scheduler'" />
         <MonitorView v-else />
       </AppWindow>
 

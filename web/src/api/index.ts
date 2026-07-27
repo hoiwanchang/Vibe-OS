@@ -37,11 +37,14 @@ import type {
   ListeningPort,
   NetInterface,
   NetworkDriversResponse,
+  NotificationChannel,
+  NotificationItem,
   NotificationListResponse,
   NotificationSettings,
   PhysicalDisk,
   ScheduledJob,
   ScrubStatus,
+  ShareConnection,
   ShareInfo,
   ShareStatusResponse,
   SnapshotInfo,
@@ -328,14 +331,22 @@ export const filesApi = {
 
 export const storageApi = {
   /** 物理磁盘列表 */
-  disks: () => request<PhysicalDisk[]>({ url: '/storage/disks' }, demo.demoDisks),
+  disks: async (): Promise<PhysicalDisk[]> => {
+    const res = await request<{ disks: PhysicalDisk[] }>({ url: '/storage/disks' }, () => ({ disks: demo.demoDisks() }));
+    return res.disks;
+  },
 
   /** 存储池列表 */
-  pools: () => request<StoragePoolInfo[]>({ url: '/storage/pools' }, demo.demoPools),
+  pools: async (): Promise<StoragePoolInfo[]> => {
+    const res = await request<{ pools: StoragePoolInfo[] }>({ url: '/storage/pools' }, () => ({ pools: demo.demoPools() }));
+    return res.pools;
+  },
 
   /** 创建存储池 */
-  createPool: (payload: CreatePoolRequest) =>
-    request<StoragePoolInfo>({ url: '/storage/pools', method: 'post', data: payload }),
+  createPool: async (payload: CreatePoolRequest): Promise<StoragePoolInfo> => {
+    const res = await request<{ pool: StoragePoolInfo }>({ url: '/storage/pools', method: 'post', data: payload });
+    return res.pool;
+  },
 
   /** 销毁存储池 */
   destroyPool: (name: string) =>
@@ -345,19 +356,23 @@ export const storageApi = {
     }),
 
   /** 扩容存储池 */
-  expandPool: (name: string, disks: string[]) =>
-    request<StoragePoolInfo>({
+  expandPool: async (name: string, disks: string[]): Promise<StoragePoolInfo> => {
+    const res = await request<{ pool: StoragePoolInfo }>({
       url: `/storage/pools/${encodeURIComponent(name)}/expand`,
       method: 'post',
       data: { disks },
-    }),
+    });
+    return res.pool;
+  },
 
   /** 池内磁盘 SMART 详情 */
-  poolSmart: (name: string) =>
-    request<DiskSmartDetail[]>(
+  poolSmart: async (name: string): Promise<DiskSmartDetail[]> => {
+    const res = await request<{ disks: DiskSmartDetail[] }>(
       { url: `/storage/pools/${encodeURIComponent(name)}/smart` },
-      () => demo.demoPoolSmart(name),
-    ),
+      () => ({ disks: demo.demoPoolSmart(name) }),
+    );
+    return res.disks;
+  },
 
   /** 启动 Scrub */
   startScrub: (name: string) =>
@@ -378,19 +393,26 @@ export const storageApi = {
 
 export const sharingApi = {
   /** 共享列表 */
-  list: () => request<ShareInfo[]>({ url: '/sharing' }, demo.demoShares),
+  list: async (): Promise<ShareInfo[]> => {
+    const res = await request<{ shares: ShareInfo[] }>({ url: '/sharing' }, () => ({ shares: demo.demoShares() }));
+    return res.shares;
+  },
 
   /** 创建共享 */
-  create: (payload: CreateShareRequest) =>
-    request<ShareInfo>({ url: '/sharing', method: 'post', data: payload }),
+  create: async (payload: CreateShareRequest): Promise<ShareInfo> => {
+    const res = await request<{ share: ShareInfo }>({ url: '/sharing', method: 'post', data: payload });
+    return res.share;
+  },
 
   /** 更新共享 */
-  update: (name: string, payload: Partial<CreateShareRequest>) =>
-    request<ShareInfo>({
+  update: async (name: string, payload: Partial<CreateShareRequest>): Promise<ShareInfo> => {
+    const res = await request<{ share: ShareInfo }>({
       url: `/sharing/${encodeURIComponent(name)}`,
       method: 'put',
       data: payload,
-    }),
+    });
+    return res.share;
+  },
 
   /** 删除共享 */
   remove: (name: string) =>
@@ -400,11 +422,13 @@ export const sharingApi = {
     }),
 
   /** 共享状态（运行状态 + 连接详情） */
-  status: (name: string) =>
-    request<ShareStatusResponse>(
+  status: async (name: string): Promise<ShareStatusResponse> => {
+    const res = await request<{ activeConnections: ShareConnection[] }>(
       { url: `/sharing/${encodeURIComponent(name)}/status` },
-      () => demo.demoShareStatus(name),
-    ),
+      () => ({ activeConnections: demo.demoShareStatus(name).connections }),
+    );
+    return { name, running: true, connections: res.activeConnections };
+  },
 
   /** 重启共享服务 */
   restart: (name: string) =>
@@ -418,18 +442,25 @@ export const sharingApi = {
 
 export const backupApi = {
   /** 备份任务列表 */
-  jobs: () => request<BackupJob[]>({ url: '/backup/jobs' }, demo.demoBackupJobs),
+  jobs: async (): Promise<BackupJob[]> => {
+    const res = await request<{ jobs: BackupJob[] }>({ url: '/backup/jobs' }, () => ({ jobs: demo.demoBackupJobs() }));
+    return res.jobs;
+  },
 
   /** 创建备份任务 */
-  createJob: (payload: CreateBackupJobRequest) =>
-    request<BackupJob>({ url: '/backup/jobs', method: 'post', data: payload }),
+  createJob: async (payload: CreateBackupJobRequest): Promise<BackupJob> => {
+    const res = await request<{ job: BackupJob }>({ url: '/backup/jobs', method: 'post', data: payload });
+    return res.job;
+  },
 
   /** 立即执行备份任务 */
-  runJob: (id: string) =>
-    request<BackupExecution>({
+  runJob: async (id: string): Promise<BackupExecution> => {
+    const res = await request<{ execution: BackupExecution }>({
       url: `/backup/jobs/${encodeURIComponent(id)}/run`,
       method: 'post',
-    }),
+    });
+    return res.execution;
+  },
 
   /** 删除备份任务 */
   deleteJob: (id: string) =>
@@ -439,11 +470,13 @@ export const backupApi = {
     }),
 
   /** 备份执行历史 */
-  history: (id: string) =>
-    request<BackupExecution[]>(
+  history: async (id: string): Promise<BackupExecution[]> => {
+    const res = await request<{ executions: BackupExecution[] }>(
       { url: `/backup/jobs/${encodeURIComponent(id)}/history` },
-      () => demo.demoBackupHistory(id),
-    ),
+      () => ({ executions: demo.demoBackupHistory(id) }),
+    );
+    return res.executions;
+  },
 
   /** 恢复备份 */
   restore: (id: string, executionId: string, targetPath?: string) =>
@@ -454,15 +487,20 @@ export const backupApi = {
     }),
 
   /** 快照列表 */
-  snapshots: () => request<SnapshotInfo[]>({ url: '/backup/snapshots' }, demo.demoSnapshots),
+  snapshots: async (): Promise<SnapshotInfo[]> => {
+    const res = await request<{ snapshots: SnapshotInfo[] }>({ url: '/backup/snapshots' }, () => ({ snapshots: demo.demoSnapshots() }));
+    return res.snapshots;
+  },
 
   /** 创建快照 */
-  createSnapshot: (pool: string, name: string) =>
-    request<SnapshotInfo>({
+  createSnapshot: async (pool: string, name: string): Promise<SnapshotInfo> => {
+    const res = await request<{ snapshot: SnapshotInfo }>({
       url: '/backup/snapshots',
       method: 'post',
       data: { pool, name },
-    }),
+    });
+    return res.snapshot;
+  },
 
   /** 删除快照 */
   deleteSnapshot: (name: string) =>
@@ -476,11 +514,16 @@ export const backupApi = {
 
 export const downloadApi = {
   /** 下载任务列表 */
-  tasks: () => request<DownloadTask[]>({ url: '/download/tasks' }, demo.demoDownloadTasks),
+  tasks: async (): Promise<DownloadTask[]> => {
+    const res = await request<{ tasks: DownloadTask[] }>({ url: '/download/tasks' }, () => ({ tasks: demo.demoDownloadTasks() }));
+    return res.tasks;
+  },
 
   /** 新建下载任务（支持批量 URL） */
-  addTask: (payload: AddDownloadRequest) =>
-    request<DownloadTask[]>({ url: '/download/tasks', method: 'post', data: payload }),
+  addTask: async (payload: AddDownloadRequest): Promise<string[]> => {
+    const res = await request<{ gids: string[] }>({ url: '/download/tasks', method: 'post', data: payload });
+    return res.gids;
+  },
 
   /** 删除下载任务 */
   removeTask: (gid: string) =>
@@ -504,51 +547,68 @@ export const downloadApi = {
     }),
 
   /** 单个任务详情 */
-  task: (gid: string) =>
-    request<DownloadTask>({ url: `/download/tasks/${encodeURIComponent(gid)}` }),
+  task: async (gid: string): Promise<DownloadTask> => {
+    const res = await request<{ task: DownloadTask }>({ url: `/download/tasks/${encodeURIComponent(gid)}` });
+    return res.task;
+  },
 
   /** 下载设置 */
-  settings: () =>
-    request<Record<string, string>>({ url: '/download/settings' }, demo.demoDownloadSettings),
+  settings: async (): Promise<Record<string, string>> => {
+    const res = await request<{ settings: Record<string, string> }>({ url: '/download/settings' }, () => ({ settings: demo.demoDownloadSettings() }));
+    return res.settings;
+  },
 
   /** 更新下载设置 */
-  updateSettings: (payload: Record<string, string>) =>
-    request<Record<string, string>>({
+  updateSettings: async (payload: Record<string, string>): Promise<Record<string, string>> => {
+    const res = await request<{ updated: Record<string, string> }>({
       url: '/download/settings',
       method: 'put',
       data: payload,
-    }),
+    });
+    return res.updated;
+  },
 };
 
 /* ---------- 网络配置 ---------- */
 
 export const networkApi = {
   /** 网络接口列表 */
-  interfaces: () =>
-    request<NetInterface[]>({ url: '/network/interfaces' }, demo.demoNetInterfaces),
+  interfaces: async (): Promise<NetInterface[]> => {
+    const res = await request<{ interfaces: NetInterface[] }>({ url: '/network/interfaces' }, () => ({ interfaces: demo.demoNetInterfaces() }));
+    return res.interfaces;
+  },
 
   /** 配置接口（DHCP/静态） */
-  configureInterface: (name: string, payload: InterfaceConfigRequest) =>
-    request<NetInterface>({
+  configureInterface: async (name: string, payload: InterfaceConfigRequest): Promise<NetInterface> => {
+    const res = await request<{ interface: NetInterface }>({
       url: `/network/interfaces/${encodeURIComponent(name)}`,
       method: 'put',
       data: payload,
-    }),
+    });
+    return res.interface;
+  },
 
   /** DNS 配置 */
   dns: () => request<DnsConfig>({ url: '/network/dns' }),
 
   /** 更新 DNS */
   setDns: (payload: DnsConfig) =>
-    request<DnsConfig>({ url: '/network/dns', method: 'put', data: payload }),
+    request<{ updated: boolean }>({ url: '/network/dns', method: 'put', data: payload }),
 
   /** 防火墙规则列表 */
-  firewall: () =>
-    request<FirewallRule[]>({ url: '/network/firewall' }, demo.demoFirewallRules),
+  firewall: async (): Promise<FirewallRule[]> => {
+    const res = await request<{ rules: FirewallRule[]; defaultPolicy: Record<string, string> }>(
+      { url: '/network/firewall' },
+      () => ({ rules: demo.demoFirewallRules(), defaultPolicy: {} }),
+    );
+    return res.rules;
+  },
 
   /** 添加防火墙规则 */
-  addFirewallRule: (payload: FirewallRuleRequest) =>
-    request<FirewallRule>({ url: '/network/firewall', method: 'post', data: payload }),
+  addFirewallRule: async (payload: FirewallRuleRequest): Promise<FirewallRule> => {
+    const res = await request<{ rule: FirewallRule }>({ url: '/network/firewall', method: 'post', data: payload });
+    return res.rule;
+  },
 
   /** 删除防火墙规则 */
   removeFirewallRule: (id: string) =>
@@ -558,11 +618,16 @@ export const networkApi = {
     }),
 
   /** 监听端口列表 */
-  ports: () =>
-    request<ListeningPort[]>({ url: '/network/ports' }, demo.demoListeningPorts),
+  ports: async (): Promise<ListeningPort[]> => {
+    const res = await request<{ ports: ListeningPort[] }>({ url: '/network/ports' }, () => ({ ports: demo.demoListeningPorts() }));
+    return res.ports;
+  },
 
   /** WoL 设备列表 */
-  wolDevices: () => request<WolDevice[]>({ url: '/network/wol' }, demo.demoWolDevices),
+  wolDevices: async (): Promise<WolDevice[]> => {
+    const res = await request<{ devices: WolDevice[] }>({ url: '/network/wol' }, () => ({ devices: demo.demoWolDevices() }));
+    return res.devices;
+  },
 
   /** 发送 WoL 魔术包 */
   sendWol: (mac: string, broadcast?: string) =>
@@ -577,22 +642,27 @@ export const networkApi = {
 
 export const notificationApi = {
   /** 通知列表（分页 + 可选严重级别过滤） */
-  list: (limit = 20, offset = 0, severity?: string) =>
-    request<NotificationListResponse>(
+  list: async (limit = 20, offset = 0, severity?: string): Promise<NotificationListResponse> => {
+    const res = await request<{ notifications: NotificationItem[]; total: number }>(
       { url: '/notifications', params: { limit, offset, severity } },
-      () => demo.demoNotifications(limit, offset),
-    ),
+      () => {
+        const d = demo.demoNotifications(limit, offset);
+        return { notifications: d.notifications, total: d.total };
+      },
+    );
+    return { notifications: res.notifications, total: res.total, unread: 0 };
+  },
 
   /** 标记单条已读 */
   markRead: (id: string) =>
-    request<{ read: boolean }>({
+    request<{ updated: boolean }>({
       url: `/notifications/${encodeURIComponent(id)}/read`,
       method: 'post',
     }),
 
   /** 全部标记已读 */
   markAllRead: () =>
-    request<{ read: number }>({ url: '/notifications/read-all', method: 'post' }),
+    request<{ updated: number }>({ url: '/notifications/read-all', method: 'post' }),
 
   /** 删除通知 */
   remove: (id: string) =>
@@ -602,45 +672,56 @@ export const notificationApi = {
     }),
 
   /** 通知设置 */
-  settings: () =>
-    request<NotificationSettings>(
+  settings: async (): Promise<NotificationSettings> => {
+    const res = await request<{ channels: NotificationChannel[] }>(
       { url: '/notifications/settings' },
-      demo.demoNotificationSettings,
-    ),
+      () => ({ channels: demo.demoNotificationSettings().channels }),
+    );
+    return { channels: res.channels };
+  },
 
   /** 更新通知设置 */
   updateSettings: (payload: NotificationSettings) =>
-    request<NotificationSettings>({
+    request<{ updated: boolean }>({
       url: '/notifications/settings',
       method: 'put',
       data: payload,
     }),
 
   /** 未读计数 */
-  unreadCount: () =>
-    request<{ unread: number }>(
+  unreadCount: async (): Promise<{ unread: number }> => {
+    const res = await request<{ count: number }>(
       { url: '/notifications/unread-count' },
-      demo.demoUnreadCount,
-    ),
+      () => ({ count: demo.demoUnreadCount().unread }),
+    );
+    return { unread: res.count };
+  },
 };
 
 /* ---------- 计划任务 ---------- */
 
 export const schedulerApi = {
   /** 计划任务列表 */
-  jobs: () => request<ScheduledJob[]>({ url: '/scheduler/jobs' }, demo.demoScheduledJobs),
+  jobs: async (): Promise<ScheduledJob[]> => {
+    const res = await request<{ jobs: ScheduledJob[] }>({ url: '/scheduler/jobs' }, () => ({ jobs: demo.demoScheduledJobs() }));
+    return res.jobs;
+  },
 
   /** 创建计划任务 */
-  createJob: (payload: CreateScheduledJobRequest) =>
-    request<ScheduledJob>({ url: '/scheduler/jobs', method: 'post', data: payload }),
+  createJob: async (payload: CreateScheduledJobRequest): Promise<ScheduledJob> => {
+    const res = await request<{ job: ScheduledJob }>({ url: '/scheduler/jobs', method: 'post', data: payload });
+    return res.job;
+  },
 
   /** 更新计划任务 */
-  updateJob: (id: string, payload: Partial<CreateScheduledJobRequest>) =>
-    request<ScheduledJob>({
+  updateJob: async (id: string, payload: Partial<CreateScheduledJobRequest>): Promise<ScheduledJob> => {
+    const res = await request<{ job: ScheduledJob }>({
       url: `/scheduler/jobs/${encodeURIComponent(id)}`,
       method: 'put',
       data: payload,
-    }),
+    });
+    return res.job;
+  },
 
   /** 删除计划任务 */
   deleteJob: (id: string) =>
@@ -650,16 +731,20 @@ export const schedulerApi = {
     }),
 
   /** 立即执行计划任务 */
-  runJob: (id: string) =>
-    request<JobExecution>({
+  runJob: async (id: string): Promise<JobExecution> => {
+    const res = await request<{ execution: JobExecution }>({
       url: `/scheduler/jobs/${encodeURIComponent(id)}/run`,
       method: 'post',
-    }),
+    });
+    return res.execution;
+  },
 
   /** 执行历史 */
-  history: (id: string) =>
-    request<JobExecution[]>(
+  history: async (id: string): Promise<JobExecution[]> => {
+    const res = await request<{ executions: JobExecution[] }>(
       { url: `/scheduler/jobs/${encodeURIComponent(id)}/history` },
-      () => demo.demoJobHistory(id),
-    ),
+      () => ({ executions: demo.demoJobHistory(id) }),
+    );
+    return res.executions;
+  },
 };

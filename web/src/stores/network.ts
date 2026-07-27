@@ -68,7 +68,8 @@ export const useNetworkStore = defineStore('network', () => {
   /** 更新 DNS 配置 */
   async function updateDns(payload: DnsConfig): Promise<boolean> {
     try {
-      dns.value = await networkApi.setDns(payload);
+      await networkApi.setDns(payload);
+      dns.value = payload;
       return true;
     } catch (err) {
       lastError.value = err instanceof Error ? err.message : String(err);
