@@ -10,6 +10,14 @@ import { hardwareRoutes } from './modules/hardware/index.js';
 import { containerRoutes } from './modules/container/index.js';
 import { metricsRoutes } from './modules/metrics/index.js';
 import { userRoutes } from './modules/user/index.js';
+import { filemanagerRoutes } from './modules/filemanager/index.js';
+import { storageRoutes } from './modules/storage/index.js';
+import { sharingRoutes } from './modules/sharing/index.js';
+import { backupRoutes } from './modules/backup/index.js';
+import { downloadRoutes } from './modules/download/index.js';
+import { networkRoutes } from './modules/network/index.js';
+import { notificationRoutes } from './modules/notification/index.js';
+import { schedulerRoutes } from './modules/scheduler/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -42,6 +50,14 @@ export function createApp(): express.Express {
   app.use('/api', containerRoutes);
   app.use('/api', metricsRoutes);
   app.use('/api', userRoutes);
+  app.use('/api', filemanagerRoutes);
+  app.use('/api', storageRoutes);
+  app.use('/api', sharingRoutes);
+  app.use('/api', backupRoutes);
+  app.use('/api', downloadRoutes);
+  app.use('/api', networkRoutes);
+  app.use('/api', notificationRoutes);
+  app.use('/api', schedulerRoutes);
 
   // 404 处理
   app.use((_req, res) => {

@@ -107,11 +107,28 @@ inject_firmware() {
     dpkg-deb -x "$deb" "$fwroot" 2>/dev/null || true
   done
 
-  # 定位 initrd（Debian 13 可能为 zstd 压缩）
-  local initrd_src="${ISO_TREE}/install.amd/initrd.gz"
-  [[ -f "$initrd_src" ]] || die "未找到 initrd: $initrd_src"
+  # 确定固件源目录（Debian 13 trixie 已 usrmerge，位于 usr/lib/firmware/）
+  FW_SRC=""
+  if [[ -d "$fwroot/usr/lib/firmware" ]]; then
+    FW_SRC="$fwroot/usr/lib/firmware"
+  elif [[ -d "$fwroot/lib/firmware" ]]; then
+    FW_SRC="$fwroot/lib/firmware"
+  fi
+  [[ -n "$FW_SRC" ]] || log "警告: 未提取到任何固件文件（检查固件包是否成功下载）"
 
-  log "解包 initrd 并注入固件"
+  # 遍历所有 initrd（文本安装器 + 图形安装器），逐个注入固件与 preseed
+  local initrd
+  for initrd in "${ISO_TREE}"/install.amd/initrd.gz "${ISO_TREE}"/install.amd/gtk/initrd.gz; do
+    [[ -f "$initrd" ]] || { log "跳过不存在的 initrd: $initrd"; continue; }
+    patch_one_initrd "$initrd"
+  done
+}
+
+# 对单个 initrd：解包 → 注入固件 → 嵌入 preseed → 按原压缩格式重打包
+patch_one_initrd() {
+  local initrd_src="$1"
+  log "处理 initrd: ${initrd_src#$ISO_TREE/}"
+
   rm -rf "${INITRD_DIR:?}/"*
   (
     cd "$INITRD_DIR"
@@ -122,29 +139,26 @@ inject_firmware() {
     esac
   )
 
-  # 合并固件到 initrd 的 lib/firmware
-  # 注意：Debian 13 (trixie) 已完成 usrmerge，固件包文件位于 usr/lib/firmware/；
-  # 旧布局为 lib/firmware/。两者都检查以兼容。
-  local fw_src=""
-  if [[ -d "$fwroot/usr/lib/firmware" ]]; then
-    fw_src="$fwroot/usr/lib/firmware"
-  elif [[ -d "$fwroot/lib/firmware" ]]; then
-    fw_src="$fwroot/lib/firmware"
-  fi
-
-  if [[ -n "$fw_src" ]]; then
-    # initrd 内统一使用 lib/firmware（内核早期用户空间从此路径加载固件）
+  # 合并固件到 initrd 的 lib/firmware（内核早期用户空间从此路径加载）
+  if [[ -n "$FW_SRC" ]]; then
     mkdir -p "${INITRD_DIR}/lib/firmware"
-    cp -r --update=none "$fw_src/." "${INITRD_DIR}/lib/firmware/" || true
+    cp -r --update=none "$FW_SRC/." "${INITRD_DIR}/lib/firmware/" || true
     local fw_count
     fw_count="$(find "${INITRD_DIR}/lib/firmware" -type f | wc -l)"
-    log "固件已合并进 initrd（来源: ${fw_src#$fwroot/}，共 $fw_count 个文件）"
-  else
-    log "警告: 未提取到任何固件文件（检查固件包是否成功下载）"
+    log "  固件已合并（共 $fw_count 个文件）"
   fi
 
-  # 重新打包 initrd（保持与原始一致的压缩格式）
-  log "重新打包 initrd"
+  # 将 preseed 嵌入 initrd 根目录（Debian 官方推荐做法）。
+  # 安装器启动早期即解压 initrd 进内存，preseed/file=/preseed.cfg 必然可达，
+  # 彻底规避从 CD 加载 preseed 时的介质挂载时序问题。
+  if [[ -f "${WORK_DIR}/preseed.cfg" ]]; then
+    cp "${WORK_DIR}/preseed.cfg" "${INITRD_DIR}/preseed.cfg"
+    log "  preseed 已嵌入根目录 (/preseed.cfg)"
+  else
+    die "未找到 ${WORK_DIR}/preseed.cfg，无法嵌入 initrd"
+  fi
+
+  # 重新打包（保持与原始一致的压缩格式）
   (
     cd "$INITRD_DIR"
     case "$(file -b "$initrd_src")" in
@@ -152,7 +166,7 @@ inject_firmware() {
       *)           find . | cpio -o -H newc --quiet | gzip -9 > "$initrd_src" ;;
     esac
   )
-  log "initrd 固件注入完成"
+  log "  initrd 处理完成"
 }
 
 # ----------------------------------------------------------------------------
@@ -175,13 +189,16 @@ generate_preseed() {
   export HOSTNAME USERNAME DATA_FSTYPE SYS_SIZE_MB
   export PASSWORD_CRYPT="$pw_crypt" ROOT_PASSWORD_CRYPT="$root_crypt"
 
-  mkdir -p "${ISO_TREE}/naisys"
+  # 输出到 WORK_DIR（后续由 inject_firmware 嵌入 initrd 根目录）
   envsubst '${HOSTNAME} ${USERNAME} ${PASSWORD_CRYPT} ${ROOT_PASSWORD_CRYPT} ${DATA_FSTYPE} ${SYS_SIZE_MB}' \
     < "${SCRIPT_DIR}/preseed/preseed.template.cfg" \
-    > "${ISO_TREE}/naisys/preseed.cfg"
+    > "${WORK_DIR}/preseed.cfg"
+
+  # ISO 树保留一份副本（供 late_command / 调试参考）
+  mkdir -p "${ISO_TREE}/naisys"
+  cp "${WORK_DIR}/preseed.cfg" "${ISO_TREE}/naisys/preseed.cfg"
 
   # 记录初始密码到构建产物（仅供首次引导显示，安装后应立即修改）
-  # OUT_DIR 此时可能尚未创建（build_iso 阶段才 mkdir），需先确保存在
   mkdir -p "$OUT_DIR"
   printf '%s\n' "$init_pw" > "${OUT_DIR}/.init-password"
   chmod 600 "${OUT_DIR}/.init-password"
@@ -301,8 +318,8 @@ main() {
   check_deps
   download_netinst
   extract_iso
-  inject_firmware
   generate_preseed
+  inject_firmware
   copy_runtime
   patch_boot
   build_iso

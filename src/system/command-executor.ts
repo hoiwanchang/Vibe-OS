@@ -33,6 +33,36 @@ const ALLOWED_COMMANDS = new Set([
   'setquota',
   'repquota',
   'quota',
+  // 存储池管理
+  'mdadm',
+  'mkfs.ext4',
+  'mkfs.xfs',
+  'mount',
+  'umount',
+  'blkid',
+  'wipefs',
+  // 共享文件夹
+  'smbcontrol',
+  'testparm',
+  'exportfs',
+  'showmount',
+  'smbstatus',
+  'systemctl',
+  // 备份
+  'rsync',
+  'btrfs',
+  'zfs',
+  'tar',
+  // 网络
+  'nft',
+  'iptables',
+  'ss',
+  'ethtool',
+  'wakeonlan',
+  // 下载
+  'aria2c',
+  // 计划任务
+  'bash',
 ]);
 
 /**
