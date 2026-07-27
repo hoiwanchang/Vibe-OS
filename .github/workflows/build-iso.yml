@@ -28,7 +28,7 @@ concurrency:
   cancel-in-progress: false
 
 env:
-  DEBIAN_VERSION: '13.3.0'
+  DEBIAN_VERSION: '13.6.0'
   DEBIAN_ARCH: 'amd64'
 
 jobs:
