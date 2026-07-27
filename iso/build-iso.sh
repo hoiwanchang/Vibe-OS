@@ -237,14 +237,36 @@ build_iso() {
   mkdir -p "$OUT_DIR"
   local out_name="${ISO_OUT_PATTERN//\{version\}/$VERSION}"
   local out_iso="${OUT_DIR}/${out_name}"
-  log "生成混合 ISO: $out_iso"
 
+  # 定位 isohybrid MBR 模板（由 syslinux-common / isolinux 包提供）。
+  # xorriso -extract 不提取原 ISO 系统区，故必须用官方模板，
+  # 由 xorriso 在其上写入新的分区表条目。
+  local mbr_template=""
+  local cand
+  for cand in \
+    /usr/lib/ISOLINUX/isohdpfx.bin \
+    /usr/lib/syslinux/bios/isohdpfx.bin \
+    /usr/lib/syslinux/isohdpfx.bin \
+    /usr/share/syslinux/isohdpfx.bin; do
+    [[ -f "$cand" ]] && { mbr_template="$cand"; break; }
+  done
+  [[ -n "$mbr_template" ]] \
+    || die "未找到 isohdpfx.bin 模板，请安装 syslinux-common/isolinux 包"
+  log "使用 MBR 模板: $mbr_template"
+
+  # 预检关键引导文件，缺失则提前报错（避免 xorriso 半途失败）
+  local need
+  for need in isolinux/isolinux.bin boot/grub/efi.img; do
+    [[ -f "${ISO_TREE}/${need}" ]] || die "ISO 树缺少引导文件: $need"
+  done
+
+  log "生成混合 ISO: $out_iso"
   xorriso -as mkisofs \
     -r -J -joliet-long -l \
     -iso-level 3 \
     -V "$ISO_LABEL" \
     -partition_offset 16 \
-    -isohybrid-mbr "${ISO_TREE}/isolinux/isohdpfx.bin" \
+    -isohybrid-mbr "$mbr_template" \
     -c isolinux/boot.cat \
     -b isolinux/isolinux.bin \
     -no-emul-boot -boot-load-size 4 -boot-info-table \
