@@ -16,6 +16,10 @@ import type {
   HealthInfo,
   NetworkDriversResponse,
   SystemOverview,
+  TailscaleLoginRequest,
+  TailscaleLoginResponse,
+  TailscaleManageReport,
+  TailscalePrefs,
   TailscaleStatusResponse,
   UserListResponse,
   UserQuotaInfo,
@@ -129,6 +133,43 @@ export const tailscaleApi = {
       url: '/tailscale/subnet-router',
       method: 'post',
       data: { subnets },
+    }),
+
+  /** 管理综合报告（状态 + 账户列表 + 偏好设置） */
+  manage: () => request<TailscaleManageReport>({ url: '/tailscale/manage' }),
+
+  /** 登录控制平面（支持第三方 headscale 服务器） */
+  login: (payload: TailscaleLoginRequest) =>
+    request<TailscaleLoginResponse>({
+      url: '/tailscale/login',
+      method: 'post',
+      data: payload,
+    }),
+
+  /** 登出当前账户 */
+  logout: () =>
+    request<{ status: string }>({ url: '/tailscale/logout', method: 'post' }),
+
+  /** 切换激活账户 */
+  switchAccount: (id: string) =>
+    request<TailscaleLoginResponse>({
+      url: `/tailscale/accounts/${encodeURIComponent(id)}/switch`,
+      method: 'post',
+    }),
+
+  /** 移除已登记账户 */
+  removeAccount: (id: string) =>
+    request<{ status: string }>({
+      url: `/tailscale/accounts/${encodeURIComponent(id)}`,
+      method: 'delete',
+    }),
+
+  /** 应用偏好设置（exit node / accept routes 等） */
+  setPrefs: (prefs: Partial<TailscalePrefs>) =>
+    request<{ status: string }>({
+      url: '/tailscale/prefs',
+      method: 'post',
+      data: prefs,
     }),
 };
 

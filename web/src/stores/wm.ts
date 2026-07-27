@@ -7,7 +7,12 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 
 /** 桌面应用 id */
-export type DesktopAppId = 'dashboard' | 'apps' | 'settings';
+export type DesktopAppId =
+  | 'dashboard'
+  | 'apps'
+  | 'settings'
+  | 'tailscale'
+  | 'monitor';
 
 /** 窗口几何 */
 export interface WindowRect {
@@ -35,6 +40,8 @@ const DEFAULT_SIZE: Record<DesktopAppId, { w: number; h: number }> = {
   dashboard: { w: 1040, h: 640 },
   apps: { w: 960, h: 620 },
   settings: { w: 900, h: 600 },
+  tailscale: { w: 980, h: 640 },
+  monitor: { w: 860, h: 560 },
 };
 
 /** 应用标题（中英文） */
@@ -42,6 +49,8 @@ const APP_TITLE: Record<DesktopAppId, string> = {
   dashboard: '仪表盘',
   apps: '应用中心',
   settings: '系统设置',
+  tailscale: 'Tailscale 网络',
+  monitor: '资源监视器',
 };
 
 /** 窗口最小尺寸 */
@@ -73,6 +82,14 @@ export const useWmStore = defineStore('wm', () => {
     return windows.value.find((w) => w.id === id);
   }
 
+  /** 移动端断点：窄屏时窗口直接全屏打开 */
+  const MOBILE_BREAKPOINT = 600;
+
+  /** 是否处于移动端视口 */
+  function isMobileViewport(): boolean {
+    return window.innerWidth <= MOBILE_BREAKPOINT;
+  }
+
   /** 计算新窗口级联位置（在可用区域内） */
   function cascadeRect(id: DesktopAppId): WindowRect {
     const size = DEFAULT_SIZE[id];
@@ -94,13 +111,19 @@ export const useWmStore = defineStore('wm', () => {
       focus(id);
       return;
     }
-    const rect = cascadeRect(id);
+
+    // 移动端：直接全屏打开（最大化态），桌面端：级联窗口
+    const mobile = isMobileViewport();
+    const rect = mobile
+      ? { x: 0, y: 0, w: window.innerWidth, h: window.innerHeight - 44 }
+      : cascadeRect(id);
+
     windows.value.push({
       id,
       title: APP_TITLE[id],
       rect,
       minimized: false,
-      maximized: false,
+      maximized: mobile,
       z: ++zCounter,
       restoreRect: null,
     });

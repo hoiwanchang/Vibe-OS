@@ -123,3 +123,65 @@ export interface TailscaleStatusResponse {
   /** Subnet Router 路由 */
   subnetRoutes: SubnetRoute[];
 }
+
+/* ---------- Tailscale 多账户 / HeadScale 管理 ---------- */
+
+/** Tailscale 账户（profile）条目 */
+export interface TailscaleAccount {
+  /** 账户唯一标识（profile id 或自定义名） */
+  id: string;
+  /** 显示名称（控制平面域名或自定义标签） */
+  label: string;
+  /** 控制平面地址（headscale / 官方 control URL） */
+  controlUrl: string;
+  /** 登录用户邮箱（如可获取） */
+  loginName: string;
+  /** 是否为当前激活账户 */
+  active: boolean;
+}
+
+/** Tailscale 登录请求（支持 headscale 第三方服务器） */
+export interface TailscaleLoginRequest {
+  /** 控制平面地址，headscale 服务器 URL（如 http://10.0.0.1:8080）或官方默认 */
+  controlUrl?: string;
+  /** 预认证密钥（headscale 场景免交互登录） */
+  authKey?: string;
+  /** 账户标签（用于多账户区分，默认取 controlUrl 主机名） */
+  label?: string;
+  /** 是否作为 exit node 通告自身 */
+  exitNode?: boolean;
+  /** 是否接受子网路由 */
+  acceptRoutes?: boolean;
+}
+
+/** Tailscale 登录响应 */
+export interface TailscaleLoginResponse {
+  /** 登录后的后端状态 */
+  backendState: string;
+  /** 需要用户访问的认证 URL（无 authKey 时由 tailscale 返回） */
+  authUrl: string | null;
+  /** 当前激活账户 */
+  account: TailscaleAccount;
+}
+
+/** Tailscale 偏好设置（set 命令可配置项） */
+export interface TailscalePrefs {
+  /** 是否接受子网路由 */
+  acceptRoutes: boolean;
+  /** 使用的 exit node 节点 IP（空字符串表示不使用） */
+  exitNode: string;
+  /** 是否允许 LAN 流量绕过 exit node */
+  exitNodeAllowLanAccess: boolean;
+  /** 是否通告自身为 exit node */
+  advertiseExitNode: boolean;
+}
+
+/** Tailscale 管理综合报告（状态 + 账户 + 偏好） */
+export interface TailscaleManageReport {
+  /** 基础状态报告 */
+  report: TailscaleStatusResponse;
+  /** 已配置账户列表 */
+  accounts: TailscaleAccount[];
+  /** 当前偏好设置 */
+  prefs: TailscalePrefs;
+}

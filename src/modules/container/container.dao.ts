@@ -24,6 +24,11 @@ import {
   getSubnetRoutes,
   applyAclPolicy,
   isTailscaleAvailable,
+  tailscaleLogin,
+  tailscaleLogout,
+  tailscaleWhoami,
+  tailscaleSetPrefs,
+  tailscaleGetPrefs,
 } from '../../system/tailscale.js';
 import type {
   ContainerDeployRequest,
@@ -31,6 +36,8 @@ import type {
   ContainerLogResult,
   TailscaleStatus,
   SubnetRoute,
+  TailscaleAccount,
+  TailscalePrefs,
 } from './container.types.js';
 
 /**
@@ -121,6 +128,88 @@ export async function pushAclPolicy(policy: string): Promise<void> {
  */
 export async function checkTailscaleAvailable(): Promise<boolean> {
   return isTailscaleAvailable();
+}
+
+/**
+ * 登录 Tailscale（支持 headscale 第三方控制平面）
+ */
+export async function loginTailscale(options: {
+  controlUrl?: string;
+  authKey?: string;
+  exitNode?: boolean;
+  acceptRoutes?: boolean;
+}): Promise<{
+  backendState: string;
+  authUrl: string | null;
+  exitCode: number;
+  errorDetail: string;
+}> {
+  return tailscaleLogin(options);
+}
+
+/**
+ * 登出 Tailscale
+ */
+export async function logoutTailscale(): Promise<void> {
+  return tailscaleLogout();
+}
+
+/**
+ * 查询当前登录身份
+ */
+export async function whoamiTailscale(): Promise<string | null> {
+  return tailscaleWhoami();
+}
+
+/**
+ * 应用 Tailscale 偏好设置
+ */
+export async function setTailscalePrefs(
+  prefs: Partial<TailscalePrefs>,
+): Promise<void> {
+  return tailscaleSetPrefs(prefs);
+}
+
+/**
+ * 读取 Tailscale 偏好设置
+ */
+export async function getTailscalePrefs(): Promise<TailscalePrefs> {
+  return tailscaleGetPrefs();
+}
+
+/* ---------- 账户注册表持久化（多账户管理） ---------- */
+
+/** 账户注册表文件路径 /data/naisys/tailscale/accounts.json */
+const ACCOUNTS_FILE = `${NAISYS_APP_DIR}/tailscale/accounts.json`;
+
+/**
+ * 读取已配置的 Tailscale 账户列表
+ * 文件不存在时返回空数组
+ */
+export async function loadAccounts(): Promise<TailscaleAccount[]> {
+  const fs = await import('node:fs/promises');
+  try {
+    const raw = await fs.readFile(ACCOUNTS_FILE, 'utf-8');
+    const parsed = JSON.parse(raw) as { accounts?: TailscaleAccount[] };
+    return Array.isArray(parsed.accounts) ? parsed.accounts : [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * 保存 Tailscale 账户列表（覆盖写入）
+ * @param accounts - 账户数组
+ */
+export async function saveAccounts(accounts: TailscaleAccount[]): Promise<void> {
+  const { ensureDir } = await import('../../system/filesystem.js');
+  const fs = await import('node:fs/promises');
+  await ensureDir(path.dirname(ACCOUNTS_FILE));
+  await fs.writeFile(
+    ACCOUNTS_FILE,
+    JSON.stringify({ accounts }, null, 2),
+    'utf-8',
+  );
 }
 
 /**

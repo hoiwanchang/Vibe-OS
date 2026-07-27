@@ -141,3 +141,103 @@ export async function handleInitAppDirs(
   const result = await service.initAppDirs(appname);
   res.status(201).json({ success: true, data: result });
 }
+
+/* ---------- Tailscale 多账户 / HeadScale 管理 ---------- */
+
+/**
+ * GET /api/tailscale/manage
+ * 获取 Tailscale 管理综合报告（状态 + 账户列表 + 偏好设置）
+ */
+export async function handleTailscaleManage(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const report = await service.getTailscaleManageReport();
+  res.json({ success: true, data: report });
+}
+
+/**
+ * POST /api/tailscale/login
+ * 登录 Tailscale 控制平面（支持第三方 headscale 服务器）
+ */
+export async function handleTailscaleLogin(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const body = (req.body ?? {}) as {
+    controlUrl?: string;
+    authKey?: string;
+    label?: string;
+    exitNode?: boolean;
+    acceptRoutes?: boolean;
+  };
+  const result = await service.loginTailscale({
+    controlUrl: body.controlUrl,
+    authKey: body.authKey,
+    label: body.label,
+    exitNode: body.exitNode,
+    acceptRoutes: body.acceptRoutes,
+  });
+  res.json({ success: true, data: result });
+}
+
+/**
+ * POST /api/tailscale/logout
+ * 登出当前 Tailscale 账户
+ */
+export async function handleTailscaleLogout(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  await service.logoutTailscale();
+  res.json({ success: true, data: { status: 'logged-out' } });
+}
+
+/**
+ * POST /api/tailscale/accounts/:id/switch
+ * 切换激活账户
+ */
+export async function handleTailscaleSwitchAccount(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const accountId = String(req.params['id'] ?? '');
+  const result = await service.switchTailscaleAccount(accountId);
+  res.json({ success: true, data: result });
+}
+
+/**
+ * DELETE /api/tailscale/accounts/:id
+ * 移除已登记账户
+ */
+export async function handleTailscaleRemoveAccount(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const accountId = String(req.params['id'] ?? '');
+  await service.removeTailscaleAccount(accountId);
+  res.json({ success: true, data: { status: 'removed' } });
+}
+
+/**
+ * POST /api/tailscale/prefs
+ * 应用 Tailscale 偏好设置（exit node / accept routes 等）
+ */
+export async function handleTailscalePrefs(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const body = (req.body ?? {}) as {
+    acceptRoutes?: boolean;
+    exitNode?: string;
+    exitNodeAllowLanAccess?: boolean;
+    advertiseExitNode?: boolean;
+  };
+  await service.setTailscalePrefs({
+    acceptRoutes: body.acceptRoutes,
+    exitNode: body.exitNode,
+    exitNodeAllowLanAccess: body.exitNodeAllowLanAccess,
+    advertiseExitNode: body.advertiseExitNode,
+  });
+  res.json({ success: true, data: { status: 'applied' } });
+}

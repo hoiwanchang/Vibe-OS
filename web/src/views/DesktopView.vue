@@ -2,21 +2,29 @@
 /**
  * WebOS 桌面主视图
  * - 开机动画 → 桌面（点阵网格背景）
- * - 桌面图标：仪表盘 / 应用中心 / 系统设置
- * - 窗口层：各功能以可拖拽窗口呈现
+ * - 桌面图标：由应用注册表驱动（dashboard/apps/settings/tailscale）
+ * - 窗口层：各功能以可拖拽窗口呈现（含 Tailscale / 资源监视器）
+ * - 桌面小组件栏（右侧：时钟/资源/存储/网络）
+ * - 开始菜单（左下角品牌按钮触发）
+ * - 告警中心面板（任务栏告警指示器触发）
  * - 统一 5s 轮询（任务栏实时状态 + 各窗口数据共用）
  * - 硬件 critical 告警全局弹窗（按 id 去重，仅新告警弹一次）
  */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ElMessageBox } from 'element-plus';
-import { Grid, Odometer, Setting } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
+import AlertsPanel from '@/components/desktop/AlertsPanel.vue';
 import AppWindow from '@/components/desktop/AppWindow.vue';
+import { DESKTOP_APPS } from '@/components/desktop/desktop-registry';
 import DesktopIcon from '@/components/desktop/DesktopIcon.vue';
 import DesktopTaskbar from '@/components/desktop/DesktopTaskbar.vue';
+import DesktopWidgets from '@/components/desktop/DesktopWidgets.vue';
+import StartMenu from '@/components/desktop/StartMenu.vue';
 import AppsView from '@/views/AppsView.vue';
 import DashboardView from '@/views/DashboardView.vue';
+import MonitorView from '@/views/MonitorView.vue';
 import SettingsView from '@/views/SettingsView.vue';
+import TailscaleView from '@/views/TailscaleView.vue';
 import { useSystemStore, POLL_INTERVAL_MS } from '@/stores/system';
 import { useWmStore } from '@/stores/wm';
 
@@ -27,6 +35,15 @@ const { activeAlerts } = storeToRefs(system);
 
 /** 开机动画状态 */
 const booted = ref(false);
+
+/** 开始菜单开关 */
+const startMenuOpen = ref(false);
+
+/** 告警中心面板开关 */
+const alertsOpen = ref(false);
+
+/** 桌面图标列表（注册表中 onDesktop 的应用） */
+const desktopApps = DESKTOP_APPS.filter((a) => a.onDesktop);
 
 let pollTimer: ReturnType<typeof setInterval> | null = null;
 let bootTimer: ReturnType<typeof setTimeout> | null = null;
@@ -86,34 +103,51 @@ onBeforeUnmount(() => {
   <div class="nx-desktop">
     <!-- 开机动画 -->
     <div v-if="!booted" class="nx-boot">
-      <div class="nx-boot__logo">NAI<em>SYS</em></div>
+      <div class="nx-boot__logo">Vibe<em>OS</em></div>
       <div class="nx-boot__bar"><div class="nx-boot__bar-fill" /></div>
       <div class="nx-boot__text">INITIALIZING SYSTEM…</div>
     </div>
 
     <template v-else>
-      <!-- 桌面图标 -->
+      <!-- 桌面图标（注册表驱动） -->
       <div class="nx-icon-grid">
-        <DesktopIcon label="仪表盘" app-id="dashboard" @open="wm.open">
-          <el-icon><Odometer /></el-icon>
-        </DesktopIcon>
-        <DesktopIcon label="应用中心" app-id="apps" @open="wm.open">
-          <el-icon><Grid /></el-icon>
-        </DesktopIcon>
-        <DesktopIcon label="系统设置" app-id="settings" @open="wm.open">
-          <el-icon><Setting /></el-icon>
+        <DesktopIcon
+          v-for="app in desktopApps"
+          :key="app.id"
+          :label="app.title"
+          :app-id="app.id"
+          @open="wm.open"
+        >
+          <el-icon><component :is="app.icon" /></el-icon>
         </DesktopIcon>
       </div>
+
+      <!-- 桌面小组件栏 -->
+      <DesktopWidgets />
 
       <!-- 窗口层 -->
       <AppWindow v-for="win in orderedWindows" :key="win.id" :win="win">
         <DashboardView v-if="win.id === 'dashboard'" />
         <AppsView v-else-if="win.id === 'apps'" />
-        <SettingsView v-else />
+        <SettingsView v-else-if="win.id === 'settings'" />
+        <TailscaleView v-else-if="win.id === 'tailscale'" />
+        <MonitorView v-else />
       </AppWindow>
 
+      <!-- 开始菜单 -->
+      <StartMenu v-if="startMenuOpen" @close="startMenuOpen = false" />
+
+      <!-- 告警中心面板 -->
+      <AlertsPanel v-if="alertsOpen" @close="alertsOpen = false" />
+
       <!-- 任务栏 -->
-      <DesktopTaskbar />
+      <DesktopTaskbar
+        :start-menu-open="startMenuOpen"
+        :alerts-open="alertsOpen"
+        @toggle-start-menu="startMenuOpen = !startMenuOpen; alertsOpen = false"
+        @toggle-alerts="alertsOpen = !alertsOpen; startMenuOpen = false"
+        @open-app="wm.open"
+      />
     </template>
   </div>
 </template>

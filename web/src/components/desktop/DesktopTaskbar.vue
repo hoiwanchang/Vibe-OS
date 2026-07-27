@@ -1,12 +1,32 @@
 <script setup lang="ts">
 /**
- * 任务栏：品牌标识 + 活动窗口按钮 + 实时状态（CPU/内存/告警）+ 时钟
+ * 任务栏（底部）
+ * - 左侧品牌按钮：触发开始菜单
+ * - 中部活动窗口按钮：点击聚焦/还原/最小化
+ * - 右侧状态区（可点击跳转）：
+ *     · 告警指示器 → 打开告警中心面板
+ *     · CPU / 内存 → 打开仪表盘窗口
+ * - 最右时钟
  */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { demoActive } from '@/api/state';
 import { useSystemStore } from '@/stores/system';
 import { useWmStore } from '@/stores/wm';
+import type { DesktopAppId } from '@/stores/wm';
+
+defineProps<{
+  /** 开始菜单是否展开（用于高亮品牌按钮） */
+  startMenuOpen: boolean;
+  /** 告警面板是否展开（用于高亮告警指示器） */
+  alertsOpen: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'toggle-start-menu'): void;
+  (e: 'toggle-alerts'): void;
+  (e: 'open-app', id: DesktopAppId): void;
+}>();
 
 const wm = useWmStore();
 const system = useSystemStore();
@@ -47,11 +67,17 @@ watch(now, tick, { immediate: true });
 
 <template>
   <div class="nx-taskbar">
-    <div class="nx-taskbar__brand">
+    <!-- 品牌按钮 → 开始菜单 -->
+    <button
+      class="nx-taskbar__brand"
+      :class="{ 'nx-taskbar__brand--active': startMenuOpen }"
+      @click="emit('toggle-start-menu')"
+    >
       <span class="nx-taskbar__brand-dot" />
-      NAISYS
-    </div>
+      <span class="nx-taskbar__brand-name">Vibe OS</span>
+    </button>
 
+    <!-- 活动窗口按钮 -->
     <div class="nx-taskbar__windows">
       <button
         v-for="win in windows"
@@ -64,21 +90,38 @@ watch(now, tick, { immediate: true });
       </button>
     </div>
 
+    <!-- 状态区（可点击跳转） -->
     <div class="nx-taskbar__status">
-      <span v-if="demoActive" class="nx-taskbar__status-item" style="color: var(--nx-amber)">
+      <span v-if="demoActive" class="nx-taskbar__status-item nx-taskbar__status-item--demo">
         演示数据
       </span>
-      <span v-if="activeAlerts.length > 0" class="nx-taskbar__status-item" style="color: var(--nx-red)">
+
+      <button
+        v-if="activeAlerts.length > 0"
+        class="nx-taskbar__status-item nx-taskbar__status-item--alert"
+        :class="{ 'nx-taskbar__status-item--active': alertsOpen }"
+        @click="emit('toggle-alerts')"
+      >
         ▲ {{ activeAlerts.length }} 告警
-      </span>
-      <span class="nx-taskbar__status-item">
+      </button>
+
+      <button
+        class="nx-taskbar__status-item nx-taskbar__status-item--clickable"
+        title="打开仪表盘"
+        @click="emit('open-app', 'dashboard')"
+      >
         CPU {{ (overview?.cpu.usagePercent ?? 0).toFixed(0) }}%
-      </span>
-      <span class="nx-taskbar__status-item">
+      </button>
+      <button
+        class="nx-taskbar__status-item nx-taskbar__status-item--clickable"
+        title="打开仪表盘"
+        @click="emit('open-app', 'dashboard')"
+      >
         MEM {{ (overview?.memory.usedPercent ?? 0).toFixed(0) }}%
-      </span>
+      </button>
     </div>
 
+    <!-- 时钟 -->
     <div class="nx-taskbar__clock">
       {{ dateText }}&nbsp;&nbsp;{{ clockText }}
     </div>

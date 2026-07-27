@@ -325,7 +325,9 @@ body {
 }
 
 .wm-window--opening {
-  animation: wm-open 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+  /* backwards：仅在动画开始前应用 from 帧，结束后回归正常级联，
+     避免 fill-mode:both 锁定 opacity 导致最小化失效（窗口冻住可见） */
+  animation: wm-open 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) backwards;
 }
 
 @keyframes wm-open {
@@ -509,13 +511,26 @@ body {
   align-items: center;
   gap: 8px;
   padding: 0 16px;
+  border: none;
   border-right: 1px solid var(--nx-border);
+  background: transparent;
   font-family: var(--nx-font-display);
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.16em;
   color: var(--nx-amber);
   white-space: nowrap;
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.nx-taskbar__brand:hover {
+  background: var(--nx-surface-hover);
+}
+
+.nx-taskbar__brand--active {
+  background: #1a1a1a;
+  box-shadow: inset 0 -2px 0 var(--nx-amber);
 }
 
 .nx-taskbar__brand-dot {
@@ -577,6 +592,52 @@ body {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* 可点击状态项（CPU/MEM → 仪表盘） */
+.nx-taskbar__status-item--clickable {
+  border: none;
+  background: transparent;
+  padding: 2px 6px;
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  color: var(--nx-text-dim);
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nx-taskbar__status-item--clickable:hover {
+  background: var(--nx-surface-hover);
+  color: var(--nx-amber);
+}
+
+/* 告警指示器（红色，可点击打开告警面板） */
+.nx-taskbar__status-item--alert {
+  border: 1px solid var(--nx-red);
+  background: transparent;
+  padding: 2px 8px;
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  color: var(--nx-red);
+  cursor: pointer;
+  animation: nx-blink 1.4s ease-in-out infinite;
+  transition: background 0.12s ease;
+}
+
+.nx-taskbar__status-item--alert:hover,
+.nx-taskbar__status-item--active {
+  background: var(--nx-red-dim);
+  animation: none;
+}
+
+/* 演示数据徽标（不可点击） */
+.nx-taskbar__status-item--demo {
+  color: var(--nx-amber);
+}
+
+@keyframes nx-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
 }
 
 .nx-taskbar__clock {
@@ -685,5 +746,432 @@ body {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+/* ============================================================
+   桌面小组件栏（右侧固定）
+   ============================================================ */
+.nx-widgets {
+  position: fixed;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 240px;
+  pointer-events: none;
+}
+
+.nx-widget {
+  pointer-events: auto;
+  border: 1px solid var(--nx-border);
+  background: rgba(10, 10, 10, 0.82);
+  backdrop-filter: blur(6px);
+  padding: 14px;
+  text-align: left;
+  color: var(--nx-text);
+  animation: fade-up 0.4s ease both;
+}
+
+.nx-widget--clickable {
+  cursor: pointer;
+  transition: border-color 0.12s ease, background 0.12s ease;
+}
+
+.nx-widget--clickable:hover {
+  border-color: var(--nx-amber);
+  background: rgba(20, 20, 20, 0.9);
+}
+
+.nx-widget--clock {
+  border-color: var(--nx-border-strong);
+}
+
+.nx-widget__title {
+  font-family: var(--nx-font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--nx-amber);
+  margin-bottom: 10px;
+}
+
+.nx-widget-clock__time {
+  font-family: var(--nx-font-mono);
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+  color: var(--nx-text);
+}
+
+.nx-widget-clock__sec {
+  font-size: 18px;
+  color: var(--nx-text-dim);
+}
+
+.nx-widget-clock__date {
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  color: var(--nx-text-dim);
+  margin-top: 8px;
+  letter-spacing: 0.06em;
+}
+
+.nx-widget-res {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.nx-widget-res__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nx-widget-res__label {
+  font-family: var(--nx-font-mono);
+  font-size: 10px;
+  color: var(--nx-text-faint);
+  width: 30px;
+  flex-shrink: 0;
+}
+
+.nx-widget-res__bar {
+  flex: 1;
+  height: 6px;
+  background: var(--nx-border-faint);
+  border: 1px solid var(--nx-border);
+  overflow: hidden;
+}
+
+.nx-widget-res__fill {
+  height: 100%;
+  transition: width 0.9s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nx-widget-res__val {
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  color: var(--nx-text-dim);
+  width: 34px;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+.nx-widget-storage__percent {
+  font-family: var(--nx-font-display);
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.nx-widget-storage__detail {
+  font-size: 10px;
+  color: var(--nx-text-faint);
+  margin-top: 8px;
+}
+
+.nx-widget-net__status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.nx-widget-net__state {
+  font-family: var(--nx-font-display);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--nx-text);
+}
+
+.nx-widget-net__peers {
+  font-size: 11px;
+  color: var(--nx-text-dim);
+}
+
+/* ============================================================
+   开始菜单（左下角弹出）
+   ============================================================ */
+.nx-startmenu {
+  position: fixed;
+  left: 8px;
+  bottom: 52px;
+  z-index: 8500;
+  width: 320px;
+  max-height: 70vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--nx-border-strong);
+  background: var(--nx-bg-raised);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  animation: fade-up 0.16s ease both;
+}
+
+.nx-startmenu__search {
+  padding: 12px;
+  border-bottom: 1px solid var(--nx-border-faint);
+}
+
+.nx-startmenu__input {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid var(--nx-border);
+  background: var(--nx-bg-sunken);
+  color: var(--nx-text);
+  font-family: var(--nx-font-mono);
+  font-size: 12px;
+  outline: none;
+}
+
+.nx-startmenu__input:focus {
+  border-color: var(--nx-amber);
+}
+
+.nx-startmenu__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 8px;
+}
+
+.nx-startmenu__group {
+  margin-bottom: 12px;
+}
+
+.nx-startmenu__group-label {
+  font-family: var(--nx-font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--nx-text-faint);
+  padding: 4px 8px 6px;
+}
+
+.nx-startmenu__item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 9px 10px;
+  border: none;
+  background: transparent;
+  color: var(--nx-text-dim);
+  cursor: pointer;
+  text-align: left;
+  transition: background 0.1s ease, color 0.1s ease;
+}
+
+.nx-startmenu__item:hover {
+  background: var(--nx-surface-hover);
+  color: var(--nx-text);
+}
+
+.nx-startmenu__item-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid var(--nx-border);
+  color: var(--nx-amber);
+  font-size: 15px;
+  flex-shrink: 0;
+}
+
+.nx-startmenu__item-title {
+  font-family: var(--nx-font-display);
+  font-size: 13px;
+  font-weight: 500;
+}
+
+.nx-startmenu__empty {
+  padding: 24px 12px;
+  text-align: center;
+  color: var(--nx-text-faint);
+  font-size: 12px;
+}
+
+.nx-startmenu__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  padding: 10px 12px;
+  border-top: 1px solid var(--nx-border-faint);
+}
+
+.nx-startmenu__power {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--nx-border);
+  background: transparent;
+  color: var(--nx-text-dim);
+  font-size: 15px;
+  cursor: pointer;
+  transition: border-color 0.1s ease, color 0.1s ease;
+}
+
+.nx-startmenu__power:hover {
+  border-color: var(--nx-amber);
+  color: var(--nx-amber);
+}
+
+/* ============================================================
+   告警中心面板（任务栏告警指示器弹出）
+   ============================================================ */
+.nx-alerts-panel {
+  position: fixed;
+  right: 8px;
+  bottom: 52px;
+  z-index: 8500;
+  width: 360px;
+  max-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--nx-border-strong);
+  background: var(--nx-bg-raised);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.7);
+  animation: fade-up 0.16s ease both;
+}
+
+.nx-alerts-panel__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--nx-border-faint);
+  font-family: var(--nx-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nx-text);
+}
+
+.nx-alerts-panel__count {
+  font-family: var(--nx-font-mono);
+  font-size: 12px;
+  color: var(--nx-red);
+  border: 1px solid var(--nx-red);
+  padding: 1px 8px;
+}
+
+.nx-alerts-panel__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px;
+}
+
+.nx-alerts-panel__empty {
+  padding: 28px 12px;
+  text-align: center;
+  color: var(--nx-green);
+  font-size: 13px;
+}
+
+.nx-alerts-panel__item {
+  border: 1px solid var(--nx-border-faint);
+  border-left-width: 3px;
+  padding: 10px 12px;
+  margin-bottom: 8px;
+  background: var(--nx-bg-sunken);
+}
+
+.nx-alerts-panel__item--critical {
+  border-left-color: var(--nx-red);
+}
+
+.nx-alerts-panel__item--warning {
+  border-left-color: var(--nx-amber);
+}
+
+.nx-alerts-panel__item-title {
+  font-family: var(--nx-font-display);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--nx-text);
+  margin-bottom: 4px;
+}
+
+.nx-alerts-panel__item-detail {
+  font-size: 12px;
+  color: var(--nx-text-dim);
+  line-height: 1.5;
+  margin-bottom: 8px;
+}
+
+.nx-alerts-panel__ack {
+  border: 1px solid var(--nx-border);
+  background: transparent;
+  color: var(--nx-text-dim);
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  padding: 3px 12px;
+  cursor: pointer;
+  transition: border-color 0.1s ease, color 0.1s ease;
+}
+
+.nx-alerts-panel__ack:hover {
+  border-color: var(--nx-amber);
+  color: var(--nx-amber);
+}
+
+/* ============================================================
+   响应式设计
+   ============================================================ */
+@media (max-width: 1100px) {
+  /* 小组件栏收窄 */
+  .nx-widgets {
+    width: 200px;
+  }
+}
+
+@media (max-width: 860px) {
+  /* 平板/窄屏：小组件栏隐藏，避免遮挡窗口 */
+  .nx-widgets {
+    display: none;
+  }
+
+  /* 桌面图标网格改为横向滚动 */
+  .nx-icon-grid {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+
+  /* 任务栏状态项收紧间距 */
+  .nx-taskbar__status {
+    gap: 10px;
+    padding: 0 10px;
+  }
+
+  .nx-taskbar__brand-name {
+    display: none;
+  }
+}
+
+@media (max-width: 600px) {
+  /* 移动端：窗口全屏化（由 wm store 几何钳制配合），任务栏极简化 */
+  .nx-taskbar__clock {
+    display: none;
+  }
+
+  .nx-taskbar__status {
+    gap: 8px;
+    padding: 0 8px;
+  }
+
+  .nx-startmenu {
+    width: calc(100vw - 16px);
+    left: 8px;
+  }
+
+  .nx-alerts-panel {
+    width: calc(100vw - 16px);
+    right: 8px;
   }
 }

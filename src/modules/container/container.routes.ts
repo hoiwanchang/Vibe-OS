@@ -98,6 +98,60 @@ router.post(
 /** POST /api/tailscale/acl — 下发 ACL 策略 */
 router.post('/tailscale/acl', asyncHandler(controller.handleAclPolicy));
 
+/** GET /api/tailscale/manage — Tailscale 管理综合报告（状态+账户+偏好） */
+router.get('/tailscale/manage', asyncHandler(controller.handleTailscaleManage));
+
+/** POST /api/tailscale/login — 登录控制平面（支持 headscale） */
+const tailscaleLoginSchema = z.object({
+  controlUrl: z.string().max(512).optional(),
+  authKey: z.string().max(512).optional(),
+  label: z.string().max(128).optional(),
+  exitNode: z.boolean().optional(),
+  acceptRoutes: z.boolean().optional(),
+});
+
+router.post(
+  '/tailscale/login',
+  validateBody(tailscaleLoginSchema),
+  asyncHandler(controller.handleTailscaleLogin),
+);
+
+/** POST /api/tailscale/logout — 登出当前账户 */
+router.post('/tailscale/logout', asyncHandler(controller.handleTailscaleLogout));
+
+/** 账户 id 参数校验 */
+const accountIdSchema = z.object({
+  id: z.string().min(1).max(128),
+});
+
+/** POST /api/tailscale/accounts/:id/switch — 切换激活账户 */
+router.post(
+  '/tailscale/accounts/:id/switch',
+  validateParams(accountIdSchema),
+  asyncHandler(controller.handleTailscaleSwitchAccount),
+);
+
+/** DELETE /api/tailscale/accounts/:id — 移除已登记账户 */
+router.delete(
+  '/tailscale/accounts/:id',
+  validateParams(accountIdSchema),
+  asyncHandler(controller.handleTailscaleRemoveAccount),
+);
+
+/** POST /api/tailscale/prefs — 应用偏好设置（exit node 等） */
+const tailscalePrefsSchema = z.object({
+  acceptRoutes: z.boolean().optional(),
+  exitNode: z.string().max(64).optional(),
+  exitNodeAllowLanAccess: z.boolean().optional(),
+  advertiseExitNode: z.boolean().optional(),
+});
+
+router.post(
+  '/tailscale/prefs',
+  validateBody(tailscalePrefsSchema),
+  asyncHandler(controller.handleTailscalePrefs),
+);
+
 /** POST /api/container/init-dirs — 初始化 AI 应用数据目录 */
 const appDirsSchema = z.object({
   appname: z.string().min(1).max(128),

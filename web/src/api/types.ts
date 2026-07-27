@@ -167,6 +167,48 @@ export interface TailscaleStatusResponse {
   subnetRoutes: Array<{ cidr: string; advertised: boolean; approved: boolean }>;
 }
 
+/* ---------- Tailscale 多账户 / HeadScale 管理 ---------- */
+
+/** Tailscale 账户（profile）条目 */
+export interface TailscaleAccount {
+  id: string;
+  label: string;
+  controlUrl: string;
+  loginName: string;
+  active: boolean;
+}
+
+/** Tailscale 登录请求 */
+export interface TailscaleLoginRequest {
+  controlUrl?: string;
+  authKey?: string;
+  label?: string;
+  exitNode?: boolean;
+  acceptRoutes?: boolean;
+}
+
+/** Tailscale 登录响应 */
+export interface TailscaleLoginResponse {
+  backendState: string;
+  authUrl: string | null;
+  account: TailscaleAccount;
+}
+
+/** Tailscale 偏好设置 */
+export interface TailscalePrefs {
+  acceptRoutes: boolean;
+  exitNode: string;
+  exitNodeAllowLanAccess: boolean;
+  advertiseExitNode: boolean;
+}
+
+/** Tailscale 管理综合报告 */
+export interface TailscaleManageReport {
+  report: TailscaleStatusResponse;
+  accounts: TailscaleAccount[];
+  prefs: TailscalePrefs;
+}
+
 /* ---------- 用户 ---------- */
 
 export interface ManagedUser {
