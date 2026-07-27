@@ -6,7 +6,7 @@
  * - 硬件异常（SMART 告警、网卡掉线）标红弹窗 + 页内横幅
  * - 5 秒自动轮询刷新
  */
-import { computed, onBeforeUnmount, onMounted, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import SectionHead from '@/components/common/SectionHead.vue';
@@ -87,9 +87,24 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
   return 'off';
 }
 
-/** 硬件异常 → 标红弹窗（仅新告警触发一次） */
+/**
+ * 硬件异常 → 标红弹窗（仅新告警触发一次）
+ * activeAlerts 是 computed，每次轮询都会产生新数组引用，
+ * 因此必须按告警 id 去重，避免同一告警每隔 5 秒重复弹窗
+ */
+const poppedAlertIds = ref<Set<string>>(new Set());
+
 watch(activeAlerts, (alerts) => {
-  const critical = alerts.find((a) => a.severity === 'critical');
+  const fresh = alerts.filter(
+    (a) => a.severity === 'critical' && !poppedAlertIds.value.has(a.id),
+  );
+  if (fresh.length === 0) return;
+
+  for (const alert of fresh) {
+    poppedAlertIds.value.add(alert.id);
+  }
+
+  const critical = fresh[0];
   if (critical) {
     ElMessageBox.alert(critical.detail, critical.title, {
       confirmButtonText: '知道了',
@@ -99,6 +114,10 @@ watch(activeAlerts, (alerts) => {
       /* 用户关闭弹窗 */
     });
   }
+});
+
+onBeforeUnmount(() => {
+  poppedAlertIds.value.clear();
 });
 </script>
 
