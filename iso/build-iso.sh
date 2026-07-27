@@ -123,12 +123,24 @@ inject_firmware() {
   )
 
   # 合并固件到 initrd 的 lib/firmware
-  if [[ -d "$fwroot/lib/firmware" ]]; then
+  # 注意：Debian 13 (trixie) 已完成 usrmerge，固件包文件位于 usr/lib/firmware/；
+  # 旧布局为 lib/firmware/。两者都检查以兼容。
+  local fw_src=""
+  if [[ -d "$fwroot/usr/lib/firmware" ]]; then
+    fw_src="$fwroot/usr/lib/firmware"
+  elif [[ -d "$fwroot/lib/firmware" ]]; then
+    fw_src="$fwroot/lib/firmware"
+  fi
+
+  if [[ -n "$fw_src" ]]; then
+    # initrd 内统一使用 lib/firmware（内核早期用户空间从此路径加载固件）
     mkdir -p "${INITRD_DIR}/lib/firmware"
-    cp -rn "$fwroot/lib/firmware/." "${INITRD_DIR}/lib/firmware/" || true
-    log "固件已合并进 initrd"
+    cp -r --update=none "$fw_src/." "${INITRD_DIR}/lib/firmware/" || true
+    local fw_count
+    fw_count="$(find "${INITRD_DIR}/lib/firmware" -type f | wc -l)"
+    log "固件已合并进 initrd（来源: ${fw_src#$fwroot/}，共 $fw_count 个文件）"
   else
-    log "警告: 未提取到任何固件文件"
+    log "警告: 未提取到任何固件文件（检查固件包是否成功下载）"
   fi
 
   # 重新打包 initrd（保持与原始一致的压缩格式）
@@ -169,8 +181,10 @@ generate_preseed() {
     > "${ISO_TREE}/naisys/preseed.cfg"
 
   # 记录初始密码到构建产物（仅供首次引导显示，安装后应立即修改）
-  printf '%s\n' "$init_pw" > "${OUT_DIR:-$WORK_DIR}/.init-password"
-  chmod 600 "${OUT_DIR:-$WORK_DIR}/.init-password"
+  # OUT_DIR 此时可能尚未创建（build_iso 阶段才 mkdir），需先确保存在
+  mkdir -p "$OUT_DIR"
+  printf '%s\n' "$init_pw" > "${OUT_DIR}/.init-password"
+  chmod 600 "${OUT_DIR}/.init-password"
   log "preseed 生成完成（主机名=$HOSTNAME 用户=$USERNAME 数据分区=$DATA_FSTYPE）"
 }
 
