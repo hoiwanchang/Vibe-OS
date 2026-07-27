@@ -25,6 +25,9 @@ export interface HardwareAlert {
 /** 轮询间隔（毫秒） */
 export const POLL_INTERVAL_MS = 5000;
 
+/** 趋势历史保留点数（30 × 5s = 2.5 分钟） */
+const HISTORY_LIMIT = 30;
+
 export const useSystemStore = defineStore('system', () => {
   const overview = ref<SystemOverview | null>(null);
   const diskHealth = ref<DiskHealthResponse | null>(null);
@@ -35,6 +38,10 @@ export const useSystemStore = defineStore('system', () => {
   const lastError = ref<string | null>(null);
   /** 已确认（关闭）的告警 ID 集合 */
   const acknowledged = ref<Set<string>>(new Set());
+  /** CPU 使用率历史（用于趋势迷你图） */
+  const cpuHistory = ref<number[]>([]);
+  /** 内存使用率历史 */
+  const memHistory = ref<number[]>([]);
 
   /** 从磁盘 SMART 与网卡状态中提取硬件告警 */
   const alerts = computed<HardwareAlert[]>(() => {
@@ -83,7 +90,12 @@ export const useSystemStore = defineStore('system', () => {
         containerApi.list(),
         tailscaleApi.status(),
       ]);
-      if (ov.status === 'fulfilled') overview.value = ov.value;
+      if (ov.status === 'fulfilled') {
+        overview.value = ov.value;
+        // 追加趋势数据点（环形缓冲，超限截断头部）
+        cpuHistory.value = [...cpuHistory.value, ov.value.cpu.usagePercent].slice(-HISTORY_LIMIT);
+        memHistory.value = [...memHistory.value, ov.value.memory.usedPercent].slice(-HISTORY_LIMIT);
+      }
       if (dh.status === 'fulfilled') diskHealth.value = dh.value;
       if (nw.status === 'fulfilled') network.value = nw.value;
       if (ct.status === 'fulfilled') containers.value = ct.value;
@@ -127,6 +139,8 @@ export const useSystemStore = defineStore('system', () => {
     lastError,
     alerts,
     activeAlerts,
+    cpuHistory,
+    memHistory,
     fetchAll,
     acknowledgeAlert,
     resetAcknowledged,

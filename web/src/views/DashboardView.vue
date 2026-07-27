@@ -12,6 +12,7 @@ import { storeToRefs } from 'pinia';
 import SectionHead from '@/components/common/SectionHead.vue';
 import StatusBadge from '@/components/common/StatusBadge.vue';
 import StorageBar from '@/components/common/StorageBar.vue';
+import TrendSparkline from '@/components/common/TrendSparkline.vue';
 import UsageGauge from '@/components/common/UsageGauge.vue';
 import { POLL_INTERVAL_MS, useSystemStore } from '@/stores/system';
 import { formatBytes, formatTime, formatUptime } from '@/utils/format';
@@ -25,6 +26,8 @@ const {
   tailscale,
   loading,
   activeAlerts,
+  cpuHistory,
+  memHistory,
 } = storeToRefs(store);
 
 let timer: ReturnType<typeof setInterval> | null = null;
@@ -101,6 +104,23 @@ watch(activeAlerts, (alerts) => {
 
 <template>
   <div class="dashboard">
+    <!-- 首屏加载骨架 -->
+    <div v-if="loading && !overview" class="skeleton-grid">
+      <div v-for="n in 4" :key="n" class="nx-panel skeleton-card">
+        <el-skeleton animated>
+          <template #template>
+            <div class="skeleton-inner">
+              <el-skeleton-item variant="circle" style="width: 120px; height: 120px" />
+              <div class="skeleton-lines">
+                <el-skeleton-item variant="text" style="width: 70%" />
+                <el-skeleton-item variant="text" style="width: 90%" />
+              </div>
+            </div>
+          </template>
+        </el-skeleton>
+      </div>
+    </div>
+
     <!-- 硬件告警横幅（标红/标黄） -->
     <div v-if="activeAlerts.length > 0" class="alert-zone">
       <div
@@ -127,6 +147,7 @@ watch(activeAlerts, (alerts) => {
       </div>
     </div>
 
+    <template v-if="overview">
     <!-- 核心指标 -->
     <div class="nx-grid nx-grid--stats">
       <div class="nx-panel stat-card">
@@ -161,6 +182,14 @@ watch(activeAlerts, (alerts) => {
             {{ overview?.cpu.cores ?? '—' }} 核 ·
             负载 {{ overview?.system.loadAvg[0] ?? '—' }}
           </div>
+          <TrendSparkline
+            v-if="cpuHistory.length >= 2"
+            :points="cpuHistory"
+            color="var(--nx-primary)"
+            :width="140"
+            :height="30"
+            class="stat-spark"
+          />
         </div>
       </div>
 
@@ -179,6 +208,14 @@ watch(activeAlerts, (alerts) => {
             {{ formatBytes(overview?.memory.usedBytes) }} /
             {{ formatBytes(overview?.memory.totalBytes) }}
           </div>
+          <TrendSparkline
+            v-if="memHistory.length >= 2"
+            :points="memHistory"
+            color="var(--nx-teal)"
+            :width="140"
+            :height="30"
+            class="stat-spark"
+          />
         </div>
       </div>
 
@@ -316,12 +353,40 @@ watch(activeAlerts, (alerts) => {
         </dl>
       </div>
     </div>
+    </template>
   </div>
 </template>
 
 <style scoped>
 .dashboard {
   animation: fade-up 0.4s ease both;
+}
+
+.skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.skeleton-inner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 4px;
+}
+
+.skeleton-lines {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+@media (max-width: 860px) {
+  .skeleton-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 }
 
 @keyframes fade-up {
@@ -360,6 +425,11 @@ watch(activeAlerts, (alerts) => {
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+
+.stat-spark {
+  margin-top: 8px;
+  opacity: 0.9;
 }
 
 .stat-numbers {
