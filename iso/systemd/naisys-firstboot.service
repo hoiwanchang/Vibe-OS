@@ -1,0 +1,14 @@
+[Unit]
+Description=NAISys First Boot Setup
+Documentation=https://github.com/NAISys/NAISys
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/naisys/.firstboot-done
+
+[Service]
+Type=oneshot
+ExecStart=/opt/naisys/firstboot.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,10 @@
+# ============================================================================
+# Legacy BIOS (isolinux) 自动安装启动参数片段
+# build-iso.sh 将此追加/替换到 isolinux/txt.cfg 的默认 append 行
+# 关键：auto=true priority=critical 跳过所有交互，preseed/file 指向嵌入文件
+# ============================================================================
+default install
+label install
+    menu label ^Install NAISys (automated)
+    kernel /install.amd/vmlinuz
+    append initrd=/install.amd/initrd.gz auto=true priority=critical preseed/file=/naisys/preseed.cfg locale=en_US.UTF-8 keymap=us --- quiet

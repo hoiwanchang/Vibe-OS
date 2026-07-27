@@ -1,0 +1,9 @@
+[Unit]
+Description=NAISys /data Integrity Guard
+Documentation=https://github.com/NAISys/NAISys
+After=local-fs.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/naisys.env
+ExecStart=/opt/naisys/data-guard.sh

@@ -1,0 +1,31 @@
+# ============================================================================
+# NAISys 安装目标系统预装包清单
+# 由 preseed late_command / install-runtime.sh 通过 apt 安装
+# 每行一个包名，# 开头为注释
+# ============================================================================
+
+# --- 基础工具 ---
+curl
+jq
+ca-certificates
+gnupg
+lsb-release
+software-properties-common
+
+# --- 容器运行时 ---
+docker-ce
+docker-ce-cli
+containerd.io
+docker-buildx-plugin
+docker-compose-plugin
+
+# --- 组网（零配置内网穿透）---
+tailscale
+
+# --- 运行时依赖 ---
+nodejs
+
+# --- 文件系统与监控工具 ---
+xfsprogs
+btrfs-progs
+smartmontools

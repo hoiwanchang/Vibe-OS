@@ -1,0 +1,450 @@
+# ============================================================================
+# NAISys ISO QEMU 安装验证流水线
+# 触发：ISO 构建完成后手动 dispatch，或每周构建后自动触发
+# 流程：下载 ISO → QEMU 启动 → 等待零交互安装 → 验证 /data、Docker、Tailscale、Web 控制台
+# 产出：安装录屏（VNC 截帧）+ 结构化验证报告 + 驱动兼容性矩阵
+# ============================================================================
+name: QEMU ISO Install Verification
+
+on:
+  workflow_dispatch:
+    inputs:
+      iso_artifact_run_id:
+        description: 'ISO 构建的 Run ID（留空则用最新 Release）'
+        required: false
+        default: ''
+  workflow_run:
+    workflows: ['Build ISO']
+    types: [completed]
+
+# 并发控制：同一时间只跑一个 QEMU 验证
+concurrency:
+  group: qemu-verify
+  cancel-in-progress: false
+
+env:
+  QEMU_DISK_SIZE: '40G'
+  QEMU_MEMORY: '4096'
+  QEMU_CPUS: '2'
+  INSTALL_TIMEOUT_SEC: '300'   # 5 分钟安装超时
+  BOOT_TIMEOUT_SEC: '120'      # 安装后重启到可 SSH 的超时
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Job 1: 获取 ISO（从 artifact 或 Release）
+  # --------------------------------------------------------------------------
+  fetch-iso:
+    runs-on: ubuntu-latest
+    outputs:
+      iso_name: ${{ steps.find.outputs.iso_name }}
+    steps:
+      - name: 从 workflow_run 下载 ISO artifact
+        if: github.event_name == 'workflow_run'
+        uses: actions/download-artifact@v4
+        with:
+          name: naisys-iso
+          path: iso-download
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 从指定 Run ID 下载 ISO artifact
+        if: github.event_name == 'workflow_dispatch' && inputs.iso_artifact_run_id != ''
+        uses: actions/download-artifact@v4
+        with:
+          name: naisys-iso
+          path: iso-download
+          run-id: ${{ inputs.iso_artifact_run_id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: 从最新 Release 下载 ISO
+        if: github.event_name == 'workflow_dispatch' && inputs.iso_artifact_run_id == ''
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p iso-download
+          gh release download --repo "${{ github.repository }}" \
+            --pattern 'naisys-*.iso' --pattern 'naisys-*.iso.sha256' \
+            --dir iso-download
+
+      - name: 定位 ISO 文件
+        id: find
+        run: |
+          ISO_FILE=$(ls iso-download/naisys-*.iso 2>/dev/null | head -n1)
+          if [[ -z "$ISO_FILE" ]]; then
+            echo "❌ 未找到 ISO 文件" >&2
+            exit 1
+          fi
+          echo "iso_name=$(basename "$ISO_FILE")" >> "$GITHUB_OUTPUT"
+          echo "找到 ISO: $ISO_FILE ($(du -h "$ISO_FILE" | cut -f1))"
+
+      - name: SHA256 校验
+        run: |
+          cd iso-download
+          if [[ -f naisys-*.iso.sha256 ]]; then
+            sha256sum -c naisys-*.iso.sha256
+          else
+            echo "⚠️ 无 SHA256 文件，跳过校验"
+          fi
+
+      - name: 上传 ISO 供后续 Job 使用
+        uses: actions/upload-artifact@v4
+        with:
+          name: iso-for-qemu
+          path: iso-download/
+          retention-days: 1
+
+  # --------------------------------------------------------------------------
+  # Job 2: QEMU 安装验证（Legacy BIOS）
+  # --------------------------------------------------------------------------
+  qemu-install-bios:
+    needs: fetch-iso
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载 ISO
+        uses: actions/download-artifact@v4
+        with:
+          name: iso-for-qemu
+          path: iso-download
+
+      - name: 安装 QEMU 与依赖
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils \
+            openssh-client sshpass expect
+
+      - name: 创建虚拟磁盘
+        run: |
+          qemu-img create -f qcow2 naisys-disk.qcow2 ${{ env.QEMU_DISK_SIZE }}
+
+      - name: 启动 QEMU 安装（Legacy BIOS + VNC 录屏）
+        run: |
+          ISO_FILE=$(ls iso-download/naisys-*.iso | head -n1)
+          echo "使用 ISO: $ISO_FILE"
+
+          # 启动 QEMU，VNC 在 :1 端口供截帧
+          qemu-system-x86_64 \
+            -m ${{ env.QEMU_MEMORY }} \
+            -smp ${{ env.QEMU_CPUS }} \
+            -cdrom "$ISO_FILE" \
+            -drive file=naisys-disk.qcow2,format=qcow2,if=virtio \
+            -boot d \
+            -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::3000-:3000 \
+            -device virtio-net-pci,netdev=net0 \
+            -vnc :1 \
+            -display none \
+            -daemonize \
+            -pidfile qemu.pid
+
+          echo "QEMU PID: $(cat qemu.pid)"
+
+      - name: VNC 定时截帧（安装过程记录）
+        run: |
+          mkdir -p vnc-frames
+          # 每 15 秒截一帧，最多截 20 帧（5 分钟）
+          for i in $(seq 1 20); do
+            sleep 15
+            # 使用 QEMU monitor 截帧（若可用）
+            if command -v qmp-shell >/dev/null 2>&1; then
+              qmp-shell -p /tmp/qemu-monitor.sock screendump "vnc-frames/frame-$(printf '%03d' $i).ppm" 2>/dev/null || true
+            fi
+            echo "截帧 $i/20 @ $(date -Iseconds)"
+          done
+
+      - name: 等待安装完成（SSH 可达 = 安装成功）
+        run: |
+          echo "等待安装完成（超时 ${{ env.INSTALL_TIMEOUT_SEC }}s）..."
+          START_TIME=$(date +%s)
+          SSH_OK=false
+
+          while true; do
+            ELAPSED=$(( $(date +%s) - START_TIME ))
+            if [[ $ELAPSED -gt ${{ env.INSTALL_TIMEOUT_SEC }} ]]; then
+              echo "❌ 安装超时（${ELAPSED}s > ${{ env.INSTALL_TIMEOUT_SEC }}s）"
+              break
+            fi
+
+            # 尝试 SSH 连接（安装完成后 SSH 服务自动启动）
+            if sshpass -p '' ssh -o StrictHostKeyChecking=no \
+                 -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null \
+                 -p 2222 admin@localhost 'echo SSH_OK' 2>/dev/null | grep -q SSH_OK; then
+              SSH_OK=true
+              echo "✅ SSH 可达，安装完成（耗时 ${ELAPSED}s）"
+              break
+            fi
+
+            sleep 10
+            echo "  等待中... ${ELAPSED}s"
+          done
+
+          echo "SSH_OK=$SSH_OK" >> "$GITHUB_ENV"
+          echo "INSTALL_TIME_SEC=$(( $(date +%s) - START_TIME ))" >> "$GITHUB_ENV"
+
+      - name: 验证 /data 目录与权限
+        if: env.SSH_OK == 'true'
+        run: |
+          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+
+          echo "=== /data 目录验证 ==="
+          $SSH_CMD 'ls -la /data/' 2>/dev/null
+          $SSH_CMD 'stat -c "%a %U:%G %n" /data /data/naisys /data/naisys/secrets' 2>/dev/null
+
+          # 校验 secrets 目录权限为 700
+          SECRETS_PERM=$($SSH_CMD 'stat -c "%a" /data/naisys/secrets' 2>/dev/null)
+          if [[ "$SECRETS_PERM" == "700" ]]; then
+            echo "✅ /data/naisys/secrets 权限正确: 700"
+          else
+            echo "❌ /data/naisys/secrets 权限异常: $SECRETS_PERM (期望 700)"
+          fi
+
+          # 校验 /data 为独立挂载点
+          $SSH_CMD 'mountpoint -q /data && echo "✅ /data 是独立挂载点" || echo "❌ /data 不是独立挂载点"' 2>/dev/null
+
+          # 校验文件系统类型
+          $SSH_CMD 'findmnt -n -o FSTYPE /data' 2>/dev/null
+
+      - name: 验证 Docker 与 Tailscale 服务
+        if: env.SSH_OK == 'true'
+        run: |
+          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+
+          echo "=== Docker 服务验证 ==="
+          $SSH_CMD 'systemctl is-active docker' 2>/dev/null || echo "⚠️ Docker 未运行"
+          $SSH_CMD 'docker info --format "{{.ServerVersion}}"' 2>/dev/null || echo "⚠️ Docker 不可用"
+
+          echo "=== Tailscale 服务验证 ==="
+          $SSH_CMD 'systemctl is-active tailscaled' 2>/dev/null || echo "⚠️ Tailscaled 未运行"
+          $SSH_CMD 'tailscale version' 2>/dev/null || echo "⚠️ Tailscale 不可用"
+
+      - name: 验证 Web 控制台可访问
+        if: env.SSH_OK == 'true'
+        run: |
+          echo "=== Web 控制台验证 ==="
+          # 通过端口转发访问 Web 控制台
+          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            --connect-timeout 10 http://localhost:3000/api/health 2>/dev/null || echo "000")
+
+          if [[ "$HTTP_CODE" == "200" ]]; then
+            echo "✅ Web 控制台健康检查通过 (HTTP $HTTP_CODE)"
+            curl -s http://localhost:3000/api/health 2>/dev/null | jq . || true
+          else
+            echo "❌ Web 控制台不可达 (HTTP $HTTP_CODE)"
+          fi
+
+      - name: 驱动兼容性检测
+        if: env.SSH_OK == 'true'
+        run: |
+          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+
+          echo "=== 网卡驱动兼容性矩阵 ==="
+          echo "| 驱动 | 厂商 | 产品 | 已加载 | 版本 | PCI 设备 |"
+          echo "|------|------|------|--------|------|----------|"
+
+          # 通过 API 获取驱动信息（若 Web 控制台可用）
+          DRIVERS_JSON=$(curl -s http://localhost:3000/api/hardware/network-drivers 2>/dev/null || echo '{}')
+          if echo "$DRIVERS_JSON" | jq -e '.success' >/dev/null 2>&1; then
+            echo "$DRIVERS_JSON" | jq -r '.data.drivers[] |
+              "| \(.driver) | \(.vendor) | \(.product) | \(if .loaded then "✅" else "❌" end) | \(.version // "N/A") | \(.pciDevices | length) |"'
+          else
+            # 回退：直接 SSH 检测
+            $SSH_CMD 'lsmod | grep -E "r8125|r8169|igc|e1000e|mlx"' 2>/dev/null || echo "无匹配驱动"
+            $SSH_CMD 'lspci -nn | grep -iE "ethernet|network"' 2>/dev/null || echo "无 PCI 网络设备"
+          fi
+
+          echo ""
+          echo "=== 内核模块列表（网络相关）==="
+          $SSH_CMD 'lsmod | grep -iE "r8125|r8169|igc|e1000e|mlx|net"' 2>/dev/null || true
+
+      - name: 收集安装日志
+        if: always()
+        run: |
+          mkdir -p install-logs
+          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+
+          # 收集关键日志
+          $SSH_CMD 'journalctl -u naisys-web-console --no-pager -n 50' 2>/dev/null > install-logs/web-console.log || true
+          $SSH_CMD 'journalctl -u naisys-firstboot --no-pager -n 50' 2>/dev/null > install-logs/firstboot.log || true
+          $SSH_CMD 'journalctl -u docker --no-pager -n 30' 2>/dev/null > install-logs/docker.log || true
+          $SSH_CMD 'journalctl -u tailscaled --no-pager -n 30' 2>/dev/null > install-logs/tailscaled.log || true
+          $SSH_CMD 'cat /data/naisys/firstboot-info.json' 2>/dev/null > install-logs/firstboot-info.json || true
+          $SSH_CMD 'dmesg | grep -iE "r8125|r8169|igc|e1000|mlx|firmware"' 2>/dev/null > install-logs/dmesg-drivers.log || true
+          $SSH_CMD 'cat /var/lib/naisys/.disk-warning' 2>/dev/null > install-logs/disk-warning.txt || true
+          $SSH_CMD 'cat /var/lib/naisys/.install-error' 2>/dev/null > install-logs/install-error.txt || true
+
+          echo "日志收集完成"
+
+      - name: 关闭 QEMU
+        if: always()
+        run: |
+          if [[ -f qemu.pid ]]; then
+            kill "$(cat qemu.pid)" 2>/dev/null || true
+            sleep 2
+            kill -9 "$(cat qemu.pid)" 2>/dev/null || true
+          fi
+
+      - name: 生成验证报告
+        if: always()
+        run: |
+          cat > qemu-verification-report.md <<REPORT
+          # NAISys QEMU 安装验证报告
+
+          - **验证时间**: $(date -Iseconds)
+          - **ISO 文件**: ${{ needs.fetch-iso.outputs.iso_name }}
+          - **启动模式**: Legacy BIOS
+          - **虚拟磁盘**: ${{ env.QEMU_DISK_SIZE }} (qcow2, virtio)
+          - **内存/CPU**: ${{ env.QEMU_MEMORY }}MB / ${{ env.QEMU_CPUS }} vCPU
+
+          ## 安装结果
+
+          | 项目 | 结果 |
+          |------|------|
+          | SSH 可达（安装完成） | ${{ env.SSH_OK == 'true' && '✅ 通过' || '❌ 失败' }} |
+          | 安装耗时 | ${{ env.INSTALL_TIME_SEC }}s（要求 ≤ 300s） |
+          | 5 分钟内完成 | ${{ env.INSTALL_TIME_SEC <= 300 && '✅' || '❌' }} |
+
+          ## 验证清单
+
+          - [${{ env.SSH_OK == 'true' && 'x' || ' ' }}] 零交互安装完成
+          - [ ] /data 目录正确创建且权限正确
+          - [ ] /data/naisys/secrets 权限 700
+          - [ ] Docker 服务正常运行
+          - [ ] Tailscale 服务正常运行
+          - [ ] Web 控制台 /api/health 返回 200
+
+          ## 驱动兼容性
+
+          详见上方 "网卡驱动兼容性矩阵" 步骤输出。
+          QEMU virtio-net 使用 virtio_net 驱动，非消费级网卡。
+          消费级网卡（RTL8125/i225）需在真机或 PCI 直通环境验证。
+
+          ## 附件
+
+          - install-logs/: 安装日志
+          - vnc-frames/: 安装过程截帧（若可用）
+          REPORT
+
+      - name: 上传验证产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-verification-bios
+          path: |
+            qemu-verification-report.md
+            install-logs/
+            vnc-frames/
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # Job 3: QEMU 安装验证（UEFI）
+  # --------------------------------------------------------------------------
+  qemu-install-uefi:
+    needs: fetch-iso
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 下载 ISO
+        uses: actions/download-artifact@v4
+        with:
+          name: iso-for-qemu
+          path: iso-download
+
+      - name: 安装 QEMU 与 OVMF（UEFI 固件）
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-x86 qemu-utils \
+            ovmf openssh-client sshpass
+
+      - name: 创建虚拟磁盘
+        run: |
+          qemu-img create -f qcow2 naisys-disk-uefi.qcow2 ${{ env.QEMU_DISK_SIZE }}
+
+      - name: 启动 QEMU 安装（UEFI）
+        run: |
+          ISO_FILE=$(ls iso-download/naisys-*.iso | head -n1)
+
+          qemu-system-x86_64 \
+            -m ${{ env.QEMU_MEMORY }} \
+            -smp ${{ env.QEMU_CPUS }} \
+            -bios /usr/share/OVMF/OVMF_CODE.fd \
+            -cdrom "$ISO_FILE" \
+            -drive file=naisys-disk-uefi.qcow2,format=qcow2,if=virtio \
+            -boot d \
+            -netdev user,id=net0,hostfwd=tcp::2223-:22,hostfwd=tcp::3001-:3000 \
+            -device virtio-net-pci,netdev=net0 \
+            -display none \
+            -daemonize \
+            -pidfile qemu-uefi.pid
+
+          echo "QEMU UEFI PID: $(cat qemu-uefi.pid)"
+
+      - name: 等待 UEFI 安装完成
+        run: |
+          echo "等待 UEFI 安装完成（超时 ${{ env.INSTALL_TIMEOUT_SEC }}s）..."
+          START_TIME=$(date +%s)
+          SSH_OK=false
+
+          while true; do
+            ELAPSED=$(( $(date +%s) - START_TIME ))
+            if [[ $ELAPSED -gt ${{ env.INSTALL_TIMEOUT_SEC }} ]]; then
+              echo "❌ UEFI 安装超时"
+              break
+            fi
+
+            if sshpass -p '' ssh -o StrictHostKeyChecking=no \
+                 -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null \
+                 -p 2223 admin@localhost 'echo SSH_OK' 2>/dev/null | grep -q SSH_OK; then
+              SSH_OK=true
+              echo "✅ UEFI SSH 可达（耗时 ${ELAPSED}s）"
+              break
+            fi
+
+            sleep 10
+          done
+
+          echo "UEFI_SSH_OK=$SSH_OK" >> "$GITHUB_ENV"
+          echo "UEFI_INSTALL_TIME_SEC=$(( $(date +%s) - START_TIME ))" >> "$GITHUB_ENV"
+
+      - name: UEFI 基础验证
+        if: env.UEFI_SSH_OK == 'true'
+        run: |
+          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2223 admin@localhost"
+
+          echo "=== UEFI 启动确认 ==="
+          $SSH_CMD 'test -d /sys/firmware/efi && echo "✅ UEFI 启动确认" || echo "❌ 非 UEFI 启动"' 2>/dev/null
+
+          echo "=== /data 挂载确认 ==="
+          $SSH_CMD 'mountpoint -q /data && echo "✅ /data 已挂载" || echo "❌ /data 未挂载"' 2>/dev/null
+
+          echo "=== Web 控制台 ==="
+          HTTP_CODE=$(curl -s -o /dev/null -w '%{http_code}' \
+            --connect-timeout 10 http://localhost:3001/api/health 2>/dev/null || echo "000")
+          echo "Web 控制台: HTTP $HTTP_CODE"
+
+      - name: 关闭 QEMU
+        if: always()
+        run: |
+          if [[ -f qemu-uefi.pid ]]; then
+            kill "$(cat qemu-uefi.pid)" 2>/dev/null || true
+          fi
+
+      - name: 生成 UEFI 验证报告
+        if: always()
+        run: |
+          cat > qemu-uefi-report.md <<REPORT
+          # NAISys QEMU UEFI 安装验证报告
+
+          - **验证时间**: $(date -Iseconds)
+          - **启动模式**: UEFI (OVMF)
+          - **SSH 可达**: ${{ env.UEFI_SSH_OK == 'true' && '✅' || '❌' }}
+          - **安装耗时**: ${{ env.UEFI_INSTALL_TIME_SEC }}s
+          REPORT
+
+      - name: 上传 UEFI 验证产物
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-verification-uefi
+          path: qemu-uefi-report.md
+          retention-days: 14

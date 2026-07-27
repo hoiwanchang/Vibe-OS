@@ -3,7 +3,7 @@
  * 编排容器部署、日志读取、Tailscale 状态查询
  */
 import { AppError } from '../../common/app-error.js';
-import { assertSafePath } from '../../system/filesystem.js';
+import { assertSafePathReal } from '../../system/filesystem.js';
 import * as dao from './container.dao.js';
 import type {
   AppDirsInitResponse,
@@ -29,9 +29,9 @@ export async function deployApp(
     throw AppError.commandFailed('docker', 'Docker 守护进程不可用');
   }
 
-  // 安全校验：所有卷挂载的 host 路径必须在 /data/ 内
+  // 安全校验：所有卷挂载的 host 路径必须在 /data/ 内（含 symlink 解析）
   for (const vol of req.volumes ?? []) {
-    assertSafePath(vol.host);
+    await assertSafePathReal(vol.host);
   }
 
   // 校验容器名合法性（防止命令注入）
@@ -39,6 +39,30 @@ export async function deployApp(
     throw AppError.badRequest(
       'INVALID_NAME',
       '容器名仅允许字母、数字、下划线、点和连字符',
+    );
+  }
+
+  // 校验镜像名合法性（防止参数注入：仅允许 registry/repo:tag 格式）
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9._:/@-]*$/.test(req.image)) {
+    throw AppError.badRequest(
+      'INVALID_IMAGE',
+      '镜像名包含非法字符',
+    );
+  }
+
+  // 校验 memoryLimit 格式（仅允许数字+单位后缀，如 512m, 2g）
+  if (req.memoryLimit && !/^\d+[bkmg]$/i.test(req.memoryLimit)) {
+    throw AppError.badRequest(
+      'INVALID_MEMORY_LIMIT',
+      '内存限制格式非法，应为数字+单位（如 512m, 2g）',
+    );
+  }
+
+  // 校验 network 名称合法性
+  if (req.network && !/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(req.network)) {
+    throw AppError.badRequest(
+      'INVALID_NETWORK',
+      '网络名仅允许字母、数字、下划线、点和连字符',
     );
   }
 

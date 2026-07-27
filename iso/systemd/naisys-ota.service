@@ -1,0 +1,12 @@
+[Unit]
+Description=NAISys OTA Upgrade
+Documentation=https://github.com/NAISys/NAISys
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/naisys.env
+ExecStart=/opt/naisys/ota-upgrade.sh
+# 升级可能耗时，放宽超时
+TimeoutStartSec=600

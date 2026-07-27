@@ -1,0 +1,13 @@
+[Unit]
+Description=NAISys OTA Upgrade Timer
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=6h
+# 加入随机抖动，避免大量设备同时拉取 Release
+RandomizedDelaySec=30min
+Persistent=true
+Unit=naisys-ota.service
+
+[Install]
+WantedBy=timers.target

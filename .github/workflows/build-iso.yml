@@ -1,0 +1,198 @@
+# ============================================================================
+# NAISys ISO 构建流水线
+# 触发：每周六凌晨 2:00（北京时间）自动构建 + 手动 dispatch
+# 流程：构建应用运行时 → 打包混合 ISO（驱动注入 + 无人值守）→ 校验 → 发布 Release
+# ============================================================================
+name: Build ISO
+
+on:
+  schedule:
+    # GitHub cron 使用 UTC。北京时间周六 02:00 = UTC 周五 18:00
+    - cron: '0 18 * * 5'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版本号（留空则用日期-weekly）'
+        required: false
+        default: ''
+      data_fstype:
+        description: '/data 文件系统类型'
+        required: false
+        default: 'xfs'
+        type: choice
+        options: [xfs, btrfs]
+
+# 并发控制：同一时间只跑一个构建，避免 Release 冲突
+concurrency:
+  group: build-iso
+  cancel-in-progress: false
+
+env:
+  DEBIAN_VERSION: '13.3.0'
+  DEBIAN_ARCH: 'amd64'
+
+jobs:
+  # --------------------------------------------------------------------------
+  # Job 1: 构建应用运行时（后端 + Web 控制台），打包为 runtime tarball
+  # --------------------------------------------------------------------------
+  build-runtime:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:trixie-slim
+    steps:
+      - name: 安装系统依赖
+        run: |
+          apt-get update && apt-get install -y curl git
+          curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+          apt-get install -y nodejs
+          corepack enable
+
+      - uses: actions/checkout@v4
+
+      - name: 安装项目依赖
+        run: pnpm install --frozen-lockfile
+
+      - name: 构建后端
+        run: pnpm build
+
+      - name: 构建 Web 控制台
+        run: pnpm web:build
+
+      - name: 打包运行时 tarball
+        run: |
+          VERSION="${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
+          mkdir -p runtime-bundle/app
+          cp -r dist runtime-bundle/app/dist
+          cp -r web/dist runtime-bundle/app/web-dist
+          cp package.json runtime-bundle/app/
+          echo "$VERSION" > runtime-bundle/app/VERSION
+          tar -czf naisys-runtime.tar.gz -C runtime-bundle/app .
+          sha256sum naisys-runtime.tar.gz > naisys-runtime.tar.gz.sha256
+          echo "运行时版本: $VERSION"
+
+      - name: 上传运行时产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: naisys-runtime
+          path: |
+            naisys-runtime.tar.gz
+            naisys-runtime.tar.gz.sha256
+          retention-days: 7
+
+  # --------------------------------------------------------------------------
+  # Job 2: 构建混合 ISO（驱动注入 + 无人值守 preseed）并校验
+  # --------------------------------------------------------------------------
+  build-iso:
+    needs: build-runtime
+    runs-on: ubuntu-latest
+    # 使用 Debian 容器：固件包名（firmware-realtek 等）为 Debian 专有，
+    # Ubuntu 仓库无此命名，故必须在 Debian 环境下载固件注入 initrd。
+    container:
+      image: debian:trixie-slim
+      options: --privileged
+    steps:
+      - name: 安装 ISO 构建依赖
+        run: |
+          # trixie-slim 默认仅启用 main，固件包位于 non-free-firmware，需显式启用
+          sed -i 's/ main/ main contrib non-free non-free-firmware/g' \
+            /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            curl git ca-certificates \
+            xorriso cpio gzip zstd dpkg-dev gettext-base file \
+            whois openssl isolinux syslinux-common \
+            grub-pc-bin grub-efi-amd64-bin mtools \
+            firmware-realtek firmware-misc-nonfree firmware-linux-nonfree
+
+      - uses: actions/checkout@v4
+
+      - name: 下载运行时产物到 runtime-bundle
+        uses: actions/download-artifact@v4
+        with:
+          name: naisys-runtime
+          path: iso/runtime-bundle-tmp
+
+      - name: 解包运行时到 runtime-bundle/app
+        run: |
+          mkdir -p iso/runtime-bundle/app
+          tar -xzf iso/runtime-bundle-tmp/naisys-runtime.tar.gz -C iso/runtime-bundle/app
+          cp iso/runtime-bundle-tmp/naisys-runtime.tar.gz iso/runtime-bundle/
+          ls -la iso/runtime-bundle/app
+
+      - name: 赋予脚本执行权限
+        run: chmod +x iso/*.sh iso/runtime/*.sh
+
+      - name: 构建 ISO
+        env:
+          NAISYS_VERSION: "${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
+          NAISYS_DATA_FSTYPE: "${{ github.event.inputs.data_fstype || 'xfs' }}"
+        # 容器内默认 root，满足 build-iso.sh 的 require_root，无需 sudo
+        run: |
+          cd iso
+          ./build-iso.sh
+
+      - name: 校验 ISO 并生成验证报告
+        run: |
+          cd iso
+          ./verify-iso.sh out/naisys-*.iso out/
+
+      - name: 上传 ISO 产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: naisys-iso
+          path: |
+            iso/out/naisys-*.iso
+            iso/out/naisys-*.iso.sha256
+            iso/out/*-verification-report.md
+          retention-days: 14
+
+  # --------------------------------------------------------------------------
+  # Job 3: 发布到 GitHub Releases
+  # --------------------------------------------------------------------------
+  release:
+    needs: build-iso
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: 下载 ISO 产物
+        uses: actions/download-artifact@v4
+        with:
+          name: naisys-iso
+          path: release-iso
+
+      - name: 下载运行时产物
+        uses: actions/download-artifact@v4
+        with:
+          name: naisys-runtime
+          path: release-runtime
+
+      - name: 创建 Release 并上传
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          VERSION="${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
+          TAG="iso-${VERSION}"
+          ISO_FILE=$(ls release-iso/naisys-*.iso | head -n1)
+
+          # 若 tag 已存在则复用，否则创建
+          if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
+            echo "Release $TAG 已存在，追加资产"
+          else
+            gh release create "$TAG" \
+              --repo "${{ github.repository }}" \
+              --title "NAISys ISO ${VERSION}" \
+              --notes "自动构建于 $(date -Iseconds)。含消费级网卡驱动、无人值守安装、运行时自愈。SHA256 与验证报告见附件。" \
+              --target "${{ github.sha }}"
+          fi
+
+          gh release upload "$TAG" \
+            --repo "${{ github.repository }}" \
+            --clobber \
+            "$ISO_FILE" \
+            release-iso/naisys-*.iso.sha256 \
+            release-iso/*-verification-report.md \
+            release-runtime/naisys-runtime.tar.gz \
+            release-runtime/naisys-runtime.tar.gz.sha256
+
+          echo "已发布: $TAG"

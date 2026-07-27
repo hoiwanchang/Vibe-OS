@@ -9,6 +9,8 @@ import { AppError } from '../common/app-error.js';
 
 /**
  * 校验路径是否在 DATA_ROOT 内（防路径穿越）
+ * 对已存在的路径额外执行 realpath 解析符号链接，
+ * 防止 /data/evil -> /etc 类型的 symlink 穿越攻击。
  * @param targetPath - 待校验路径
  * @returns 规范化后的绝对路径
  * @throws AppError 路径穿越检测
@@ -23,6 +25,35 @@ export function assertSafePath(targetPath: string): string {
     );
   }
   return normalized;
+}
+
+/**
+ * 异步版路径安全校验（含 symlink 解析）
+ * 对已存在的路径调用 fs.realpath 解析符号链接后再次校验前缀，
+ * 防止 /data/evil -> /etc 类型的 symlink 穿越攻击。
+ * 不存在的路径仅做 resolve 前缀校验（创建场景）。
+ * @param targetPath - 待校验路径
+ * @returns 规范化后的绝对路径
+ * @throws AppError 路径穿越检测
+ */
+export async function assertSafePathReal(targetPath: string): Promise<string> {
+  const normalized = assertSafePath(targetPath);
+  try {
+    const real = await fs.realpath(normalized);
+    const dataRoot = path.resolve(DATA_ROOT);
+    if (!real.startsWith(dataRoot + path.sep) && real !== dataRoot) {
+      throw AppError.forbidden(
+        `符号链接穿越检测: [${targetPath}] 实际指向 [${real}]，不在数据根目录内`,
+      );
+    }
+    return real;
+  } catch (err) {
+    // ENOENT: 路径尚不存在（创建场景），仅做前缀校验即可
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return normalized;
+    }
+    throw err;
+  }
 }
 
 /**

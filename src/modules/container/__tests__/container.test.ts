@@ -67,7 +67,16 @@ vi.mock('../../../system/filesystem.js', () => ({
     }
     return p;
   }),
+  assertSafePathReal: vi.fn(async (p: string) => {
+    if (!p.startsWith('/data')) {
+      const err = new Error('路径穿越');
+      (err as Error & { statusCode?: number }).statusCode = 403;
+      throw err;
+    }
+    return p;
+  }),
   ensureDir: vi.fn().mockResolvedValue(undefined),
+  pathExists: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock('../../../config.js', () => ({
