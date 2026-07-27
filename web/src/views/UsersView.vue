@@ -118,16 +118,16 @@ function quotaProgressType(percent: number): 'success' | 'warning' | 'danger' {
 .user-avatar {
   width: 34px;
   height: 34px;
-  border-radius: 8px;
   flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-family: 'Space Grotesk', monospace;
+  font-family: var(--nx-font-display);
   font-weight: 700;
   font-size: 15px;
-  color: #062030;
-  background: linear-gradient(135deg, var(--nx-violet), var(--nx-primary));
+  color: #000;
+  background: var(--nx-amber);
+  border: 1px solid var(--nx-border-strong);
 }
 
 .user-name {

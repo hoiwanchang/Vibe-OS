@@ -1,5 +1,7 @@
 /**
- * 路由定义 — 全部页面组件懒加载（动态 import），降低首屏资源占用
+ * 路由定义 — WebOS 单桌面架构
+ * 整个控制台是一个桌面（DesktopView），各功能以窗口形式呈现，
+ * 不再使用传统多页面路由
  */
 import { createRouter, createWebHistory } from 'vue-router';
 
@@ -8,35 +10,14 @@ const router = createRouter({
   routes: [
     {
       path: '/',
-      component: () => import('@/components/layout/AppShell.vue'),
-      children: [
-        {
-          path: '',
-          name: 'dashboard',
-          component: () => import('@/views/DashboardView.vue'),
-          meta: { title: '系统总览' },
-        },
-        {
-          path: 'apps',
-          name: 'apps',
-          component: () => import('@/views/AppsView.vue'),
-          meta: { title: 'AI 应用中心' },
-        },
-        {
-          path: 'users',
-          name: 'users',
-          component: () => import('@/views/UsersView.vue'),
-          meta: { title: '用户与权限' },
-        },
-      ],
+      name: 'desktop',
+      component: () => import('@/views/DesktopView.vue'),
     },
-    { path: '/:pathMatch(.*)*', redirect: '/' },
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
+    },
   ],
-});
-
-router.afterEach((to) => {
-  const title = to.meta['title'];
-  document.title = title ? `${String(title)} · NAISys 控制台` : 'NAISys 控制台';
 });
 
 export default router;

@@ -1,20 +1,19 @@
 <script setup lang="ts">
 /**
- * 页面1：系统总览仪表盘
- * - 存储池使用率 / CPU / 内存负载（环形仪表 + 语义色）
+ * 系统总览仪表盘（桌面窗口内容）
+ * - 存储池 / CPU / 内存条形仪表 + 语义色 + 趋势迷你图
  * - Tailscale 节点在线状态、Docker 容器运行概览
- * - 硬件异常（SMART 告警、网卡掉线）标红弹窗 + 页内横幅
- * - 5 秒自动轮询刷新
+ * - 硬件告警页内横幅（全局弹窗由桌面层统一驱动）
+ * - 数据由桌面层统一轮询，本组件仅做展示
  */
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
-import { ElMessageBox } from 'element-plus';
+import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
 import SectionHead from '@/components/common/SectionHead.vue';
 import StatusBadge from '@/components/common/StatusBadge.vue';
 import StorageBar from '@/components/common/StorageBar.vue';
 import TrendSparkline from '@/components/common/TrendSparkline.vue';
 import UsageGauge from '@/components/common/UsageGauge.vue';
-import { POLL_INTERVAL_MS, useSystemStore } from '@/stores/system';
+import { useSystemStore } from '@/stores/system';
 import { formatBytes, formatTime, formatUptime } from '@/utils/format';
 
 const store = useSystemStore();
@@ -29,19 +28,6 @@ const {
   cpuHistory,
   memHistory,
 } = storeToRefs(store);
-
-let timer: ReturnType<typeof setInterval> | null = null;
-
-onMounted(async () => {
-  await store.fetchAll();
-  timer = setInterval(() => {
-    void store.fetchAll();
-  }, POLL_INTERVAL_MS);
-});
-
-onBeforeUnmount(() => {
-  if (timer) clearInterval(timer);
-});
 
 /** 数据盘（/data 前缀挂载点）聚合使用率 */
 const dataPool = computed(() => {
@@ -86,39 +72,6 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
   if (online) return 'warn';
   return 'off';
 }
-
-/**
- * 硬件异常 → 标红弹窗（仅新告警触发一次）
- * activeAlerts 是 computed，每次轮询都会产生新数组引用，
- * 因此必须按告警 id 去重，避免同一告警每隔 5 秒重复弹窗
- */
-const poppedAlertIds = ref<Set<string>>(new Set());
-
-watch(activeAlerts, (alerts) => {
-  const fresh = alerts.filter(
-    (a) => a.severity === 'critical' && !poppedAlertIds.value.has(a.id),
-  );
-  if (fresh.length === 0) return;
-
-  for (const alert of fresh) {
-    poppedAlertIds.value.add(alert.id);
-  }
-
-  const critical = fresh[0];
-  if (critical) {
-    ElMessageBox.alert(critical.detail, critical.title, {
-      confirmButtonText: '知道了',
-      type: 'error',
-      customClass: 'nx-critical-dialog',
-    }).catch(() => {
-      /* 用户关闭弹窗 */
-    });
-  }
-});
-
-onBeforeUnmount(() => {
-  poppedAlertIds.value.clear();
-});
 </script>
 
 <template>
@@ -175,7 +128,6 @@ onBeforeUnmount(() => {
             :percent="dataPool.percent"
             :label="`${dataPool.percent.toFixed(1)}%`"
             caption="存储池"
-            :size="120"
           />
         </div>
         <div class="stat-meta">
@@ -192,7 +144,6 @@ onBeforeUnmount(() => {
             :percent="cpuPercent"
             :label="`${cpuPercent.toFixed(1)}%`"
             caption="CPU"
-            :size="120"
           />
         </div>
         <div class="stat-meta">
@@ -218,7 +169,6 @@ onBeforeUnmount(() => {
             :percent="memPercent"
             :label="`${memPercent.toFixed(1)}%`"
             caption="内存"
-            :size="120"
           />
         </div>
         <div class="stat-meta">
@@ -424,13 +374,14 @@ onBeforeUnmount(() => {
 
 .stat-card {
   display: flex;
-  align-items: center;
-  gap: 18px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 14px;
   padding: 18px 22px;
 }
 
 .stat-gauge {
-  flex-shrink: 0;
+  width: 100%;
 }
 
 .stat-meta {

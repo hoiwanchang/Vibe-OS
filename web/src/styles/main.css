@@ -1,355 +1,174 @@
 /**
- * NAISys 控制台主题
- * 深空蓝基底 + 青绿主色 + 琥珀告警色，NAS 机房监控定位
- * 字体：Space Grotesk（数字/标题）+ Noto Sans SC（中文正文）+ JetBrains Mono（等宽数据）
+ * NAISys 控制台主题 — 硬朗工业风
+ * 纯黑底 / 白字 / 琥珀功能色 / 零圆角 / 点阵网格背景
+ * 字体：Chakra Petch（展示/数字）+ IBM Plex Sans（正文）+ IBM Plex Mono（等宽数据）
  */
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+@import 'element-plus/dist/index.css';
+@import 'element-plus/theme-chalk/dark/css-vars.css';
 
+/* ============================================================
+   设计令牌
+   ============================================================ */
 :root {
-  /* 色板 */
-  --nx-bg: #0a121c;
-  --nx-bg-elev: #101b29;
-  --nx-surface: #13202f;
-  --nx-surface-hover: #182838;
-  --nx-border: #1e3044;
-  --nx-border-strong: #2a4258;
-  --nx-text: #e6eef6;
-  --nx-text-dim: #8ba3b8;
-  --nx-text-faint: #5c7285;
-  --nx-primary: #39d5ff;
-  --nx-primary-dim: #1a8fb3;
-  --nx-teal: #2dd4a7;
-  --nx-amber: #ffb454;
-  --nx-red: #ff5d6c;
-  --nx-violet: #a78bfa;
+  /* 基底 */
+  --nx-bg: #000000;
+  --nx-bg-raised: #0a0a0a;
+  --nx-bg-sunken: #050505;
+  --nx-surface: #0d0d0d;
+  --nx-surface-hover: #141414;
 
-  /* Element Plus 暗色覆写 */
-  --el-color-primary: var(--nx-primary);
-  --el-color-primary-light-3: #61dfff;
-  --el-color-primary-light-5: #8ce8ff;
-  --el-color-primary-light-7: #b7f1ff;
-  --el-color-primary-light-8: #d0f6ff;
-  --el-color-primary-light-9: #e9fbff;
-  --el-color-primary-dark-2: var(--nx-primary-dim);
-  --el-color-success: var(--nx-teal);
-  --el-color-warning: var(--nx-amber);
-  --el-color-danger: var(--nx-red);
-  --el-color-error: var(--nx-red);
-  --el-bg-color: var(--nx-surface);
-  --el-bg-color-overlay: var(--nx-bg-elev);
-  --el-bg-color-page: var(--nx-bg);
-  --el-border-color: var(--nx-border);
-  --el-border-color-light: var(--nx-border);
-  --el-border-color-lighter: var(--nx-border);
-  --el-text-color-primary: var(--nx-text);
-  --el-text-color-regular: var(--nx-text-dim);
-  --el-fill-color-blank: var(--nx-surface);
-  --el-mask-color: rgba(6, 11, 18, 0.72);
-  --el-font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  /* 边框 */
+  --nx-border: #262626;
+  --nx-border-strong: #3d3d3d;
+  --nx-border-faint: #1a1a1a;
+
+  /* 文字 */
+  --nx-text: #f2f2f2;
+  --nx-text-dim: #9a9a9a;
+  --nx-text-faint: #5c5c5c;
+
+  /* 功能色（克制：仅琥珀为强调色，红为告警） */
+  --nx-amber: #ffb000;
+  --nx-amber-dim: rgba(255, 176, 0, 0.14);
+  --nx-red: #ff3b30;
+  --nx-red-dim: rgba(255, 59, 48, 0.12);
+  --nx-green: #34d058;
+  --nx-green-dim: rgba(52, 208, 88, 0.12);
+
+  /* 兼容旧组件引用的变量（映射到新语义） */
+  --nx-primary: var(--nx-amber);
+  --nx-teal: var(--nx-green);
+  --nx-violet: var(--nx-amber);
+
+  /* 字体 */
+  --nx-font-display: 'Chakra Petch', 'IBM Plex Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --nx-font-body: 'IBM Plex Sans', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  --nx-font-mono: 'IBM Plex Mono', 'SFMono-Regular', Consolas, monospace;
+
+  /* 尺寸 */
+  --nx-taskbar-h: 44px;
+  --nx-radius: 0; /* 全局零圆角 */
 }
 
+/* ============================================================
+   Element Plus 暗色变量覆盖（工业风）
+   ============================================================ */
+html.dark {
+  --el-color-primary: var(--nx-amber);
+  --el-color-primary-light-3: #ffc233;
+  --el-color-primary-light-5: #ffd166;
+  --el-color-primary-light-7: #ffe099;
+  --el-color-primary-light-8: #ffebc2;
+  --el-color-primary-light-9: #fff5e0;
+  --el-color-primary-dark-2: #cc8d00;
+
+  --el-color-success: var(--nx-green);
+  --el-color-danger: var(--nx-red);
+  --el-color-warning: var(--nx-amber);
+
+  --el-bg-color: var(--nx-bg-raised);
+  --el-bg-color-overlay: var(--nx-surface);
+  --el-bg-color-page: var(--nx-bg);
+
+  --el-text-color-primary: var(--nx-text);
+  --el-text-color-regular: #c9c9c9;
+  --el-text-color-secondary: var(--nx-text-dim);
+  --el-text-color-placeholder: var(--nx-text-faint);
+
+  --el-border-color: var(--nx-border);
+  --el-border-color-light: var(--nx-border-faint);
+  --el-border-color-lighter: var(--nx-border-faint);
+  --el-border-color-dark: var(--nx-border-strong);
+
+  --el-fill-color: #161616;
+  --el-fill-color-light: #111111;
+  --el-fill-color-lighter: #0d0d0d;
+  --el-fill-color-blank: var(--nx-bg-raised);
+
+  --el-mask-color: rgba(0, 0, 0, 0.72);
+
+  /* 零圆角 */
+  --el-border-radius-base: 0;
+  --el-border-radius-small: 0;
+  --el-border-radius-round: 0;
+  --el-border-radius-circle: 0;
+
+  --el-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.9);
+  --el-box-shadow-light: 0 4px 16px rgba(0, 0, 0, 0.7);
+
+  --el-font-family: var(--nx-font-body);
+}
+
+/* ============================================================
+   全局基底
+   ============================================================ */
 * {
-  box-sizing: border-box;
+  border-radius: 0 !important; /* 强制零圆角，杜绝任何圆角残留 */
 }
 
 html,
 body {
   margin: 0;
   padding: 0;
-  min-height: 100vh;
-}
-
-body {
+  height: 100%;
   background: var(--nx-bg);
   color: var(--nx-text);
-  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-family: var(--nx-font-body);
   font-size: 14px;
   -webkit-font-smoothing: antialiased;
 }
 
-/* ---------- 布局骨架 ---------- */
-
-.nx-shell {
-  display: flex;
-  min-height: 100vh;
+#app {
+  height: 100%;
 }
 
-.nx-sidebar {
-  width: 220px;
-  flex-shrink: 0;
-  background: linear-gradient(180deg, #0d1826 0%, #0a121c 100%);
-  border-right: 1px solid var(--nx-border);
-  display: flex;
-  flex-direction: column;
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  z-index: 20;
+::selection {
+  background: var(--nx-amber);
+  color: #000;
 }
 
-.nx-brand {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 22px 20px 18px;
-  border-bottom: 1px solid var(--nx-border);
-}
-
-.nx-brand-logo {
-  width: 38px;
-  height: 38px;
-  flex-shrink: 0;
-}
-
-.nx-brand-name {
-  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
-  font-size: 20px;
-  font-weight: 700;
-  letter-spacing: 0.5px;
-  background: linear-gradient(120deg, var(--nx-primary), var(--nx-teal));
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
-}
-
-.nx-brand-sub {
-  font-size: 11px;
-  color: var(--nx-text-faint);
-  letter-spacing: 2px;
-  margin-top: 2px;
-}
-
-.nx-nav {
-  flex: 1;
-  padding: 14px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.nx-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 10px;
-  color: var(--nx-text-dim);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 500;
-  transition: all 0.2s ease;
-  border: 1px solid transparent;
-}
-
-.nx-nav-item:hover {
-  color: var(--nx-text);
-  background: var(--nx-surface-hover);
-}
-
-.nx-nav-item.router-link-active {
-  color: var(--nx-primary);
-  background: rgba(57, 213, 255, 0.08);
-  border-color: rgba(57, 213, 255, 0.25);
-}
-
-.nx-nav-item .el-icon {
-  font-size: 18px;
-}
-
-.nx-sidebar-footer {
-  padding: 16px 20px;
-  border-top: 1px solid var(--nx-border);
-  font-size: 12px;
-  color: var(--nx-text-faint);
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.nx-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
-.nx-topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px 28px;
-  border-bottom: 1px solid var(--nx-border);
-  background: rgba(10, 18, 28, 0.85);
-  backdrop-filter: blur(8px);
-  position: sticky;
-  top: 0;
-  z-index: 15;
-}
-
-.nx-topbar-title {
-  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.nx-topbar-right {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.nx-content {
-  flex: 1;
-  padding: 24px 28px 40px;
-  max-width: 1440px;
-  width: 100%;
-  margin: 0 auto;
-}
-
-/* ---------- 通用卡片 ---------- */
-
-.nx-panel {
-  background: linear-gradient(160deg, var(--nx-surface) 0%, #111d2b 100%);
-  border: 1px solid var(--nx-border);
-  border-radius: 12px;
-  padding: 20px;
-  transition: border-color 0.25s ease, transform 0.25s ease;
-}
-
-.nx-panel:hover {
-  border-color: var(--nx-border-strong);
-}
-
-.nx-panel-title {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--nx-text-dim);
-  margin: 0 0 16px;
-  letter-spacing: 1px;
-}
-
-.nx-panel-title .el-icon {
-  color: var(--nx-primary);
-}
-
-/* ---------- 指标数字 ---------- */
-
-.nx-metric-value {
-  font-family: 'Space Grotesk', 'JetBrains Mono', monospace;
-  font-size: 34px;
-  font-weight: 700;
-  line-height: 1.1;
-  color: var(--nx-text);
-}
-
-.nx-metric-unit {
-  font-size: 15px;
-  font-weight: 500;
-  color: var(--nx-text-faint);
-  margin-left: 4px;
-}
-
-.nx-metric-label {
-  font-size: 12px;
-  color: var(--nx-text-faint);
-  margin-top: 6px;
-  letter-spacing: 1px;
-}
-
-.nx-mono {
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
-  font-size: 12.5px;
-}
-
-/* ---------- 状态点 ---------- */
-
-.nx-dot {
-  display: inline-block;
+/* 滚动条：细窄工业风 */
+::-webkit-scrollbar {
   width: 8px;
   height: 8px;
-  border-radius: 50%;
-  flex-shrink: 0;
 }
-
-.nx-dot--ok {
-  background: var(--nx-teal);
-  box-shadow: 0 0 8px rgba(45, 212, 167, 0.6);
-  animation: nx-pulse 2.4s ease-in-out infinite;
+::-webkit-scrollbar-track {
+  background: var(--nx-bg-sunken);
 }
-
-.nx-dot--warn {
+::-webkit-scrollbar-thumb {
+  background: var(--nx-border-strong);
+}
+::-webkit-scrollbar-thumb:hover {
   background: var(--nx-amber);
-  box-shadow: 0 0 8px rgba(255, 180, 84, 0.6);
 }
 
-.nx-dot--error {
-  background: var(--nx-red);
-  box-shadow: 0 0 8px rgba(255, 93, 108, 0.7);
-  animation: nx-pulse 1.2s ease-in-out infinite;
+/* ============================================================
+   桌面基底（点阵网格背景）
+   ============================================================ */
+.nx-desktop {
+  position: fixed;
+  inset: 0;
+  background-color: var(--nx-bg);
+  background-image: radial-gradient(circle, #1c1c1c 1px, transparent 1px);
+  background-size: 26px 26px;
+  overflow: hidden;
+  user-select: none;
 }
 
-.nx-dot--off {
-  background: var(--nx-text-faint);
+/* ============================================================
+   通用面板 / 网格
+   ============================================================ */
+.nx-panel {
+  background: var(--nx-surface);
+  border: 1px solid var(--nx-border);
+  padding: 18px;
+  transition: border-color 0.2s ease;
 }
 
-@keyframes nx-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
+.nx-panel--hover:hover {
+  border-color: var(--nx-border-strong);
 }
-
-/* ---------- 告警横幅 ---------- */
-
-.nx-alert-banner {
-  display: flex;
-  align-items: flex-start;
-  gap: 12px;
-  padding: 14px 18px;
-  border-radius: 10px;
-  margin-bottom: 12px;
-  border: 1px solid;
-  animation: nx-slide-in 0.35s ease both;
-}
-
-.nx-alert-banner--critical {
-  background: rgba(255, 93, 108, 0.08);
-  border-color: rgba(255, 93, 108, 0.4);
-}
-
-.nx-alert-banner--warning {
-  background: rgba(255, 180, 84, 0.07);
-  border-color: rgba(255, 180, 84, 0.35);
-}
-
-.nx-alert-banner .el-icon {
-  font-size: 20px;
-  margin-top: 2px;
-}
-
-.nx-alert-banner--critical .el-icon { color: var(--nx-red); }
-.nx-alert-banner--warning .el-icon { color: var(--nx-amber); }
-
-.nx-alert-title {
-  font-weight: 600;
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.nx-alert-detail {
-  font-size: 12.5px;
-  color: var(--nx-text-dim);
-  line-height: 1.6;
-}
-
-@keyframes nx-slide-in {
-  from { opacity: 0; transform: translateY(-8px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-/* ---------- 网格布局 ---------- */
 
 .nx-grid {
   display: grid;
@@ -360,116 +179,511 @@ body {
   grid-template-columns: repeat(4, 1fr);
 }
 
-.nx-grid--2 {
+.nx-grid--two {
   grid-template-columns: 1fr 1fr;
 }
 
-.nx-grid--dash {
-  grid-template-columns: 1.4fr 1fr;
-}
-
-/* ---------- 进度条语义色 ---------- */
-
-.nx-progress--ok .el-progress-bar__inner { background: linear-gradient(90deg, #2dd4a7, #39d5ff); }
-.nx-progress--warn .el-progress-bar__inner { background: linear-gradient(90deg, #ffb454, #ff9a3d); }
-.nx-progress--critical .el-progress-bar__inner { background: linear-gradient(90deg, #ff5d6c, #ff8a5d); }
-
-/* ---------- 日志终端 ---------- */
-
-.nx-terminal {
-  background: #060b12;
-  border: 1px solid var(--nx-border);
-  border-radius: 10px;
-  padding: 16px;
-  font-family: 'JetBrains Mono', 'Consolas', monospace;
-  font-size: 12px;
-  line-height: 1.75;
-  color: #9fd8c4;
-  max-height: 420px;
-  overflow-y: auto;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.nx-terminal::-webkit-scrollbar { width: 8px; }
-.nx-terminal::-webkit-scrollbar-thumb { background: var(--nx-border-strong); border-radius: 4px; }
-
-/* ---------- 移动端适配 ---------- */
-
-.nx-mobile-tabbar {
-  display: none;
-}
-
-@media (max-width: 860px) {
-  .nx-sidebar {
-    display: none;
-  }
-
-  .nx-mobile-tabbar {
-    display: flex;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    background: rgba(13, 24, 38, 0.96);
-    backdrop-filter: blur(10px);
-    border-top: 1px solid var(--nx-border);
-    z-index: 30;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
-  }
-
-  .nx-mobile-tabbar .nx-nav-item {
-    flex: 1;
-    flex-direction: column;
-    gap: 4px;
-    font-size: 11px;
-    padding: 8px 4px;
-    justify-content: center;
-  }
-
-  .nx-content {
-    padding: 16px 14px 96px;
-  }
-
-  .nx-topbar {
-    padding: 12px 16px;
-  }
-
+@media (max-width: 1100px) {
   .nx-grid--stats {
     grid-template-columns: repeat(2, 1fr);
   }
+}
 
-  .nx-grid--2,
-  .nx-grid--dash {
+@media (max-width: 640px) {
+  .nx-grid--stats,
+  .nx-grid--two {
     grid-template-columns: 1fr;
   }
+}
 
-  .nx-metric-value {
-    font-size: 26px;
+/* ============================================================
+   文字工具类
+   ============================================================ */
+.nx-mono {
+  font-family: var(--nx-font-mono);
+}
+
+.nx-display {
+  font-family: var(--nx-font-display);
+  letter-spacing: 0.04em;
+}
+
+.nx-metric-label {
+  font-family: var(--nx-font-display);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--nx-text-faint);
+}
+
+.nx-metric-value {
+  font-family: var(--nx-font-display);
+  font-size: 28px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--nx-text);
+}
+
+/* ============================================================
+   状态点（方形）
+   ============================================================ */
+.nx-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+}
+
+.nx-dot--ok {
+  background: var(--nx-green);
+  box-shadow: 0 0 6px var(--nx-green);
+}
+
+.nx-dot--warn {
+  background: var(--nx-amber);
+  box-shadow: 0 0 6px var(--nx-amber);
+  animation: nx-blink 1.6s steps(2, start) infinite;
+}
+
+.nx-dot--error {
+  background: var(--nx-red);
+  box-shadow: 0 0 6px var(--nx-red);
+  animation: nx-blink 0.9s steps(2, start) infinite;
+}
+
+.nx-dot--off {
+  background: var(--nx-border-strong);
+}
+
+@keyframes nx-blink {
+  50% {
+    opacity: 0.25;
   }
 }
 
-/* ---------- Element Plus 微调 ---------- */
-
-.el-table {
-  --el-table-bg-color: transparent;
-  --el-table-tr-bg-color: transparent;
-  --el-table-header-bg-color: rgba(57, 213, 255, 0.04);
-  --el-table-row-hover-bg-color: var(--nx-surface-hover);
-  --el-table-border-color: var(--nx-border);
+/* ============================================================
+   告警横幅
+   ============================================================ */
+.nx-alert-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  border: 1px solid;
+  font-size: 13px;
 }
 
-.el-dialog {
-  --el-dialog-bg-color: var(--nx-bg-elev);
+.nx-alert-banner--critical {
+  border-color: var(--nx-red);
+  background: var(--nx-red-dim);
+  color: #ffb4ae;
+}
+
+.nx-alert-banner--warning {
+  border-color: var(--nx-amber);
+  background: var(--nx-amber-dim);
+  color: #ffd58a;
+}
+
+.nx-alert-title {
+  font-family: var(--nx-font-display);
+  font-weight: 600;
+  letter-spacing: 0.03em;
+}
+
+.nx-alert-detail {
+  font-size: 12px;
+  opacity: 0.85;
+}
+
+/* ============================================================
+   窗口（WebOS）
+   ============================================================ */
+.wm-window {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  background: var(--nx-bg-raised);
   border: 1px solid var(--nx-border-strong);
-  border-radius: 14px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85);
+  transition: box-shadow 0.2s ease;
 }
 
-.el-card {
-  --el-card-bg-color: var(--nx-surface);
+.wm-window--focused {
+  border-color: var(--nx-amber);
+  box-shadow:
+    0 0 0 1px var(--nx-amber),
+    0 20px 56px rgba(0, 0, 0, 0.9);
+}
+
+.wm-window--minimized {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(24px) scale(0.97);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+.wm-window--opening {
+  animation: wm-open 0.16s cubic-bezier(0.2, 0.8, 0.3, 1) both;
+}
+
+@keyframes wm-open {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.wm-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 36px;
+  padding: 0 4px 0 12px;
+  background: var(--nx-surface);
+  border-bottom: 1px solid var(--nx-border);
+  cursor: default;
+  flex-shrink: 0;
+}
+
+.wm-window--focused .wm-titlebar {
+  background: #161616;
+  border-bottom-color: var(--nx-border-strong);
+}
+
+.wm-titlebar__title {
+  flex: 1;
+  font-family: var(--nx-font-display);
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--nx-text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.wm-window--focused .wm-titlebar__title {
+  color: var(--nx-text);
+}
+
+.wm-titlebar__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 26px;
+  border: none;
+  background: transparent;
+  color: var(--nx-text-dim);
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.wm-titlebar__btn:hover {
+  background: var(--nx-surface-hover);
+  color: var(--nx-text);
+}
+
+.wm-titlebar__btn--close:hover {
+  background: var(--nx-red);
+  color: #fff;
+}
+
+.wm-body {
+  flex: 1;
+  overflow: auto;
+  padding: 18px;
+  user-select: text;
+}
+
+.wm-resize {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  width: 16px;
+  height: 16px;
+  cursor: nwse-resize;
+  background: linear-gradient(
+    135deg,
+    transparent 50%,
+    var(--nx-border-strong) 50%
+  );
+}
+
+.wm-window--focused .wm-resize {
+  background: linear-gradient(135deg, transparent 50%, var(--nx-amber) 50%);
+}
+
+/* ============================================================
+   桌面图标
+   ============================================================ */
+.nx-icon-grid {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.nx-desktop-icon {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 88px;
+  padding: 12px 4px;
+  border: 1px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease;
+}
+
+.nx-desktop-icon:hover {
+  background: rgba(255, 255, 255, 0.05);
   border-color: var(--nx-border);
 }
 
+.nx-desktop-icon:active {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.nx-desktop-icon__glyph {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border: 1px solid var(--nx-border-strong);
+  background: var(--nx-surface);
+  color: var(--nx-amber);
+  font-size: 24px;
+  transition: border-color 0.12s ease, box-shadow 0.12s ease, transform 0.12s ease;
+}
+
+.nx-desktop-icon:hover .nx-desktop-icon__glyph {
+  border-color: var(--nx-amber);
+  box-shadow: 0 0 12px rgba(255, 176, 0, 0.25);
+  transform: translateY(-2px);
+}
+
+.nx-desktop-icon__label {
+  font-family: var(--nx-font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.06em;
+  color: var(--nx-text-dim);
+  text-align: center;
+}
+
+.nx-desktop-icon:hover .nx-desktop-icon__label {
+  color: var(--nx-text);
+}
+
+/* ============================================================
+   任务栏
+   ============================================================ */
+.nx-taskbar {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: var(--nx-taskbar-h);
+  display: flex;
+  align-items: stretch;
+  background: var(--nx-surface);
+  border-top: 1px solid var(--nx-border-strong);
+  z-index: 9000;
+}
+
+.nx-taskbar__brand {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border-right: 1px solid var(--nx-border);
+  font-family: var(--nx-font-display);
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  color: var(--nx-amber);
+  white-space: nowrap;
+}
+
+.nx-taskbar__brand-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--nx-amber);
+  box-shadow: 0 0 8px var(--nx-amber);
+}
+
+.nx-taskbar__windows {
+  flex: 1;
+  display: flex;
+  align-items: stretch;
+  overflow: hidden;
+}
+
+.nx-taskbar__win {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 16px;
+  border: none;
+  border-right: 1px solid var(--nx-border-faint);
+  background: transparent;
+  color: var(--nx-text-dim);
+  font-family: var(--nx-font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.nx-taskbar__win:hover {
+  background: var(--nx-surface-hover);
+  color: var(--nx-text);
+}
+
+.nx-taskbar__win--active {
+  background: #1a1a1a;
+  color: var(--nx-amber);
+  box-shadow: inset 0 -2px 0 var(--nx-amber);
+}
+
+.nx-taskbar__status {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 0 16px;
+  border-left: 1px solid var(--nx-border);
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  color: var(--nx-text-dim);
+  white-space: nowrap;
+}
+
+.nx-taskbar__status-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.nx-taskbar__clock {
+  display: flex;
+  align-items: center;
+  padding: 0 16px;
+  border-left: 1px solid var(--nx-border);
+  font-family: var(--nx-font-mono);
+  font-size: 12px;
+  color: var(--nx-text);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+/* ============================================================
+   开机画面
+   ============================================================ */
+.nx-boot {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 22px;
+  background: var(--nx-bg);
+}
+
+.nx-boot__logo {
+  font-family: var(--nx-font-display);
+  font-size: 34px;
+  font-weight: 700;
+  letter-spacing: 0.3em;
+  color: var(--nx-text);
+}
+
+.nx-boot__logo em {
+  font-style: normal;
+  color: var(--nx-amber);
+}
+
+.nx-boot__bar {
+  width: 220px;
+  height: 3px;
+  background: var(--nx-border);
+  overflow: hidden;
+}
+
+.nx-boot__bar-fill {
+  height: 100%;
+  width: 40%;
+  background: var(--nx-amber);
+  animation: nx-boot-slide 1s ease-in-out infinite;
+}
+
+@keyframes nx-boot-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(280%);
+  }
+}
+
+.nx-boot__text {
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.2em;
+  color: var(--nx-text-faint);
+}
+
+/* ============================================================
+   告警弹窗（critical dialog）
+   ============================================================ */
+.nx-critical-dialog {
+  border: 1px solid var(--nx-red) !important;
+  box-shadow: 0 0 0 1px var(--nx-red), 0 24px 64px rgba(0, 0, 0, 0.9) !important;
+}
+
+/* ============================================================
+   Element Plus 细节收敛
+   ============================================================ */
+.el-button {
+  font-family: var(--nx-font-display);
+  letter-spacing: 0.06em;
+}
+
+.el-table {
+  --el-table-border-color: var(--nx-border-faint);
+  --el-table-header-bg-color: var(--nx-surface);
+  font-size: 13px;
+}
+
 .el-tag {
-  border-radius: 6px;
+  font-family: var(--nx-font-mono);
+  font-size: 11px;
+}
+
+/* 页面切换动效 */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
