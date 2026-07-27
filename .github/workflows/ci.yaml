@@ -24,8 +24,11 @@ jobs:
       - name: 安装项目依赖
         run: pnpm install --frozen-lockfile
 
-      - name: ESLint 检查
+      - name: ESLint 检查（后端）
         run: pnpm lint
+
+      - name: ESLint 检查（Web 控制台）
+        run: pnpm web:lint
 
   build:
     needs: lint
@@ -45,8 +48,11 @@ jobs:
       - name: 安装项目依赖
         run: pnpm install --frozen-lockfile
 
-      - name: TypeScript 编译
+      - name: TypeScript 编译（后端）
         run: pnpm build
+
+      - name: 构建 Web 控制台
+        run: pnpm web:build
 
   test:
     needs: build
@@ -66,5 +72,8 @@ jobs:
       - name: 安装项目依赖
         run: pnpm install --frozen-lockfile
 
-      - name: 运行测试（覆盖率 ≥ 80%）
+      - name: 运行后端测试（覆盖率 ≥ 80%）
         run: pnpm test
+
+      - name: 运行 Web 控制台测试（覆盖率 ≥ 80%）
+        run: pnpm web:test

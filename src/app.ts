@@ -8,6 +8,8 @@ import { errorHandler } from './common/error-handler.js';
 import { systemInitRoutes } from './modules/system-init/index.js';
 import { hardwareRoutes } from './modules/hardware/index.js';
 import { containerRoutes } from './modules/container/index.js';
+import { metricsRoutes } from './modules/metrics/index.js';
+import { userRoutes } from './modules/user/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -38,6 +40,8 @@ export function createApp(): express.Express {
   app.use('/api', systemInitRoutes);
   app.use('/api', hardwareRoutes);
   app.use('/api', containerRoutes);
+  app.use('/api', metricsRoutes);
+  app.use('/api', userRoutes);
 
   // 404 处理
   app.use((_req, res) => {

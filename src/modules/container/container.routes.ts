@@ -98,4 +98,15 @@ router.post(
 /** POST /api/tailscale/acl — 下发 ACL 策略 */
 router.post('/tailscale/acl', asyncHandler(controller.handleAclPolicy));
 
+/** POST /api/container/init-dirs — 初始化 AI 应用数据目录 */
+const appDirsSchema = z.object({
+  appname: z.string().min(1).max(128),
+});
+
+router.post(
+  '/container/init-dirs',
+  validateBody(appDirsSchema),
+  asyncHandler(controller.handleInitAppDirs),
+);
+
 export default router;

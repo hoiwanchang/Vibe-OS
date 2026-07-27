@@ -127,3 +127,17 @@ export async function handleAclPolicy(
   await service.pushAcl(policy);
   res.json({ success: true, data: { status: 'applied' } });
 }
+
+/**
+ * POST /api/container/init-dirs
+ * 初始化 AI 应用数据目录（/data/naisys/{appname}/）
+ */
+export async function handleInitAppDirs(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const body = (req.body ?? {}) as { appname?: string };
+  const appname = String(body.appname ?? '');
+  const result = await service.initAppDirs(appname);
+  res.status(201).json({ success: true, data: result });
+}

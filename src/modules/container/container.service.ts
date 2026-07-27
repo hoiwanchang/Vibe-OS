@@ -6,6 +6,7 @@ import { AppError } from '../../common/app-error.js';
 import { assertSafePath } from '../../system/filesystem.js';
 import * as dao from './container.dao.js';
 import type {
+  AppDirsInitResponse,
   ContainerDeployRequest,
   ContainerDeployResponse,
   ContainerInfo,
@@ -156,4 +157,20 @@ export async function pushAcl(policy: string): Promise<void> {
     throw AppError.badRequest('INVALID_JSON', 'ACL 策略必须为有效 JSON');
   }
   await dao.pushAclPolicy(policy);
+}
+
+/**
+ * 初始化 AI 应用数据目录 /data/naisys/{appname}/{models,data,logs}
+ * 供前端"一键部署"在创建容器前调用，保证卷挂载路径存在
+ * @param appname - 应用名
+ * @returns 应用根目录与新建目录列表
+ */
+export async function initAppDirs(appname: string): Promise<AppDirsInitResponse> {
+  if (!/^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/.test(appname)) {
+    throw AppError.badRequest(
+      'INVALID_APPNAME',
+      '应用名仅允许字母、数字、下划线、点和连字符，且以字母或数字开头',
+    );
+  }
+  return dao.createAppDirs(appname);
 }

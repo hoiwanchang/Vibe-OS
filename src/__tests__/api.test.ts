@@ -81,6 +81,52 @@ vi.mock('../config.js', () => ({
   APP_SUBDIRS: ['models', 'data', 'logs'],
 }));
 
+vi.mock('../system/metrics.js', () => ({
+  getCpuTimes: vi
+    .fn()
+    .mockReturnValue({ user: 0, nice: 0, sys: 0, idle: 0, irq: 0 }),
+  computeCpuUsagePercent: vi.fn().mockReturnValue(25),
+  getMemoryInfo: vi.fn().mockReturnValue({
+    totalBytes: 8000000000,
+    freeBytes: 3000000000,
+    usedBytes: 5000000000,
+    usedPercent: 62.5,
+  }),
+  getMounts: vi.fn().mockResolvedValue([
+    {
+      device: '/dev/sda1',
+      mountPoint: '/data',
+      fsType: 'ext4',
+      totalBytes: 1000000000000,
+      freeBytes: 400000000000,
+      availableBytes: 380000000000,
+      usedBytes: 600000000000,
+      usedPercent: 61.2,
+    },
+  ]),
+  getSystemInfo: vi.fn().mockReturnValue({
+    hostname: 'naisys-test',
+    platform: 'Linux 6.1.0',
+    arch: 'x64',
+    cpuModel: 'Test CPU',
+    cpuCores: 4,
+    uptimeSeconds: 100,
+    loadAvg: [0.1, 0.1, 0.1],
+    nodeVersion: 'v22.0.0',
+  }),
+}));
+
+vi.mock('../modules/user/user.dao.js', () => ({
+  listManagedUids: vi.fn().mockResolvedValue([1000]),
+  getPasswdUsers: vi.fn().mockResolvedValue(new Map([[1000, 'alice']])),
+  getNaisysUserMappings: vi.fn().mockResolvedValue(new Map()),
+  saveNaisysUserMapping: vi.fn().mockResolvedValue(undefined),
+  getUserUsage: vi.fn().mockResolvedValue(1024n),
+  isUsernameTaken: vi.fn().mockResolvedValue(false),
+  isUidTaken: vi.fn().mockResolvedValue(false),
+  allocateNextUid: vi.fn().mockResolvedValue(1005),
+}));
+
 import { createApp } from '../app.js';
 
 describe('API 集成测试', () => {
@@ -257,6 +303,75 @@ describe('API 集成测试', () => {
       const res = await request(app).get('/api/nonexistent');
       expect(res.status).toBe(404);
       expect(res.body.error.code).toBe('NOT_FOUND');
+    });
+  });
+
+  describe('GET /api/metrics/*', () => {
+    it('/api/metrics/cpu 应返回 CPU 使用率', async () => {
+      const res = await request(app).get('/api/metrics/cpu');
+      expect(res.status).toBe(200);
+      expect(res.body.data.usagePercent).toBe(25);
+    });
+
+    it('/api/metrics/memory 应返回内存指标', async () => {
+      const res = await request(app).get('/api/metrics/memory');
+      expect(res.status).toBe(200);
+      expect(res.body.data.usedPercent).toBe(62.5);
+    });
+
+    it('/api/metrics/storage 应返回存储池列表', async () => {
+      const res = await request(app).get('/api/metrics/storage');
+      expect(res.status).toBe(200);
+      expect(res.body.data.count).toBe(1);
+    });
+
+    it('/api/metrics/overview 应返回聚合指标', async () => {
+      const res = await request(app).get('/api/metrics/overview');
+      expect(res.status).toBe(200);
+      expect(res.body.data.system.hostname).toBe('naisys-test');
+      expect(res.body.data.cpu.usagePercent).toBe(25);
+      expect(res.body.data.memory.usedPercent).toBe(62.5);
+      expect(res.body.data.storage).toHaveLength(1);
+    });
+  });
+
+  describe('用户管理端点', () => {
+    it('GET /api/users 应返回受管用户列表', async () => {
+      const res = await request(app).get('/api/users');
+      expect(res.status).toBe(200);
+      expect(res.body.data.count).toBe(1);
+      expect(res.body.data.users[0].username).toBe('alice');
+    });
+
+    it('POST /api/users 应创建用户数据空间', async () => {
+      const res = await request(app)
+        .post('/api/users')
+        .send({ username: 'newuser' });
+      expect(res.status).toBe(201);
+      expect(res.body.data.uid).toBe(1005);
+      expect(res.body.data.dataDir).toBe('/data/1005');
+    });
+
+    it('POST /api/users 缺少用户名应返回 400', async () => {
+      const res = await request(app).post('/api/users').send({});
+      expect(res.status).toBe(400);
+    });
+  });
+
+  describe('POST /api/container/init-dirs', () => {
+    it('应初始化应用数据目录', async () => {
+      const res = await request(app)
+        .post('/api/container/init-dirs')
+        .send({ appname: 'ollama' });
+      expect(res.status).toBe(201);
+      expect(res.body.data.appDir).toBe('/data/naisys/ollama');
+    });
+
+    it('缺少 appname 应返回 400', async () => {
+      const res = await request(app)
+        .post('/api/container/init-dirs')
+        .send({});
+      expect(res.status).toBe(400);
     });
   });
 });

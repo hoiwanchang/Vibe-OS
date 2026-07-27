@@ -61,6 +61,20 @@ export interface ContainerLogResult {
   exitCode: number;
 }
 
+/** 应用目录初始化请求 */
+export interface AppDirsInitRequest {
+  /** 应用名（与容器名同命名规范） */
+  appname: string;
+}
+
+/** 应用目录初始化响应 */
+export interface AppDirsInitResponse {
+  /** 应用根目录 */
+  appDir: string;
+  /** 新创建的目录列表 */
+  createdDirs: string[];
+}
+
 /** Tailscale 节点状态 */
 export interface TailscaleStatus {
   /** 后端状态（Running, Stopped, NotRunning 等） */

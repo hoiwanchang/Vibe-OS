@@ -1,0 +1,1 @@
+{"extends": "./tsconfig.app.json", "include": ["env.d.ts", "src/**/*.ts", "src/**/*.vue", "vite.config.ts", "vitest.config.ts"]}

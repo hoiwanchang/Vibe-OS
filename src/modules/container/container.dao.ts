@@ -2,6 +2,13 @@
  * 模块3：Docker 与 Tailscale 服务编排 — 数据访问层
  * 封装 Docker CLI 和 Tailscale CLI 的底层调用
  */
+import * as path from 'node:path';
+import { APP_SUBDIRS, NAISYS_APP_DIR } from '../../config.js';
+import {
+  assertSafePath,
+  ensureDir,
+  pathExists,
+} from '../../system/filesystem.js';
 import {
   deployContainer,
   restartContainer,
@@ -114,4 +121,32 @@ export async function pushAclPolicy(policy: string): Promise<void> {
  */
 export async function checkTailscaleAvailable(): Promise<boolean> {
   return isTailscaleAvailable();
+}
+
+/**
+ * 创建 AI 应用标准目录结构 /data/naisys/{appname}/{models,data,logs}
+ * @param appname - 应用名（调用方已完成合法性校验）
+ * @returns 应用根目录与新创建的目录列表
+ */
+export async function createAppDirs(appname: string): Promise<{
+  appDir: string;
+  createdDirs: string[];
+}> {
+  const appDir = assertSafePath(path.join(NAISYS_APP_DIR, appname));
+  const createdDirs: string[] = [];
+
+  if (!(await pathExists(appDir))) {
+    await ensureDir(appDir, 0o755);
+    createdDirs.push(appDir);
+  }
+
+  for (const subdir of APP_SUBDIRS) {
+    const subPath = path.join(appDir, subdir);
+    if (!(await pathExists(subPath))) {
+      await ensureDir(subPath, 0o755);
+      createdDirs.push(subPath);
+    }
+  }
+
+  return { appDir, createdDirs };
 }

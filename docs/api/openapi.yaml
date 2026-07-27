@@ -345,6 +345,129 @@ paths:
         '200':
           description: 策略已应用
 
+  /api/metrics/cpu:
+    get:
+      summary: CPU 使用率
+      description: 双采样差分算法（间隔 300ms），返回使用率、核心数与负载均值
+      tags: [系统指标]
+      responses:
+        '200':
+          description: CPU 指标
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CpuUsageResponse'
+
+  /api/metrics/memory:
+    get:
+      summary: 内存使用
+      tags: [系统指标]
+      responses:
+        '200':
+          description: 内存指标
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemoryUsageResponse'
+
+  /api/metrics/storage:
+    get:
+      summary: 存储池使用率
+      description: 枚举真实块设备挂载点（/proc/mounts + statfs）
+      tags: [系统指标]
+      responses:
+        '200':
+          description: 存储池列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StoragePoolResponse'
+
+  /api/metrics/overview:
+    get:
+      summary: 系统概览（仪表盘聚合接口）
+      description: 一次请求返回系统信息、CPU、内存、存储池全部指标
+      tags: [系统指标]
+      responses:
+        '200':
+          description: 聚合指标
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SystemOverviewResponse'
+
+  /api/users:
+    get:
+      summary: 受管用户列表
+      description: 合并 /data 数字目录、/etc/passwd 普通用户与 NAISys 映射文件
+      tags: [用户管理]
+      responses:
+        '200':
+          description: 用户列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserListResponse'
+    post:
+      summary: 创建用户数据空间
+      description: 创建 /data/{uid}/files、config、cache 目录并设置配额，用户名映射写入 /data/naisys/users.json
+      tags: [用户管理]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateUserRequest'
+      responses:
+        '201':
+          description: 创建成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateUserResponse'
+        '400':
+          description: 用户名或 UID 非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: 用户名或 UID 已占用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/container/init-dirs:
+    post:
+      summary: 初始化 AI 应用数据目录
+      description: 创建 /data/naisys/{appname}/models、data、logs，供一键部署在创建容器前调用
+      tags: [容器编排]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [appname]
+              properties:
+                appname:
+                  type: string
+                  description: 应用名（字母/数字/下划线/点/连字符）
+      responses:
+        '201':
+          description: 目录已创建
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AppDirsInitResponse'
+        '400':
+          description: 应用名非法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
 components:
   securitySchemes:
     bearerAuth:
@@ -644,3 +767,234 @@ components:
                 type: boolean
               approved:
                 type: boolean
+
+    CpuUsageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            usagePercent:
+              type: number
+              description: 使用率百分比（0-100）
+            cores:
+              type: integer
+            loadAvg:
+              type: array
+              items:
+                type: number
+              minItems: 3
+              maxItems: 3
+
+    MemoryUsageResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            totalBytes:
+              type: number
+            freeBytes:
+              type: number
+            usedBytes:
+              type: number
+            usedPercent:
+              type: number
+
+    StoragePoolEntry:
+      type: object
+      properties:
+        device:
+          type: string
+        mountPoint:
+          type: string
+        fsType:
+          type: string
+        totalBytes:
+          type: number
+        freeBytes:
+          type: number
+        availableBytes:
+          type: number
+        usedBytes:
+          type: number
+        usedPercent:
+          type: number
+
+    StoragePoolResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            count:
+              type: integer
+            pools:
+              type: array
+              items:
+                $ref: '#/components/schemas/StoragePoolEntry'
+
+    SystemOverviewResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            system:
+              type: object
+              properties:
+                hostname:
+                  type: string
+                platform:
+                  type: string
+                arch:
+                  type: string
+                cpuModel:
+                  type: string
+                cpuCores:
+                  type: integer
+                uptimeSeconds:
+                  type: integer
+                loadAvg:
+                  type: array
+                  items:
+                    type: number
+                nodeVersion:
+                  type: string
+            cpu:
+              type: object
+              properties:
+                usagePercent:
+                  type: number
+                cores:
+                  type: integer
+            memory:
+              type: object
+              properties:
+                timestamp:
+                  type: string
+                totalBytes:
+                  type: number
+                freeBytes:
+                  type: number
+                usedBytes:
+                  type: number
+                usedPercent:
+                  type: number
+            storage:
+              type: array
+              items:
+                $ref: '#/components/schemas/StoragePoolEntry'
+
+    ManagedUser:
+      type: object
+      properties:
+        uid:
+          type: integer
+        username:
+          type: string
+        dataDir:
+          type: string
+        dirExists:
+          type: boolean
+        usedBytes:
+          type: string
+          description: 字节数（字符串形式，兼容大数）
+        quotaBytes:
+          type: string
+        usagePercent:
+          type: number
+
+    UserListResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            timestamp:
+              type: string
+              format: date-time
+            count:
+              type: integer
+            users:
+              type: array
+              items:
+                $ref: '#/components/schemas/ManagedUser'
+
+    CreateUserRequest:
+      type: object
+      required: [username]
+      properties:
+        username:
+          type: string
+          pattern: '^[a-z_][a-z0-9_-]{0,31}$'
+          description: 小写字母或下划线开头，仅含小写字母、数字、下划线、连字符
+        uid:
+          type: integer
+          minimum: 1000
+          maximum: 59999
+          description: 可选，默认自动分配
+        quotaBytes:
+          type: string
+          pattern: '^\d+$'
+          description: 配额（字节字符串），默认 100GB
+
+    CreateUserResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            uid:
+              type: integer
+            username:
+              type: string
+            dataDir:
+              type: string
+            createdDirs:
+              type: array
+              items:
+                type: string
+            quotaSet:
+              type: boolean
+              description: 配额是否设置成功（文件系统不支持时为 false）
+
+    AppDirsInitResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            appDir:
+              type: string
+              description: 应用根目录 /data/naisys/{appname}
+            createdDirs:
+              type: array
+              items:
+                type: string

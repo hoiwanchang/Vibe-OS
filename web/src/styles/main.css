@@ -1,0 +1,475 @@
+/**
+ * NAISys 控制台主题
+ * 深空蓝基底 + 青绿主色 + 琥珀告警色，NAS 机房监控定位
+ * 字体：Space Grotesk（数字/标题）+ Noto Sans SC（中文正文）+ JetBrains Mono（等宽数据）
+ */
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  /* 色板 */
+  --nx-bg: #0a121c;
+  --nx-bg-elev: #101b29;
+  --nx-surface: #13202f;
+  --nx-surface-hover: #182838;
+  --nx-border: #1e3044;
+  --nx-border-strong: #2a4258;
+  --nx-text: #e6eef6;
+  --nx-text-dim: #8ba3b8;
+  --nx-text-faint: #5c7285;
+  --nx-primary: #39d5ff;
+  --nx-primary-dim: #1a8fb3;
+  --nx-teal: #2dd4a7;
+  --nx-amber: #ffb454;
+  --nx-red: #ff5d6c;
+  --nx-violet: #a78bfa;
+
+  /* Element Plus 暗色覆写 */
+  --el-color-primary: var(--nx-primary);
+  --el-color-primary-light-3: #61dfff;
+  --el-color-primary-light-5: #8ce8ff;
+  --el-color-primary-light-7: #b7f1ff;
+  --el-color-primary-light-8: #d0f6ff;
+  --el-color-primary-light-9: #e9fbff;
+  --el-color-primary-dark-2: var(--nx-primary-dim);
+  --el-color-success: var(--nx-teal);
+  --el-color-warning: var(--nx-amber);
+  --el-color-danger: var(--nx-red);
+  --el-color-error: var(--nx-red);
+  --el-bg-color: var(--nx-surface);
+  --el-bg-color-overlay: var(--nx-bg-elev);
+  --el-bg-color-page: var(--nx-bg);
+  --el-border-color: var(--nx-border);
+  --el-border-color-light: var(--nx-border);
+  --el-border-color-lighter: var(--nx-border);
+  --el-text-color-primary: var(--nx-text);
+  --el-text-color-regular: var(--nx-text-dim);
+  --el-fill-color-blank: var(--nx-surface);
+  --el-mask-color: rgba(6, 11, 18, 0.72);
+  --el-font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+}
+
+body {
+  background: var(--nx-bg);
+  color: var(--nx-text);
+  font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ---------- 布局骨架 ---------- */
+
+.nx-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+.nx-sidebar {
+  width: 220px;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #0d1826 0%, #0a121c 100%);
+  border-right: 1px solid var(--nx-border);
+  display: flex;
+  flex-direction: column;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 20;
+}
+
+.nx-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 22px 20px 18px;
+  border-bottom: 1px solid var(--nx-border);
+}
+
+.nx-brand-logo {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+}
+
+.nx-brand-name {
+  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  background: linear-gradient(120deg, var(--nx-primary), var(--nx-teal));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.nx-brand-sub {
+  font-size: 11px;
+  color: var(--nx-text-faint);
+  letter-spacing: 2px;
+  margin-top: 2px;
+}
+
+.nx-nav {
+  flex: 1;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.nx-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  color: var(--nx-text-dim);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  border: 1px solid transparent;
+}
+
+.nx-nav-item:hover {
+  color: var(--nx-text);
+  background: var(--nx-surface-hover);
+}
+
+.nx-nav-item.router-link-active {
+  color: var(--nx-primary);
+  background: rgba(57, 213, 255, 0.08);
+  border-color: rgba(57, 213, 255, 0.25);
+}
+
+.nx-nav-item .el-icon {
+  font-size: 18px;
+}
+
+.nx-sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid var(--nx-border);
+  font-size: 12px;
+  color: var(--nx-text-faint);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.nx-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.nx-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 28px;
+  border-bottom: 1px solid var(--nx-border);
+  background: rgba(10, 18, 28, 0.85);
+  backdrop-filter: blur(8px);
+  position: sticky;
+  top: 0;
+  z-index: 15;
+}
+
+.nx-topbar-title {
+  font-family: 'Space Grotesk', 'Noto Sans SC', sans-serif;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.nx-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nx-content {
+  flex: 1;
+  padding: 24px 28px 40px;
+  max-width: 1440px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+/* ---------- 通用卡片 ---------- */
+
+.nx-panel {
+  background: linear-gradient(160deg, var(--nx-surface) 0%, #111d2b 100%);
+  border: 1px solid var(--nx-border);
+  border-radius: 12px;
+  padding: 20px;
+  transition: border-color 0.25s ease, transform 0.25s ease;
+}
+
+.nx-panel:hover {
+  border-color: var(--nx-border-strong);
+}
+
+.nx-panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--nx-text-dim);
+  margin: 0 0 16px;
+  letter-spacing: 1px;
+}
+
+.nx-panel-title .el-icon {
+  color: var(--nx-primary);
+}
+
+/* ---------- 指标数字 ---------- */
+
+.nx-metric-value {
+  font-family: 'Space Grotesk', 'JetBrains Mono', monospace;
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1.1;
+  color: var(--nx-text);
+}
+
+.nx-metric-unit {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--nx-text-faint);
+  margin-left: 4px;
+}
+
+.nx-metric-label {
+  font-size: 12px;
+  color: var(--nx-text-faint);
+  margin-top: 6px;
+  letter-spacing: 1px;
+}
+
+.nx-mono {
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 12.5px;
+}
+
+/* ---------- 状态点 ---------- */
+
+.nx-dot {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.nx-dot--ok {
+  background: var(--nx-teal);
+  box-shadow: 0 0 8px rgba(45, 212, 167, 0.6);
+  animation: nx-pulse 2.4s ease-in-out infinite;
+}
+
+.nx-dot--warn {
+  background: var(--nx-amber);
+  box-shadow: 0 0 8px rgba(255, 180, 84, 0.6);
+}
+
+.nx-dot--error {
+  background: var(--nx-red);
+  box-shadow: 0 0 8px rgba(255, 93, 108, 0.7);
+  animation: nx-pulse 1.2s ease-in-out infinite;
+}
+
+.nx-dot--off {
+  background: var(--nx-text-faint);
+}
+
+@keyframes nx-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+/* ---------- 告警横幅 ---------- */
+
+.nx-alert-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 14px 18px;
+  border-radius: 10px;
+  margin-bottom: 12px;
+  border: 1px solid;
+  animation: nx-slide-in 0.35s ease both;
+}
+
+.nx-alert-banner--critical {
+  background: rgba(255, 93, 108, 0.08);
+  border-color: rgba(255, 93, 108, 0.4);
+}
+
+.nx-alert-banner--warning {
+  background: rgba(255, 180, 84, 0.07);
+  border-color: rgba(255, 180, 84, 0.35);
+}
+
+.nx-alert-banner .el-icon {
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.nx-alert-banner--critical .el-icon { color: var(--nx-red); }
+.nx-alert-banner--warning .el-icon { color: var(--nx-amber); }
+
+.nx-alert-title {
+  font-weight: 600;
+  font-size: 14px;
+  margin-bottom: 4px;
+}
+
+.nx-alert-detail {
+  font-size: 12.5px;
+  color: var(--nx-text-dim);
+  line-height: 1.6;
+}
+
+@keyframes nx-slide-in {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* ---------- 网格布局 ---------- */
+
+.nx-grid {
+  display: grid;
+  gap: 16px;
+}
+
+.nx-grid--stats {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+.nx-grid--2 {
+  grid-template-columns: 1fr 1fr;
+}
+
+.nx-grid--dash {
+  grid-template-columns: 1.4fr 1fr;
+}
+
+/* ---------- 进度条语义色 ---------- */
+
+.nx-progress--ok .el-progress-bar__inner { background: linear-gradient(90deg, #2dd4a7, #39d5ff); }
+.nx-progress--warn .el-progress-bar__inner { background: linear-gradient(90deg, #ffb454, #ff9a3d); }
+.nx-progress--critical .el-progress-bar__inner { background: linear-gradient(90deg, #ff5d6c, #ff8a5d); }
+
+/* ---------- 日志终端 ---------- */
+
+.nx-terminal {
+  background: #060b12;
+  border: 1px solid var(--nx-border);
+  border-radius: 10px;
+  padding: 16px;
+  font-family: 'JetBrains Mono', 'Consolas', monospace;
+  font-size: 12px;
+  line-height: 1.75;
+  color: #9fd8c4;
+  max-height: 420px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.nx-terminal::-webkit-scrollbar { width: 8px; }
+.nx-terminal::-webkit-scrollbar-thumb { background: var(--nx-border-strong); border-radius: 4px; }
+
+/* ---------- 移动端适配 ---------- */
+
+.nx-mobile-tabbar {
+  display: none;
+}
+
+@media (max-width: 860px) {
+  .nx-sidebar {
+    display: none;
+  }
+
+  .nx-mobile-tabbar {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(13, 24, 38, 0.96);
+    backdrop-filter: blur(10px);
+    border-top: 1px solid var(--nx-border);
+    z-index: 30;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom));
+  }
+
+  .nx-mobile-tabbar .nx-nav-item {
+    flex: 1;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 11px;
+    padding: 8px 4px;
+    justify-content: center;
+  }
+
+  .nx-content {
+    padding: 16px 14px 96px;
+  }
+
+  .nx-topbar {
+    padding: 12px 16px;
+  }
+
+  .nx-grid--stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .nx-grid--2,
+  .nx-grid--dash {
+    grid-template-columns: 1fr;
+  }
+
+  .nx-metric-value {
+    font-size: 26px;
+  }
+}
+
+/* ---------- Element Plus 微调 ---------- */
+
+.el-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: transparent;
+  --el-table-header-bg-color: rgba(57, 213, 255, 0.04);
+  --el-table-row-hover-bg-color: var(--nx-surface-hover);
+  --el-table-border-color: var(--nx-border);
+}
+
+.el-dialog {
+  --el-dialog-bg-color: var(--nx-bg-elev);
+  border: 1px solid var(--nx-border-strong);
+  border-radius: 14px;
+}
+
+.el-card {
+  --el-card-bg-color: var(--nx-surface);
+  border-color: var(--nx-border);
+}
+
+.el-tag {
+  border-radius: 6px;
+}
