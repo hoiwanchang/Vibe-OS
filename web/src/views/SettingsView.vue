@@ -1,87 +1,153 @@
 <script setup lang="ts">
 /**
- * 系统设置窗口：用户与权限 + 系统信息 两个标签页
+ * 系统设置中心 — 左导航 + 右内容
+ * 重构自原版双 tab 布局，覆盖 11 个设置分区
+ * 导航使用自定义列表（非 el-menu），避免 Element Plus 主题冲突
  */
-import { ref } from 'vue';
+import { computed } from 'vue';
+import { ElMessageBox } from 'element-plus';
+import {
+  Setting, User, Connection, Operation, Lock, Coin,
+  Lightning, Bell, Upload, Document, InfoFilled,
+} from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
-import UsersView from '@/views/UsersView.vue';
-import { useSystemStore } from '@/stores/system';
-import { formatBytes, formatUptime } from '@/utils/format';
+import { useSettingsStore } from '@/stores/settings';
 
-const activeTab = ref('users');
+import GeneralSettings from '@/components/settings/GeneralSettings.vue';
+import UserSettings from '@/components/settings/UserSettings.vue';
+import NetworkSettings from '@/components/settings/NetworkSettings.vue';
+import ServiceSettings from '@/components/settings/ServiceSettings.vue';
+import SecuritySettings from '@/components/settings/SecuritySettings.vue';
+import StorageSettings from '@/components/settings/StorageSettings.vue';
+import PowerSettings from '@/components/settings/PowerSettings.vue';
+import NotificationSettings from '@/components/settings/NotificationSettings.vue';
+import UpdateSettings from '@/components/settings/UpdateSettings.vue';
+import LogViewer from '@/components/settings/LogViewer.vue';
+import AboutPanel from '@/components/settings/AboutPanel.vue';
 
-const system = useSystemStore();
-const { overview } = storeToRefs(system);
+const store = useSettingsStore();
+const { activeSection, sectionList, dirty } = storeToRefs(store);
+
+const iconMap: Record<string, typeof Setting> = {
+  Setting, User, Connection, Operation, Lock, Coin,
+  Lightning, Bell, Upload, Document, InfoFilled,
+};
+
+const componentMap: Record<string, typeof GeneralSettings> = {
+  general: GeneralSettings,
+  users: UserSettings,
+  network: NetworkSettings,
+  services: ServiceSettings,
+  security: SecuritySettings,
+  storage: StorageSettings,
+  power: PowerSettings,
+  notification: NotificationSettings,
+  update: UpdateSettings,
+  logs: LogViewer,
+  about: AboutPanel,
+};
+
+const currentComponent = computed(() => componentMap[activeSection.value] ?? GeneralSettings);
+
+/** 切换 section 时，若有未保存修改则提示 */
+async function switchSection(id: string): Promise<void> {
+  if (dirty.value && activeSection.value !== id) {
+    try {
+      await ElMessageBox.confirm(
+        '当前页面有未保存的修改，切换将丢失更改。',
+        '未保存修改',
+        { confirmButtonText: '放弃修改', cancelButtonText: '留在当前页', type: 'warning' },
+      );
+      dirty.value = false;
+    } catch {
+      return;
+    }
+  }
+  activeSection.value = id;
+}
 </script>
 
 <template>
-  <div class="settings-view">
-    <el-tabs v-model="activeTab">
-      <el-tab-pane label="用户与权限" name="users">
-        <UsersView />
-      </el-tab-pane>
+  <div class="settings-center">
+    <nav class="settings-nav">
+      <button
+        v-for="s in sectionList"
+        :key="s.id"
+        class="settings-nav__item"
+        :class="{ 'settings-nav__item--active': activeSection === s.id }"
+        @click="switchSection(s.id)"
+      >
+        <el-icon :size="16"><component :is="iconMap[s.icon]" /></el-icon>
+        <span>{{ s.label }}</span>
+      </button>
+    </nav>
 
-      <el-tab-pane label="系统信息" name="system">
-        <div class="nx-panel sysinfo">
-          <dl class="sysinfo-list">
-            <div><dt>主机名</dt><dd class="nx-mono">{{ overview?.system.hostname ?? '—' }}</dd></div>
-            <div><dt>平台</dt><dd class="nx-mono">{{ overview?.system.platform ?? '—' }}</dd></div>
-            <div><dt>架构</dt><dd class="nx-mono">{{ overview?.system.arch ?? '—' }}</dd></div>
-            <div><dt>Node 版本</dt><dd class="nx-mono">{{ overview?.system.nodeVersion ?? '—' }}</dd></div>
-            <div><dt>CPU 核心</dt><dd class="nx-mono">{{ overview?.system.cpuCores ?? '—' }} 核</dd></div>
-            <div><dt>内存总量</dt><dd class="nx-mono">{{ formatBytes(overview?.memory.totalBytes) }}</dd></div>
-            <div><dt>运行时长</dt><dd class="nx-mono">{{ formatUptime(overview?.system.uptimeSeconds) }}</dd></div>
-            <div>
-              <dt>系统负载</dt>
-              <dd class="nx-mono">
-                {{ overview?.system.loadAvg.map((l) => l.toFixed(2)).join(' / ') ?? '—' }}
-              </dd>
-            </div>
-          </dl>
-        </div>
-      </el-tab-pane>
-    </el-tabs>
+    <div class="settings-content">
+      <component :is="currentComponent" />
+    </div>
   </div>
 </template>
 
 <style scoped>
-.settings-view {
+.settings-center {
+  display: flex;
+  height: 100%;
+  overflow: hidden;
+}
+
+.settings-nav {
+  width: 160px;
+  min-width: 160px;
+  border-right: 1px solid var(--nx-border-faint);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+}
+
+.settings-nav__item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 16px;
+  border: none;
+  background: transparent;
+  color: var(--nx-text-dim);
+  font-size: 13px;
+  font-family: var(--nx-font-body);
+  cursor: pointer;
+  text-align: left;
+  transition: color 0.15s, background 0.15s;
+}
+
+.settings-nav__item:hover {
+  color: var(--nx-text);
+  background: var(--nx-surface-hover);
+}
+
+.settings-nav__item--active,
+.settings-nav__item--active:hover {
+  color: var(--nx-amber);
+  background: var(--nx-amber-dim);
+}
+
+.settings-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px 20px;
+}
+
+.settings-section {
   animation: fade-up 0.3s ease both;
 }
 
-.sysinfo-list {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 0;
-  margin: 0;
+.settings-form {
+  max-width: 480px;
 }
 
-.sysinfo-list > div {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 4px;
-  border-bottom: 1px solid var(--nx-border-faint);
-}
-
-.sysinfo-list dt {
-  color: var(--nx-text-faint);
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  flex-shrink: 0;
-}
-
-.sysinfo-list dd {
-  margin: 0;
-  color: var(--nx-text);
-  font-size: 12px;
-  text-align: right;
-  word-break: break-all;
-}
-
-@media (max-width: 640px) {
-  .sysinfo-list {
-    grid-template-columns: 1fr;
-  }
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 </style>

@@ -730,3 +730,196 @@ export function demoJobHistory(jobId: string): JobExecution[] {
     { id: 'jex-001', jobId, startedAt: '2026-07-26T03:00:00Z', finishedAt: '2026-07-26T03:00:06Z', exitCode: 0, stdout: 'cleaned 98 log files, freed 2.1 GB', stderr: '', status: 'success' },
   ];
 }
+
+/* ---------- 应用中心演示数据 ---------- */
+
+/** 模拟注册表应用 */
+export function demoRegistryApps(): import('./types').RegistryApp[] {
+  return [
+    {
+      id: 'jellyfin', name: 'Jellyfin 媒体服务器', category: 'media',
+      description: '开源免费的媒体流服务器', icon: '🎬',
+      image: 'jellyfin/jellyfin:latest',
+      ports: [{ host: 8096, container: 8096 }],
+      volumes: [{ host: '/data/naisys/apps/jellyfin/config', container: '/config' }],
+      env: { TZ: 'Asia/Shanghai' },
+      homepage: 'https://jellyfin.org',
+    },
+    {
+      id: 'nextcloud', name: 'Nextcloud 私有网盘', category: 'files',
+      description: '功能完整的私有云平台', icon: '☁️',
+      image: 'nextcloud:latest',
+      ports: [{ host: 8888, container: 80 }],
+      volumes: [{ host: '/data/naisys/apps/nextcloud/data', container: '/var/www/html' }],
+      env: { TZ: 'Asia/Shanghai' },
+      homepage: 'https://nextcloud.com',
+    },
+    {
+      id: 'vaultwarden', name: 'Vaultwarden 密码管理', category: 'security',
+      description: 'Bitwarden 兼容的轻量密码管理器', icon: '🔐',
+      image: 'vaultwarden/server:latest',
+      ports: [{ host: 8222, container: 80 }],
+      volumes: [{ host: '/data/naisys/apps/vaultwarden/data', container: '/data' }],
+      env: { TZ: 'Asia/Shanghai' },
+    },
+    {
+      id: 'ollama', name: 'Ollama 本地 AI 推理', category: 'ai',
+      description: '本地大模型推理引擎', icon: '🤖',
+      image: 'ollama/ollama:latest',
+      ports: [{ host: 11434, container: 11434 }],
+      volumes: [{ host: '/data/naisys/apps/ollama/models', container: '/root/.ollama' }],
+      env: { TZ: 'Asia/Shanghai' },
+    },
+  ];
+}
+
+/** 模拟已安装应用 */
+export function demoInstalledApps(): import('./types').InstalledAppWithStatus[] {
+  return [
+    {
+      appId: 'homepage', containerName: 'naisys-homepage',
+      image: 'ghcr.io/gethomepage/homepage:latest',
+      ports: [{ host: 3333, container: 3000 }],
+      volumes: [{ host: '/data/naisys/apps/homepage/config', container: '/app/config' }],
+      env: { TZ: 'Asia/Shanghai' },
+      installedAt: '2026-07-20T10:00:00Z', source: 'registry',
+      status: 'running', containerId: 'abc123',
+    },
+  ];
+}
+
+/* ============================================================
+   系统设置中心演示数据
+   ============================================================ */
+
+import type {
+  AboutInfo,
+  ManagedService,
+  SettingsLogLine,
+  SettingsLogSource,
+  SystemSettings,
+} from './types';
+
+export function demoSettings(): SystemSettings {
+  return {
+    general: {
+      hostname: 'naisys-node-01',
+      timezone: 'Asia/Shanghai',
+      locale: 'zh-CN',
+      ntpEnabled: true,
+      ntpServer: 'ntp.aliyun.com',
+      description: 'Kane 的私有 AI NAS',
+    },
+    security: {
+      httpsEnabled: false,
+      httpsPort: 443,
+      httpsCertPath: '/data/naisys/certs/server.crt',
+      httpsKeyPath: '/data/naisys/certs/server.key',
+      sshEnabled: true,
+      sshPort: 22,
+      sshPasswordAuth: false,
+      maxLoginAttempts: 5,
+      lockoutMinutes: 30,
+      ipBlacklist: [],
+      ipWhitelist: [],
+      firewallEnabled: true,
+      autoSecurityUpdates: true,
+    },
+    storage: {
+      diskSpindownMinutes: 30,
+      hddStandbyEnabled: true,
+      smartCheckInterval: 24,
+      smartEmailAlert: true,
+      trashRetentionDays: 30,
+      autoDefrag: false,
+      writeCache: 'enabled',
+    },
+    power: {
+      upsEnabled: false,
+      upsDevice: '/dev/usb/hiddev0',
+      upsShutdownThreshold: 15,
+      scheduledPowerOn: { enabled: false, time: '07:00' },
+      scheduledShutdown: { enabled: false, time: '23:00' },
+      idleShutdown: { enabled: false, minutes: 120 },
+      wakeOnLan: true,
+    },
+    notification: {
+      channels: [
+        {
+          id: 'ch-1',
+          type: 'webhook',
+          name: '企业微信',
+          enabled: true,
+          url: 'https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxx',
+          minSeverity: 'warning',
+        },
+      ],
+      globalMinSeverity: 'info',
+      quietHoursStart: '22:00',
+      quietHoursEnd: '08:00',
+    },
+    update: {
+      autoCheck: true,
+      autoInstall: false,
+      channel: 'stable',
+      lastCheck: '2026-07-27T20:00:00Z',
+      currentVersion: '0.1.0',
+    },
+  };
+}
+
+export function demoServices(): ManagedService[] {
+  return [
+    { name: 'ssh', displayName: 'SSH 远程访问', description: 'OpenSSH Server', enabled: true, running: true, pid: 1234, uptime: 864000 },
+    { name: 'smbd', displayName: 'SMB 文件共享', description: 'Samba', enabled: true, running: true, pid: 2345, uptime: 864000 },
+    { name: 'nfs-server', displayName: 'NFS 文件共享', description: 'NFS Kernel Server', enabled: false, running: false, pid: null, uptime: null },
+    { name: 'docker', displayName: 'Docker 引擎', description: 'Docker CE', enabled: true, running: true, pid: 3456, uptime: 864000 },
+    { name: 'tailscaled', displayName: 'Tailscale', description: 'Tailscale Daemon', enabled: true, running: true, pid: 4567, uptime: 864000 },
+    { name: 'vsftpd', displayName: 'FTP 服务', description: 'vsftpd', enabled: false, running: false, pid: null, uptime: null },
+    { name: 'nginx', displayName: 'Nginx 反代', description: 'Nginx', enabled: true, running: true, pid: 5678, uptime: 864000 },
+    { name: 'smartd', displayName: 'SMART 监控', description: 'smartmontools', enabled: true, running: true, pid: 6789, uptime: 864000 },
+  ];
+}
+
+export function demoAbout(): AboutInfo {
+  return {
+    version: '0.1.0',
+    buildDate: '2026-07-27',
+    nodeVersion: 'v22.16.0',
+    osVersion: 'Debian 13 (Trixie)',
+    kernel: 'Linux 6.12.0-trixie',
+    cpuModel: 'AMD Ryzen 7 5800X 8-Core Processor',
+    cpuCores: 16,
+    totalMemoryBytes: 32 * 1024 ** 3,
+    hostname: 'naisys-node-01',
+    uptimeSeconds: 1287645,
+    dataRoot: '/data',
+    license: 'MIT',
+  };
+}
+
+export function demoLogSources(): SettingsLogSource[] {
+  return [
+    { id: 'system', name: '系统日志', description: 'journalctl 系统日志', sizeBytes: 52 * 1024 * 1024 },
+    { id: 'auth', name: '认证日志', description: 'SSH / PAM 认证记录', sizeBytes: 8 * 1024 * 1024 },
+    { id: 'naisys', name: 'NAISys 日志', description: 'NAISys 后端服务日志', sizeBytes: 12 * 1024 * 1024 },
+    { id: 'docker', name: 'Docker 日志', description: 'Docker 引擎日志', sizeBytes: 128 * 1024 * 1024 },
+    { id: 'smartd', name: 'SMART 日志', description: '磁盘健康监控日志', sizeBytes: 2 * 1024 * 1024 },
+  ];
+}
+
+export function demoSettingsLogs(source: string): SettingsLogLine[] {
+  const base: SettingsLogLine[] = [
+    { timestamp: '2026-07-27T22:10:01Z', level: 'info', source, message: '服务启动完成，监听 127.0.0.1:3000' },
+    { timestamp: '2026-07-27T22:10:03Z', level: 'warn', source, message: '/dev/sdc SMART 健康检查未通过' },
+    { timestamp: '2026-07-27T22:10:05Z', level: 'info', source, message: '容器 ollama 启动成功' },
+    { timestamp: '2026-07-27T22:10:08Z', level: 'info', source, message: 'Tailscale 节点同步完成，39/112 在线' },
+    { timestamp: '2026-07-27T22:10:12Z', level: 'error', source, message: '备份任务 db-daily 执行失败：目标不可达' },
+    { timestamp: '2026-07-27T22:10:15Z', level: 'info', source, message: '用户 kane 登录成功 (192.168.50.22)' },
+    { timestamp: '2026-07-27T22:10:20Z', level: 'info', source, message: '存储池 data-pool scrub 完成，0 错误' },
+    { timestamp: '2026-07-27T22:10:25Z', level: 'warn', source, message: '磁盘 /dev/sdb 温度 49°C 超过阈值' },
+    { timestamp: '2026-07-27T22:10:30Z', level: 'info', source, message: 'Nginx 配置重载成功' },
+    { timestamp: '2026-07-27T22:10:35Z', level: 'info', source, message: '定时任务 log-cleanup 执行完成' },
+  ];
+  return base;
+}

@@ -6,7 +6,15 @@ import { request } from './client';
 import * as demo from './demo-data';
 import type {
   AddDownloadRequest,
+  AnalyzeRepoRequest,
+  AnalyzeRepoResult,
   AppDirsInitResponse,
+  DeployCustomRequest,
+  DeployFromRegistryRequest,
+  DeployResponse,
+  InstalledAppWithStatus,
+  LlmConfig,
+  RegistryApp,
   BackupExecution,
   BackupJob,
   ContainerDeployRequest,
@@ -59,6 +67,11 @@ import type {
   UserListResponse,
   UserQuotaInfo,
   WolDevice,
+  AboutInfo,
+  ManagedService,
+  SettingsLogLine,
+  SettingsLogSource,
+  SystemSettings,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -747,4 +760,162 @@ export const schedulerApi = {
     );
     return res.executions;
   },
+};
+
+/* ---------- 应用中心 ---------- */
+
+export const appsApi = {
+  /** 注册表列表 */
+  registry: async (): Promise<RegistryApp[]> => {
+    const res = await request<{ apps: RegistryApp[] }>(
+      { url: '/apps/registry' },
+      () => ({ apps: demo.demoRegistryApps() }),
+    );
+    return res.apps;
+  },
+
+  /** 单个注册表应用 */
+  registryDetail: async (id: string): Promise<RegistryApp> => {
+    const res = await request<{ app: RegistryApp }>({ url: `/apps/registry/${encodeURIComponent(id)}` });
+    return res.app;
+  },
+
+  /** 从注册表部署 */
+  deploy: (payload: DeployFromRegistryRequest) =>
+    request<DeployResponse>({ url: '/apps/deploy', method: 'post', data: payload }),
+
+  /** 自定义部署 */
+  deployCustom: (payload: DeployCustomRequest) =>
+    request<DeployResponse>({ url: '/apps/deploy-custom', method: 'post', data: payload }),
+
+  /** 已安装应用列表 */
+  installed: async (): Promise<InstalledAppWithStatus[]> => {
+    const res = await request<{ apps: InstalledAppWithStatus[] }>(
+      { url: '/apps/installed' },
+      () => ({ apps: demo.demoInstalledApps() }),
+    );
+    return res.apps;
+  },
+
+  /** 卸载应用 */
+  uninstall: (id: string) =>
+    request<{ removed: string }>({ url: `/apps/installed/${encodeURIComponent(id)}`, method: 'delete' }),
+
+  /** 重启应用 */
+  restart: (id: string) =>
+    request<{ restarted: string }>({ url: `/apps/installed/${encodeURIComponent(id)}/restart`, method: 'post' }),
+
+  /** 停止应用 */
+  stop: (id: string) =>
+    request<{ stopped: string }>({ url: `/apps/installed/${encodeURIComponent(id)}/stop`, method: 'post' }),
+
+  /** 获取 LLM 配置 */
+  llmConfig: () =>
+    request<{ config: LlmConfig | null; configured: boolean }>({ url: '/apps/llm-config' }),
+
+  /** 保存 LLM 配置 */
+  setLlmConfig: (payload: LlmConfig) =>
+    request<{ updated: boolean }>({ url: '/apps/llm-config', method: 'put', data: payload }),
+
+  /** 分析 Git 仓库 */
+  analyze: (payload: AnalyzeRepoRequest) =>
+    request<AnalyzeRepoResult>({ url: '/apps/analyze', method: 'post', data: payload }),
+};
+
+/* ---------- 系统设置中心 ---------- */
+
+export const settingsApi = {
+  /** 完整配置 */
+  getAll: () =>
+    request<SystemSettings>({ url: '/settings' }, demo.demoSettings),
+
+  /** 单分区 */
+  getSection: (section: string) =>
+    request<Record<string, unknown>>({ url: `/settings/${section}` }),
+
+  /** 更新分区 */
+  updateSection: (section: string, data: Record<string, unknown>) =>
+    request<{ updated: string; applied: boolean }>({
+      url: `/settings/${section}`,
+      method: 'put',
+      data,
+    }),
+
+  /** 服务列表 */
+  services: () =>
+    request<{ services: ManagedService[] }>(
+      { url: '/settings/services' },
+      () => ({ services: demo.demoServices() }),
+    ),
+
+  /** 开关服务 */
+  toggleService: (name: string, enabled: boolean) =>
+    request<{ name: string; enabled: boolean; running: boolean }>({
+      url: `/settings/services/${encodeURIComponent(name)}/toggle`,
+      method: 'post',
+      data: { enabled },
+    }),
+
+  /** 重启服务 */
+  restartService: (name: string) =>
+    request<{ name: string; running: boolean; pid: number | null }>({
+      url: `/settings/services/${encodeURIComponent(name)}/restart`,
+      method: 'post',
+    }),
+
+  /** 关于 */
+  about: () =>
+    request<AboutInfo>({ url: '/settings/about' }, demo.demoAbout),
+
+  /** 日志源 */
+  logSources: () =>
+    request<{ sources: SettingsLogSource[] }>(
+      { url: '/settings/logs/sources' },
+      () => ({ sources: demo.demoLogSources() }),
+    ),
+
+  /** 读取日志 */
+  logs: (source: string, lines = 200, level?: string) =>
+    request<{ lines: SettingsLogLine[]; total: number; source: string }>(
+      { url: '/settings/logs', params: { source, lines, level } },
+      () => ({ lines: demo.demoSettingsLogs(source), total: 200, source }),
+    ),
+
+  /** 清空日志 */
+  clearLogs: (source: string) =>
+    request<{ cleared: string }>({
+      url: '/settings/logs/clear',
+      method: 'delete',
+      params: { source },
+    }),
+
+  /** 导出诊断包 */
+  exportDiagnostics: () =>
+    request<{ path: string; sizeBytes: number }>({
+      url: '/settings/logs/export',
+      method: 'post',
+    }),
+
+  /** 检查更新 */
+  checkUpdate: () =>
+    request<{ updateAvailable: boolean; latestVersion?: string; changelog?: string }>({
+      url: '/settings/update/check',
+      method: 'post',
+    }),
+
+  /** 测试通知 */
+  testNotification: (channelType: string) =>
+    request<{ sent: boolean; error?: string }>({
+      url: '/settings/notification/test',
+      method: 'post',
+      data: { channelType },
+    }),
+
+  /** 重启系统 */
+  reboot: () =>
+    request<{ rebooting: boolean }>({ url: '/system/reboot', method: 'post' }),
+
+  /** 关机 */
+  shutdown: () =>
+    request<{ shuttingDown: boolean }>({ url: '/system/shutdown', method: 'post' }),
 };

@@ -572,3 +572,230 @@ export interface CreateScheduledJobRequest {
   schedule: string;
   enabled?: boolean;
 }
+
+/* ---------- 应用中心 ---------- */
+
+export interface AppPortMapping {
+  host: number;
+  container: number;
+  protocol?: 'tcp' | 'udp';
+}
+
+export interface AppVolumeMapping {
+  host: string;
+  container: string;
+  readonly?: boolean;
+}
+
+export interface RegistryApp {
+  id: string;
+  name: string;
+  category: 'media' | 'files' | 'security' | 'tools' | 'monitoring' | 'network' | 'ai' | 'other';
+  description: string;
+  icon: string;
+  image: string;
+  ports: AppPortMapping[];
+  volumes: AppVolumeMapping[];
+  env: Record<string, string>;
+  healthcheck?: string;
+  homepage?: string;
+  dependsOn?: string[];
+  postInstallNote?: string;
+}
+
+export type InstalledAppStatus = 'running' | 'stopped' | 'error' | 'deploying';
+
+export interface InstalledApp {
+  appId: string;
+  containerName: string;
+  image: string;
+  ports: AppPortMapping[];
+  volumes: AppVolumeMapping[];
+  env: Record<string, string>;
+  installedAt: string;
+  source: 'registry' | 'custom';
+  gitUrl?: string;
+}
+
+export interface InstalledAppWithStatus extends InstalledApp {
+  status: InstalledAppStatus;
+  containerId?: string;
+}
+
+export interface DeployFromRegistryRequest {
+  appId: string;
+  ports?: AppPortMapping[];
+  env?: Record<string, string>;
+  volumes?: AppVolumeMapping[];
+  memoryLimit?: string;
+  cpuLimit?: number;
+}
+
+export interface DeployCustomRequest {
+  name: string;
+  image: string;
+  ports?: AppPortMapping[];
+  volumes?: AppVolumeMapping[];
+  env?: Record<string, string>;
+  memoryLimit?: string;
+  cpuLimit?: number;
+  restartPolicy?: 'no' | 'always' | 'unless-stopped' | 'on-failure';
+  gitUrl?: string;
+}
+
+export interface DeployResponse {
+  containerName: string;
+  image: string;
+  status: string;
+  app: InstalledApp;
+}
+
+export interface LlmConfig {
+  endpoint: string;
+  apiKey: string;
+  model: string;
+  maxTokens?: number;
+  temperature?: number;
+}
+
+export interface AnalyzeRepoRequest {
+  gitUrl: string;
+  branch?: string;
+}
+
+export interface AnalyzeRepoResult {
+  name: string;
+  image: string;
+  ports: AppPortMapping[];
+  volumes: AppVolumeMapping[];
+  env: Record<string, string>;
+  healthcheck?: string;
+  analysis: string;
+  confidence: number;
+  dockerfile?: string;
+  composeFile?: string;
+}
+
+/* ---------- 系统设置中心 ---------- */
+
+export interface GeneralSettings {
+  hostname: string;
+  timezone: string;
+  locale: string;
+  ntpEnabled: boolean;
+  ntpServer: string;
+  description: string;
+}
+
+export interface ManagedService {
+  name: string;
+  displayName: string;
+  description: string;
+  enabled: boolean;
+  running: boolean;
+  pid: number | null;
+  uptime: number | null;
+}
+
+export interface SecuritySettings {
+  httpsEnabled: boolean;
+  httpsPort: number;
+  httpsCertPath: string;
+  httpsKeyPath: string;
+  sshEnabled: boolean;
+  sshPort: number;
+  sshPasswordAuth: boolean;
+  maxLoginAttempts: number;
+  lockoutMinutes: number;
+  ipBlacklist: string[];
+  ipWhitelist: string[];
+  firewallEnabled: boolean;
+  autoSecurityUpdates: boolean;
+}
+
+export interface StoragePolicySettings {
+  diskSpindownMinutes: number;
+  hddStandbyEnabled: boolean;
+  smartCheckInterval: number;
+  smartEmailAlert: boolean;
+  trashRetentionDays: number;
+  autoDefrag: boolean;
+  writeCache: 'enabled' | 'disabled';
+}
+
+export interface PowerSettings {
+  upsEnabled: boolean;
+  upsDevice: string;
+  upsShutdownThreshold: number;
+  scheduledPowerOn: { enabled: boolean; time: string };
+  scheduledShutdown: { enabled: boolean; time: string };
+  idleShutdown: { enabled: boolean; minutes: number };
+  wakeOnLan: boolean;
+}
+
+export interface SettingsNotificationChannel {
+  id: string;
+  type: 'webhook' | 'email';
+  name: string;
+  enabled: boolean;
+  url?: string;
+  emailTo?: string;
+  emailSmtpHost?: string;
+  emailSmtpPort?: number;
+  minSeverity: 'info' | 'warning' | 'critical';
+}
+
+export interface SettingsNotificationConfig {
+  channels: SettingsNotificationChannel[];
+  globalMinSeverity: 'info' | 'warning' | 'critical';
+  quietHoursStart: string;
+  quietHoursEnd: string;
+}
+
+export interface UpdateSettings {
+  autoCheck: boolean;
+  autoInstall: boolean;
+  channel: 'stable' | 'beta';
+  lastCheck: string | null;
+  currentVersion: string;
+}
+
+export interface SystemSettings {
+  general: GeneralSettings;
+  security: SecuritySettings;
+  storage: StoragePolicySettings;
+  power: PowerSettings;
+  notification: SettingsNotificationConfig;
+  update: UpdateSettings;
+}
+
+export type SettingsSection = keyof SystemSettings;
+
+export interface SettingsLogLine {
+  timestamp: string;
+  level: 'debug' | 'info' | 'warn' | 'error';
+  source: string;
+  message: string;
+}
+
+export interface SettingsLogSource {
+  id: string;
+  name: string;
+  description: string;
+  sizeBytes: number;
+}
+
+export interface AboutInfo {
+  version: string;
+  buildDate: string;
+  nodeVersion: string;
+  osVersion: string;
+  kernel: string;
+  cpuModel: string;
+  cpuCores: number;
+  totalMemoryBytes: number;
+  hostname: string;
+  uptimeSeconds: number;
+  dataRoot: string;
+  license: string;
+}

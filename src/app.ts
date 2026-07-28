@@ -18,6 +18,8 @@ import { downloadRoutes } from './modules/download/index.js';
 import { networkRoutes } from './modules/network/index.js';
 import { notificationRoutes } from './modules/notification/index.js';
 import { schedulerRoutes } from './modules/scheduler/index.js';
+import { appsRoutes } from './modules/apps/index.js';
+import { settingsRoutes } from './modules/settings/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -58,6 +60,8 @@ export function createApp(): express.Express {
   app.use('/api', networkRoutes);
   app.use('/api', notificationRoutes);
   app.use('/api', schedulerRoutes);
+  app.use('/api', appsRoutes);
+  app.use('/api', settingsRoutes);
 
   // 404 处理
   app.use((_req, res) => {

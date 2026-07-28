@@ -1,0 +1,349 @@
+{
+  "version": 1,
+  "apps": [
+    {
+      "id": "jellyfin",
+      "name": "Jellyfin 媒体服务器",
+      "category": "media",
+      "description": "开源免费的媒体流服务器，支持视频/音乐/图片串流，无需订阅",
+      "icon": "🎬",
+      "image": "jellyfin/jellyfin:latest",
+      "ports": [{ "host": 8096, "container": 8096 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/jellyfin/config", "container": "/config" },
+        { "host": "/data/{uid}/files/media", "container": "/media", "readonly": true }
+      ],
+      "env": { "TZ": "Asia/Shanghai" },
+      "healthcheck": "http://localhost:8096/health",
+      "homepage": "https://jellyfin.org",
+      "postInstallNote": "首次访问 http://NAS-IP:8096 完成向导设置"
+    },
+    {
+      "id": "nextcloud",
+      "name": "Nextcloud 私有网盘",
+      "category": "files",
+      "description": "功能完整的私有云平台，文件同步、协作、日历、联系人一站式",
+      "icon": "☁️",
+      "image": "nextcloud:latest",
+      "ports": [{ "host": 8888, "container": 80 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/nextcloud/data", "container": "/var/www/html" }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "NEXTCLOUD_ADMIN_USER": "admin",
+        "NEXTCLOUD_ADMIN_PASSWORD": "naisys-change-me"
+      },
+      "healthcheck": "http://localhost:8888/status.php",
+      "homepage": "https://nextcloud.com",
+      "postInstallNote": "访问 http://NAS-IP:8888，默认管理员 admin / naisys-change-me，请立即修改密码"
+    },
+    {
+      "id": "vaultwarden",
+      "name": "Vaultwarden 密码管理",
+      "category": "security",
+      "description": "Bitwarden 兼容的轻量密码管理器，支持自托管",
+      "icon": "🔐",
+      "image": "vaultwarden/server:latest",
+      "ports": [{ "host": 8222, "container": 80 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/vaultwarden/data", "container": "/data" }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "SIGNUPS_ALLOWED": "true",
+        "WEBSOCKET_ENABLED": "true"
+      },
+      "healthcheck": "http://localhost:8222/api/version",
+      "homepage": "https://github.com/dani-garcia/vaultwarden"
+    },
+    {
+      "id": "homepage",
+      "name": "Homepage 导航页",
+      "category": "tools",
+      "description": "现代化自托管导航页，聚合所有服务状态与快捷入口",
+      "icon": "🏠",
+      "image": "ghcr.io/gethomepage/homepage:latest",
+      "ports": [{ "host": 3333, "container": 3000 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/homepage/config", "container": "/app/config" },
+        { "host": "/var/run/docker.sock", "container": "/var/run/docker.sock", "readonly": true }
+      ],
+      "env": { "TZ": "Asia/Shanghai" },
+      "healthcheck": "http://localhost:3333",
+      "homepage": "https://gethomepage.dev"
+    },
+    {
+      "id": "portainer",
+      "name": "Portainer 容器管理",
+      "category": "tools",
+      "description": "可视化 Docker 容器管理面板，支持镜像/网络/卷/堆栈管理",
+      "icon": "🐳",
+      "image": "portainer/portainer-ce:latest",
+      "ports": [
+        { "host": 9443, "container": 9443 },
+        { "host": 9000, "container": 9000 }
+      ],
+      "volumes": [
+        { "host": "/data/naisys/apps/portainer/data", "container": "/data" },
+        { "host": "/var/run/docker.sock", "container": "/var/run/docker.sock", "readonly": true }
+      ],
+      "env": { "TZ": "Asia/Shanghai" },
+      "healthcheck": "http://localhost:9000",
+      "homepage": "https://www.portainer.io"
+    },
+    {
+      "id": "uptime-kuma",
+      "name": "Uptime Kuma 监控",
+      "category": "monitoring",
+      "description": "自托管服务监控工具，支持 HTTP/TCP/Ping/DNS 等多种探测方式",
+      "icon": "📊",
+      "image": "louislam/uptime-kuma:latest",
+      "ports": [{ "host": 3001, "container": 3001 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/uptime-kuma/data", "container": "/app/data" }
+      ],
+      "env": { "TZ": "Asia/Shanghai" },
+      "healthcheck": "http://localhost:3001",
+      "homepage": "https://uptime.kuma.pet"
+    },
+    {
+      "id": "immich",
+      "name": "Immich 照片管理",
+      "category": "media",
+      "description": "高性能自托管照片/视频管理平台，支持人脸识别与地图视图",
+      "icon": "📷",
+      "image": "ghcr.io/immich-app/immich-server:release",
+      "ports": [{ "host": 2283, "container": 2283 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/immich/upload", "container": "/usr/src/app/upload" },
+        { "host": "/data/{uid}/files/photos", "container": "/import", "readonly": true }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "DB_HOSTNAME": "immich-postgres",
+        "DB_USERNAME": "postgres",
+        "DB_PASSWORD": "naisys-immich",
+        "DB_DATABASE_NAME": "immich"
+      },
+      "dependsOn": ["immich-postgres"],
+      "homepage": "https://immich.app",
+      "postInstallNote": "需要配合 PostgreSQL 容器使用，建议通过 docker compose 一并部署"
+    },
+    {
+      "id": "qbittorrent",
+      "name": "qBittorrent 下载器",
+      "category": "tools",
+      "description": "功能强大的 BitTorrent 客户端，支持 WebUI 远程管理",
+      "icon": "⬇️",
+      "image": "linuxserver/qbittorrent:latest",
+      "ports": [
+        { "host": 8112, "container": 8080 },
+        { "host": 6881, "container": 6881 },
+        { "host": 6881, "container": 6881, "protocol": "udp" }
+      ],
+      "volumes": [
+        { "host": "/data/naisys/apps/qbittorrent/config", "container": "/config" },
+        { "host": "/data/{uid}/files/downloads", "container": "/downloads" }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "WEBUI_PORT": "8080",
+        "PUID": "1000",
+        "PGID": "1000"
+      },
+      "healthcheck": "http://localhost:8112",
+      "homepage": "https://www.qbittorrent.org"
+    },
+    {
+      "id": "alist",
+      "name": "AList 文件列表",
+      "category": "files",
+      "description": "支持多种存储的文件列表程序，聚合网盘/本地/S3 等存储",
+      "icon": "📂",
+      "image": "xhofe/alist:latest",
+      "ports": [{ "host": 5244, "container": 5244 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/alist/data", "container": "/opt/alist/data" }
+      ],
+      "env": { "TZ": "Asia/Shanghai", "PUID": "1000", "PGID": "1000" },
+      "healthcheck": "http://localhost:5244",
+      "homepage": "https://alist.nn.ci"
+    },
+    {
+      "id": "gitea",
+      "name": "Gitea 代码托管",
+      "category": "tools",
+      "description": "轻量级自托管 Git 服务，支持 PR/Issue/Wiki/CI",
+      "icon": "🍵",
+      "image": "gitea/gitea:latest",
+      "ports": [
+        { "host": 3300, "container": 3000 },
+        { "host": 2222, "container": 22 }
+      ],
+      "volumes": [
+        { "host": "/data/naisys/apps/gitea/data", "container": "/data" }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "USER_UID": "1000",
+        "USER_GID": "1000",
+        "GITEA__database__DB_TYPE": "sqlite3"
+      },
+      "healthcheck": "http://localhost:3300",
+      "homepage": "https://gitea.io"
+    },
+    {
+      "id": "minio",
+      "name": "MinIO 对象存储",
+      "category": "files",
+      "description": "高性能 S3 兼容对象存储，适合备份/媒体/AI 训练数据",
+      "icon": "🪣",
+      "image": "minio/minio:latest",
+      "ports": [
+        { "host": 9100, "container": 9000 },
+        { "host": 9101, "container": 9001 }
+      ],
+      "volumes": [
+        { "host": "/data/naisys/apps/minio/data", "container": "/data" }
+      ],
+      "env": {
+        "MINIO_ROOT_USER": "naisys-admin",
+        "MINIO_ROOT_PASSWORD": "naisys-minio-2027"
+      },
+      "healthcheck": "http://localhost:9100/minio/health/live",
+      "homepage": "https://min.io",
+      "postInstallNote": "控制台 http://NAS-IP:9101，API http://NAS-IP:9100"
+    },
+    {
+      "id": "watchtower",
+      "name": "Watchtower 自动更新",
+      "category": "tools",
+      "description": "自动监控并更新运行中的 Docker 容器镜像",
+      "icon": "🗼",
+      "image": "containrrr/watchtower:latest",
+      "ports": [],
+      "volumes": [
+        { "host": "/var/run/docker.sock", "container": "/var/run/docker.sock", "readonly": true }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "WATCHTOWER_CLEANUP": "true",
+        "WATCHTOWER_SCHEDULE": "0 0 4 * * *"
+      },
+      "homepage": "https://containrrr.dev/watchtower"
+    },
+    {
+      "id": "nginx-proxy-manager",
+      "name": "Nginx Proxy Manager",
+      "category": "network",
+      "description": "可视化反向代理管理，支持 SSL 证书自动申请与续期",
+      "icon": "🔀",
+      "image": "jc21/nginx-proxy-manager:latest",
+      "ports": [
+        { "host": 8180, "container": 80 },
+        { "host": 8181, "container": 81 },
+        { "host": 4443, "container": 443 }
+      ],
+      "volumes": [
+        { "host": "/data/naisys/apps/npm/data", "container": "/data" },
+        { "host": "/data/naisys/apps/npm/letsencrypt", "container": "/etc/letsencrypt" }
+      ],
+      "env": { "TZ": "Asia/Shanghai" },
+      "healthcheck": "http://localhost:8181",
+      "homepage": "https://nginxproxymanager.com",
+      "postInstallNote": "管理面板 http://NAS-IP:8181，默认 admin@example.com / changeme"
+    },
+    {
+      "id": "freshrss",
+      "name": "FreshRSS 订阅阅读器",
+      "category": "tools",
+      "description": "自托管 RSS/Atom 聚合阅读器，支持多用户与 API",
+      "icon": "📰",
+      "image": "freshrss/freshrss:latest",
+      "ports": [{ "host": 8444, "container": 80 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/freshrss/data", "container": "/var/www/FreshRSS/data" },
+        { "host": "/data/naisys/apps/freshrss/extensions", "container": "/var/www/FreshRSS/extensions" }
+      ],
+      "env": { "TZ": "Asia/Shanghai", "CRON_MIN": "*/15" },
+      "healthcheck": "http://localhost:8444",
+      "homepage": "https://freshrss.org"
+    },
+    {
+      "id": "paperless-ngx",
+      "name": "Paperless-ngx 文档管理",
+      "category": "files",
+      "description": "扫描/上传文档自动 OCR 归档，支持全文检索与标签分类",
+      "icon": "📄",
+      "image": "ghcr.io/paperless-ngx/paperless-ngx:latest",
+      "ports": [{ "host": 8777, "container": 8000 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/paperless/data", "container": "/usr/src/paperless/data" },
+        { "host": "/data/naisys/apps/paperless/media", "container": "/usr/src/paperless/media" },
+        { "host": "/data/{uid}/files/documents", "container": "/usr/src/paperless/consume" }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "PAPERLESS_OCR_LANGUAGE": "chi_sim+eng",
+        "PAPERLESS_OCR_MODE": "skip"
+      },
+      "healthcheck": "http://localhost:8777",
+      "homepage": "https://docs.paperless-ngx.com"
+    },
+    {
+      "id": "syncthing",
+      "name": "Syncthing 文件同步",
+      "category": "files",
+      "description": "去中心化实时文件同步，支持多设备双向同步",
+      "icon": "🔄",
+      "image": "syncthing/syncthing:latest",
+      "ports": [
+        { "host": 8384, "container": 8384 },
+        { "host": 22000, "container": 22000 },
+        { "host": 22000, "container": 22000, "protocol": "udp" }
+      ],
+      "volumes": [
+        { "host": "/data/naisys/apps/syncthing/config", "container": "/var/syncthing" }
+      ],
+      "env": { "TZ": "Asia/Shanghai", "PUID": "1000", "PGID": "1000" },
+      "healthcheck": "http://localhost:8384",
+      "homepage": "https://syncthing.net"
+    },
+    {
+      "id": "grafana",
+      "name": "Grafana 可视化监控",
+      "category": "monitoring",
+      "description": "开源数据可视化平台，支持 Prometheus/InfluxDB 等多种数据源",
+      "icon": "📈",
+      "image": "grafana/grafana:latest",
+      "ports": [{ "host": 3400, "container": 3000 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/grafana/data", "container": "/var/lib/grafana" }
+      ],
+      "env": {
+        "TZ": "Asia/Shanghai",
+        "GF_SECURITY_ADMIN_USER": "admin",
+        "GF_SECURITY_ADMIN_PASSWORD": "naisys-grafana"
+      },
+      "healthcheck": "http://localhost:3400/api/health",
+      "homepage": "https://grafana.com"
+    },
+    {
+      "id": "ollama",
+      "name": "Ollama 本地 AI 推理",
+      "category": "ai",
+      "description": "本地大模型推理引擎，支持 Llama/Qwen/Mistral 等主流模型",
+      "icon": "🤖",
+      "image": "ollama/ollama:latest",
+      "ports": [{ "host": 11434, "container": 11434 }],
+      "volumes": [
+        { "host": "/data/naisys/apps/ollama/models", "container": "/root/.ollama" }
+      ],
+      "env": { "TZ": "Asia/Shanghai" },
+      "healthcheck": "http://localhost:11434/api/tags",
+      "homepage": "https://ollama.com",
+      "postInstallNote": "部署后执行 docker exec naisys-ollama ollama pull qwen2.5:7b 下载模型"
+    }
+  ]
+}
