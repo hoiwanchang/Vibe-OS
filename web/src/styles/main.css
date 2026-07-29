@@ -756,7 +756,8 @@ body {
   position: fixed;
   top: 16px;
   right: 16px;
-  z-index: 50;
+  /* 必须低于窗口最小 z（zCounter 从 10 自增），否则新窗口会被组件遮挡 */
+  z-index: 5;
   display: flex;
   flex-direction: column;
   gap: 12px;
