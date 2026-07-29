@@ -58,21 +58,10 @@ const DEFAULT_SIZE: Record<DesktopAppId, { w: number; h: number }> = {
   scheduler: { w: 800, h: 520 },
 };
 
-/** 应用标题（中英文） */
-const APP_TITLE: Record<DesktopAppId, string> = {
-  dashboard: '仪表盘',
-  apps: '应用中心',
-  settings: '系统设置',
-  tailscale: 'Tailscale 网络',
-  monitor: '资源监视器',
-  files: '文件管理',
-  storage: '存储池',
-  sharing: '共享文件夹',
-  backup: '备份中心',
-  download: '下载中心',
-  network: '网络配置',
-  scheduler: '计划任务',
-};
+/**
+ * 窗口标题以 i18n 键呈现（`wm.titles.{id}`），由消费组件经 t() 翻译，
+ * 保证切换语言时已打开窗口的标题实时更新。此处仅存 id 作为标题键。
+ */
 
 /** 窗口最小尺寸 */
 const MIN_W = 420;
@@ -141,7 +130,7 @@ export const useWmStore = defineStore('wm', () => {
 
     windows.value.push({
       id,
-      title: APP_TITLE[id],
+      title: id,
       rect,
       minimized: false,
       maximized: mobile,

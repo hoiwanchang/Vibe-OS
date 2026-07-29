@@ -4,9 +4,12 @@
  * 用于「自定义部署」中的 Git 仓库智能分析
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { appsApi } from '@/api';
 import type { LlmConfig } from '@/api/types';
+
+const { t } = useI18n();
 
 const form = ref<LlmConfig>({
   endpoint: '',
@@ -36,14 +39,14 @@ async function load(): Promise<void> {
 
 async function save(): Promise<void> {
   if (!form.value.endpoint || !form.value.model) {
-    ElMessage.warning('请填写 API 端点和模型名');
+    ElMessage.warning(t('settings.llm.fillRequired'));
     return;
   }
   saving.value = true;
   try {
     await appsApi.setLlmConfig(form.value);
     configured.value = true;
-    ElMessage.success('LLM 配置已保存');
+    ElMessage.success(t('settings.llm.saved'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   } finally {
@@ -58,34 +61,34 @@ onMounted(() => {
 
 <template>
   <div class="settings-section" v-loading="loading">
-    <h3 class="section-title">AI 助手配置</h3>
+    <h3 class="section-title">{{ t('settings.llm.title') }}</h3>
     <p class="section-hint">
-      配置 OpenAI 兼容的 LLM API，用于「应用中心 → 自定义部署」中的 Git 仓库智能分析。
-      支持任何兼容 /v1/chat/completions 接口的服务（Ollama、vLLM、LM Studio、OpenAI 等）。
+      {{ t('settings.llm.desc1') }}
+      {{ t('settings.llm.desc2') }}
     </p>
 
     <el-form label-width="100px" label-position="left" class="settings-form">
-      <el-form-item label="API 端点" required>
+      <el-form-item :label="t('settings.llm.endpoint')" required>
         <el-input
           v-model="form.endpoint"
-          placeholder="http://localhost:11434/v1 或 https://api.openai.com/v1"
+          :placeholder="t('settings.llm.endpointPh')"
         />
       </el-form-item>
-      <el-form-item label="API 密钥" required>
+      <el-form-item :label="t('settings.llm.apiKey')" required>
         <el-input
           v-model="form.apiKey"
           type="password"
           show-password
-          placeholder="sk-... 或 ollama（本地可填任意值）"
+          :placeholder="t('settings.llm.apiKeyPh')"
         />
       </el-form-item>
-      <el-form-item label="模型名" required>
+      <el-form-item :label="t('settings.llm.model')" required>
         <el-input
           v-model="form.model"
           placeholder="qwen2.5:7b / gpt-4o / llama3.1:8b"
         />
       </el-form-item>
-      <el-form-item label="最大 Token">
+      <el-form-item :label="t('settings.llm.maxTokens')">
         <el-input-number
           v-model="form.maxTokens"
           :min="256"
@@ -93,7 +96,7 @@ onMounted(() => {
           :step="256"
         />
       </el-form-item>
-      <el-form-item label="温度">
+      <el-form-item :label="t('settings.llm.temperature')">
         <el-slider
           v-model="form.temperature"
           :min="0"
@@ -105,10 +108,10 @@ onMounted(() => {
       </el-form-item>
       <el-form-item>
         <el-button type="primary" :loading="saving" @click="save">
-          保存配置
+          {{ t('settings.llm.saveConfig') }}
         </el-button>
         <el-tag v-if="configured" type="success" effect="dark" size="small" style="margin-left: 12px">
-          已配置
+          {{ t('settings.llm.configured') }}
         </el-tag>
       </el-form-item>
     </el-form>

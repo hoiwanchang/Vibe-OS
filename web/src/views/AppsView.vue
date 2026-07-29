@@ -3,11 +3,13 @@
  * 应用中心 — 三标签页：应用商店 / 已安装 / 自定义部署（LLM 分析）
  */
 import { onMounted, ref, computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useAppCenterStore } from '@/stores/appcenter';
 import type { RegistryApp, AnalyzeRepoResult } from '@/api/types';
 
+const { t } = useI18n();
 const store = useAppCenterStore();
 const {
   registry, installed, loading, deploying, analyzing,
@@ -20,10 +22,16 @@ const categoryFilter = ref('');
 
 /* ---------- 商店 ---------- */
 
-const categoryLabels: Record<string, string> = {
-  media: '媒体', files: '文件', security: '安全', tools: '工具',
-  monitoring: '监控', network: '网络', ai: 'AI', other: '其他',
-};
+const categoryLabels = computed<Record<string, string>>(() => ({
+  media: t('apps.categoryMap.media'),
+  files: t('apps.categoryMap.files'),
+  security: t('apps.categoryMap.security'),
+  tools: t('apps.categoryMap.tools'),
+  monitoring: t('apps.categoryMap.monitoring'),
+  network: t('apps.categoryMap.network'),
+  ai: t('apps.categoryMap.ai'),
+  other: t('apps.categoryMap.other'),
+}));
 
 const filteredRegistry = computed(() => {
   let apps = registry.value;
@@ -53,7 +61,7 @@ async function confirmDeploy(): Promise<void> {
   if (!deployTarget.value) return;
   try {
     await store.deployFromRegistry({ appId: deployTarget.value.id });
-    ElMessage.success(`${deployTarget.value.name} 部署成功`);
+    ElMessage.success(t('apps.deploySuccess', { name: deployTarget.value.name }));
     deployVisible.value = false;
     activeTab.value = 'installed';
   } catch (err) {
@@ -66,7 +74,7 @@ async function confirmDeploy(): Promise<void> {
 async function handleRestart(appId: string): Promise<void> {
   try {
     await store.restart(appId);
-    ElMessage.success('已重启');
+    ElMessage.success(t('apps.restarted'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -75,7 +83,7 @@ async function handleRestart(appId: string): Promise<void> {
 async function handleStop(appId: string): Promise<void> {
   try {
     await store.stop(appId);
-    ElMessage.success('已停止');
+    ElMessage.success(t('apps.stoppedApp'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -84,16 +92,16 @@ async function handleStop(appId: string): Promise<void> {
 async function handleUninstall(appId: string, name: string): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      `确定卸载 ${name} 吗？容器将被移除，/data/naisys/apps/${appId}/ 下的数据会保留。`,
-      '卸载确认',
-      { confirmButtonText: '卸载', cancelButtonText: '取消', type: 'warning' },
+      t('apps.uninstallConfirm', { name, appId }),
+      t('apps.uninstallTitle'),
+      { confirmButtonText: t('common.uninstall'), cancelButtonText: t('common.cancel'), type: 'warning' },
     );
   } catch {
     return;
   }
   try {
     await store.uninstall(appId);
-    ElMessage.success(`${name} 已卸载`);
+    ElMessage.success(t('apps.uninstalled', { name }));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -108,7 +116,7 @@ const customDeployVisible = ref(false);
 
 async function handleAnalyze(): Promise<void> {
   if (!gitUrl.value.trim()) {
-    ElMessage.warning('请输入 Git 仓库地址');
+    ElMessage.warning(t('apps.enterGitUrl'));
     return;
   }
   try {
@@ -116,7 +124,7 @@ async function handleAnalyze(): Promise<void> {
       gitUrl: gitUrl.value.trim(),
       branch: gitBranch.value.trim() || undefined,
     });
-    ElMessage.success('分析完成，请确认配置后部署');
+    ElMessage.success(t('apps.analyzeDone'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -134,7 +142,7 @@ async function confirmCustomDeploy(): Promise<void> {
       env: r.env,
       gitUrl: gitUrl.value.trim(),
     });
-    ElMessage.success(`${r.name} 部署成功`);
+    ElMessage.success(t('apps.deployedFromDraft', { name: r.name }));
     customDeployVisible.value = false;
     analyzeResult.value = null;
     gitUrl.value = '';
@@ -155,7 +163,10 @@ function statusType(status: string): 'success' | 'danger' | 'warning' | 'info' {
 
 function statusLabel(status: string): string {
   const map: Record<string, string> = {
-    running: '运行中', stopped: '已停止', error: '异常', deploying: '部署中',
+    running: t('apps.statusMap.running'),
+    stopped: t('apps.statusMap.stopped'),
+    error: t('apps.statusMap.error'),
+    deploying: t('apps.statusMap.deploying'),
   };
   return map[status] ?? status;
 }
@@ -169,16 +180,16 @@ onMounted(() => {
   <div class="appcenter-view">
     <el-tabs v-model="activeTab">
       <!-- ===== 应用商店 ===== -->
-      <el-tab-pane label="应用商店" name="store">
+      <el-tab-pane :label="t('apps.tabStore')" name="store">
         <div class="store-toolbar">
           <el-input
             v-model="searchQuery"
-            placeholder="搜索应用..."
+            :placeholder="t('apps.searchPh')"
             clearable
             class="store-search"
             prefix-icon="Search"
           />
-          <el-select v-model="categoryFilter" placeholder="全部分类" clearable class="store-category">
+          <el-select v-model="categoryFilter" :placeholder="t('apps.allCategories')" clearable class="store-category">
             <el-option
               v-for="(label, key) in categoryLabels"
               :key="key"
@@ -211,7 +222,7 @@ onMounted(() => {
                 type="success"
                 effect="dark"
               >
-                已安装
+                {{ t('apps.installed') }}
               </el-tag>
             </div>
             <p class="app-desc">{{ app.description }}</p>
@@ -223,15 +234,15 @@ onMounted(() => {
                 size="small"
                 @click="openDeploy(app)"
               >
-                部署
+                {{ t('apps.deploy') }}
               </el-button>
-              <el-button v-else size="small" disabled>已安装</el-button>
+              <el-button v-else size="small" disabled>{{ t('apps.installed') }}</el-button>
             </div>
           </div>
 
           <el-empty
             v-if="!loading && filteredRegistry.length === 0"
-            description="没有匹配的应用"
+            :description="t('apps.noMatch')"
             class="store-empty"
           />
         </div>
@@ -240,13 +251,13 @@ onMounted(() => {
       <!-- ===== 已安装 ===== -->
       <el-tab-pane name="installed">
         <template #label>
-          已安装
+          {{ t('apps.tabInstalled') }}
           <el-badge v-if="runningCount > 0" :value="runningCount" type="success" class="tab-badge" />
         </template>
 
         <div class="installed-toolbar">
           <el-tag effect="plain" size="small">
-            运行中 {{ runningCount }} / {{ installed.length }}
+            {{ t('apps.runningCount', { running: runningCount, total: installed.length }) }}
           </el-tag>
           <el-button circle :loading="loading" @click="store.fetchInstalled()">
             <el-icon><Refresh /></el-icon>
@@ -259,52 +270,52 @@ onMounted(() => {
           stripe
           class="installed-table"
         >
-          <el-table-column prop="appId" label="应用" min-width="120">
+          <el-table-column prop="appId" :label="t('apps.colApp')" min-width="120">
             <template #default="{ row }">
               <span class="nx-mono">{{ row.appId }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="image" label="镜像" min-width="200">
+          <el-table-column prop="image" :label="t('apps.colImage')" min-width="200">
             <template #default="{ row }">
               <span class="nx-mono img-cell">{{ row.image }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="端口" width="120">
+          <el-table-column :label="t('common.port')" width="120">
             <template #default="{ row }">
               <span class="nx-mono">
                 {{ row.ports.map((p: Record<string, number>) => p.host).join(', ') || '—' }}
               </span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="100" align="center">
+          <el-table-column :label="t('common.status')" width="100" align="center">
             <template #default="{ row }">
               <el-tag :type="statusType(row.status)" size="small" effect="dark">
                 {{ statusLabel(row.status) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="来源" width="80" align="center">
+          <el-table-column :label="t('apps.colSource')" width="80" align="center">
             <template #default="{ row }">
               <el-tag size="small" :type="row.source === 'registry' ? 'info' : 'warning'">
-                {{ row.source === 'registry' ? '商店' : '自定义' }}
+                {{ row.source === 'registry' ? t('apps.sourceRegistry') : t('apps.sourceCustom') }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="180" align="center">
+          <el-table-column :label="t('common.ops')" width="180" align="center">
             <template #default="{ row }">
               <el-button
                 size="small"
                 :loading="busy.has(row.appId)"
                 @click="handleRestart(row.appId)"
               >
-                重启
+                {{ t('common.restart') }}
               </el-button>
               <el-button
                 size="small"
                 :loading="busy.has(row.appId)"
                 @click="handleStop(row.appId)"
               >
-                停止
+                {{ t('common.stop') }}
               </el-button>
               <el-button
                 size="small"
@@ -312,7 +323,7 @@ onMounted(() => {
                 :loading="busy.has(row.appId)"
                 @click="handleUninstall(row.appId, row.appId)"
               >
-                卸载
+                {{ t('common.uninstall') }}
               </el-button>
             </template>
           </el-table-column>
@@ -320,17 +331,16 @@ onMounted(() => {
 
         <el-empty
           v-if="!loading && installed.length === 0"
-          description="尚未安装任何应用，前往「应用商店」部署"
+          :description="t('apps.notInstalledYet')"
         />
       </el-tab-pane>
 
       <!-- ===== 自定义部署 ===== -->
-      <el-tab-pane label="自定义部署" name="custom">
+      <el-tab-pane :label="t('apps.tabCustom')" name="custom">
         <div class="custom-section nx-panel">
-          <h4 class="section-title">Git 仓库 → AI 分析 → 一键部署</h4>
+          <h4 class="section-title">{{ t('apps.customTitle') }}</h4>
           <p class="section-hint">
-            输入 Git 仓库地址，AI 将自动分析 Dockerfile / docker-compose.yml / README，
-            生成部署配置草稿供你确认后部署。
+            {{ t('apps.customDesc') }}
           </p>
           <div class="custom-form">
             <el-input
@@ -342,7 +352,7 @@ onMounted(() => {
             </el-input>
             <el-input
               v-model="gitBranch"
-              placeholder="分支（默认 main）"
+              :placeholder="t('apps.branchPh')"
               class="custom-branch"
             />
             <el-button
@@ -350,7 +360,7 @@ onMounted(() => {
               :loading="analyzing"
               @click="handleAnalyze"
             >
-              {{ analyzing ? '分析中...' : 'AI 分析' }}
+              {{ analyzing ? t('apps.analyzing') : t('apps.aiAnalyze') }}
             </el-button>
           </div>
 
@@ -363,39 +373,39 @@ onMounted(() => {
                 :type="analyzeResult.confidence >= 0.7 ? 'success' : analyzeResult.confidence >= 0.4 ? 'warning' : 'danger'"
                 size="small"
               >
-                置信度 {{ Math.round(analyzeResult.confidence * 100) }}%
+                {{ t('apps.confidence', { pct: Math.round(analyzeResult.confidence * 100) }) }}
               </el-tag>
             </div>
             <p class="result-analysis">{{ analyzeResult.analysis }}</p>
 
             <el-descriptions :column="1" border size="small" class="result-config">
-              <el-descriptions-item label="镜像">
+              <el-descriptions-item :label="t('apps.colImage')">
                 <span class="nx-mono">{{ analyzeResult.image }}</span>
               </el-descriptions-item>
-              <el-descriptions-item label="端口">
+              <el-descriptions-item :label="t('common.port')">
                 <span class="nx-mono">
-                  {{ analyzeResult.ports.map((p) => `${p.host}→${p.container}`).join(', ') || '无' }}
+                  {{ analyzeResult.ports.map((p) => `${p.host}→${p.container}`).join(', ') || t('apps.noPorts') }}
                 </span>
               </el-descriptions-item>
-              <el-descriptions-item label="卷挂载">
+              <el-descriptions-item :label="t('apps.volumes')">
                 <div v-for="(v, i) in analyzeResult.volumes" :key="i" class="nx-mono vol-line">
-                  {{ v.host }} → {{ v.container }}{{ v.readonly ? ' (只读)' : '' }}
+                  {{ v.host }} → {{ v.container }}{{ v.readonly ? ` (${t('apps.readOnly')})` : '' }}
                 </div>
-                <span v-if="analyzeResult.volumes.length === 0">无</span>
+                <span v-if="analyzeResult.volumes.length === 0">{{ t('common.none') }}</span>
               </el-descriptions-item>
-              <el-descriptions-item label="环境变量">
+              <el-descriptions-item :label="t('apps.envVars')">
                 <div v-for="(val, key) in analyzeResult.env" :key="key" class="nx-mono env-line">
                   {{ key }}={{ val }}
                 </div>
-                <span v-if="Object.keys(analyzeResult.env).length === 0">无</span>
+                <span v-if="Object.keys(analyzeResult.env).length === 0">{{ t('common.none') }}</span>
               </el-descriptions-item>
             </el-descriptions>
 
             <div class="result-actions">
               <el-button type="primary" :loading="deploying" @click="confirmCustomDeploy">
-                确认部署
+                {{ t('apps.confirmDeploy') }}
               </el-button>
-              <el-button @click="analyzeResult = null">放弃</el-button>
+              <el-button @click="analyzeResult = null">{{ t('apps.discard') }}</el-button>
             </div>
           </div>
         </div>
@@ -405,26 +415,26 @@ onMounted(() => {
     <!-- 注册表部署确认对话框 -->
     <el-dialog
       v-model="deployVisible"
-      :title="`部署 ${deployTarget?.name ?? ''}`"
+      :title="t('apps.deployTitle', { name: deployTarget?.name ?? '' })"
       width="520px"
       destroy-on-close
     >
       <template v-if="deployTarget">
         <el-descriptions :column="1" border size="small">
-          <el-descriptions-item label="镜像">
+          <el-descriptions-item :label="t('apps.colImage')">
             <span class="nx-mono">{{ deployTarget.image }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="端口">
+          <el-descriptions-item :label="t('common.port')">
             <span class="nx-mono">
-              {{ deployTarget.ports.map((p) => `${p.host}→${p.container}`).join(', ') || '无' }}
+              {{ deployTarget.ports.map((p) => `${p.host}→${p.container}`).join(', ') || t('apps.noPorts') }}
             </span>
           </el-descriptions-item>
-          <el-descriptions-item label="卷挂载">
+          <el-descriptions-item :label="t('apps.volumes')">
             <div v-for="(v, i) in deployTarget.volumes" :key="i" class="nx-mono vol-line">
               {{ v.host }} → {{ v.container }}
             </div>
           </el-descriptions-item>
-          <el-descriptions-item label="环境变量">
+          <el-descriptions-item :label="t('apps.envVars')">
             <div v-for="(val, key) in deployTarget.env" :key="key" class="nx-mono env-line">
               {{ key }}={{ val }}
             </div>
@@ -435,9 +445,9 @@ onMounted(() => {
         </p>
       </template>
       <template #footer>
-        <el-button @click="deployVisible = false">取消</el-button>
+        <el-button @click="deployVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="deploying" @click="confirmDeploy">
-          确认部署
+          {{ t('apps.confirmDeploy') }}
         </el-button>
       </template>
     </el-dialog>

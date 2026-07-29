@@ -9,11 +9,13 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Connection, Plus } from '@element-plus/icons-vue';
+import { useI18n } from 'vue-i18n';
 import { useNetworkStore } from '@/stores/network';
 import type { FirewallRuleRequest, InterfaceConfigRequest, NetInterface } from '@/api/types';
 import { formatTime } from '@/utils/format';
 
 const network = useNetworkStore();
+const { t } = useI18n();
 
 /** 当前标签 */
 const activeTab = ref('interfaces');
@@ -51,11 +53,11 @@ const wolMac = ref('');
 /** 接口类型图标文本 */
 function ifaceTypeText(type: string): string {
   const map: Record<string, string> = {
-    ethernet: '有线',
-    wifi: '无线',
-    bridge: '桥接',
+    ethernet: t('network.ifaceTypes.ethernet'),
+    wifi: t('network.ifaceTypes.wifi'),
+    bridge: t('network.ifaceTypes.bridge'),
     vlan: 'VLAN',
-    loopback: '回环',
+    loopback: t('network.ifaceTypes.loopback'),
   };
   return map[type] ?? type;
 }
@@ -84,7 +86,7 @@ async function submitIface(): Promise<void> {
   const payload: InterfaceConfigRequest = { method: ifaceForm.method };
   if (ifaceForm.method === 'static') {
     if (!ifaceForm.ip) {
-      ElMessage.warning('静态配置需填写 IP 地址');
+      ElMessage.warning(t('network.staticNeedsIp'));
       return;
     }
     payload.ip = ifaceForm.ip;
@@ -94,10 +96,10 @@ async function submitIface(): Promise<void> {
   }
   const ok = await network.updateInterface(editingIface.value.name, payload);
   if (ok) {
-    ElMessage.success(`${editingIface.value.name} 配置已应用`);
+    ElMessage.success(t('network.ifaceApplied', { name: editingIface.value.name }));
     ifaceDialogVisible.value = false;
   } else {
-    ElMessage.error(network.lastError ?? '应用失败');
+    ElMessage.error(network.lastError ?? t('network.applyFailed'));
   }
 }
 
@@ -114,28 +116,28 @@ async function submitRule(): Promise<void> {
 
   const ok = await network.addRule(payload);
   if (ok) {
-    ElMessage.success('规则已添加');
+    ElMessage.success(t('network.ruleAdded'));
     ruleDialogVisible.value = false;
     Object.assign(ruleForm, { chain: 'input', protocol: 'tcp', port: '', action: 'accept', source: '', comment: '' });
   } else {
-    ElMessage.error(network.lastError ?? '添加失败');
+    ElMessage.error(network.lastError ?? t('network.addFailed'));
   }
 }
 
 /** 删除防火墙规则 */
 async function removeRule(id: string): Promise<void> {
   try {
-    await ElMessageBox.confirm('确定删除该防火墙规则吗？', '删除规则', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('network.deleteRuleConfirm'), t('network.deleteRuleTitle'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
   } catch {
     return;
   }
   const ok = await network.removeRule(id);
-  if (ok) ElMessage.success('规则已删除');
-  else ElMessage.error(network.lastError ?? '删除失败');
+  if (ok) ElMessage.success(t('network.ruleDeleted'));
+  else ElMessage.error(network.lastError ?? t('network.deleteFailed'));
 }
 
 /** 动作标签类型 */
@@ -161,18 +163,18 @@ const filteredPorts = computed(() => {
 /** 发送 WoL */
 async function wake(mac: string): Promise<void> {
   const ok = await network.sendWol(mac);
-  if (ok) ElMessage.success(`唤醒魔术包已发送至 ${mac}`);
-  else ElMessage.error(network.lastError ?? '发送失败');
+  if (ok) ElMessage.success(t('network.wolSent', { mac }));
+  else ElMessage.error(network.lastError ?? t('network.sendFailed'));
 }
 
 /** 添加 WoL 设备（仅本地提示，后端无添加端点时降级） */
 async function addWolDevice(): Promise<void> {
   if (!wolName.value.trim() || !wolMac.value.trim()) {
-    ElMessage.warning('请填写设备名称和 MAC 地址');
+    ElMessage.warning(t('network.fillWolFields'));
     return;
   }
   // 后端暂无添加设备端点，直接唤醒并提示
-  ElMessage.info('设备已记录（本地），可立即唤醒');
+  ElMessage.info(t('network.wolSaved'));
   await wake(wolMac.value.trim());
   wolName.value = '';
   wolMac.value = '';
@@ -195,7 +197,7 @@ onMounted(() => {
     <el-tabs v-model="activeTab">
       <!-- 标签 1：接口 -->
       <el-tab-pane name="interfaces">
-        <template #label><span class="nv-tab-label">接口</span></template>
+        <template #label><span class="nv-tab-label">{{ t('network.tabInterfaces') }}</span></template>
         <div class="nv-iface-grid">
           <div
             v-for="iface in network.interfaces"
@@ -209,7 +211,7 @@ onMounted(() => {
               <span
                 class="nx-dot"
                 :class="iface.state === 'up' ? 'nx-dot--ok' : 'nx-dot--error'"
-                :title="iface.state === 'up' ? '已连接' : '未连接'"
+                :title="iface.state === 'up' ? t('common.connected') : t('common.disconnected')"
               />
             </div>
             <div class="nv-iface__type">{{ ifaceTypeText(iface.type) }}</div>
@@ -218,7 +220,7 @@ onMounted(() => {
               {{ iface.mac }}<span v-if="iface.speed"> · {{ iface.speed }}</span>
             </div>
             <div v-if="iface.type !== 'loopback'" class="nv-iface__ops">
-              <el-button size="small" @click="openIfaceEdit(iface)">配置</el-button>
+              <el-button size="small" @click="openIfaceEdit(iface)">{{ t('common.config') }}</el-button>
             </div>
           </div>
         </div>
@@ -226,69 +228,69 @@ onMounted(() => {
 
       <!-- 标签 2：防火墙 -->
       <el-tab-pane name="firewall">
-        <template #label><span class="nv-tab-label">防火墙</span></template>
+        <template #label><span class="nv-tab-label">{{ t('network.tabFirewall') }}</span></template>
         <div class="nx-panel">
           <el-table v-loading="network.loading" :data="network.firewallRules" size="small" stripe>
-            <el-table-column prop="chain" label="链" width="90">
+            <el-table-column prop="chain" :label="t('common.chain')" width="90">
               <template #default="{ row }">
                 <span class="nx-mono">{{ row.chain.toUpperCase() }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="protocol" label="协议" width="80">
+            <el-table-column prop="protocol" :label="t('common.protocol')" width="80">
               <template #default="{ row }">
                 <span class="nx-mono">{{ row.protocol.toUpperCase() }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="端口" width="90">
+            <el-table-column :label="t('common.port')" width="90">
               <template #default="{ row }">
-                <span class="nx-mono">{{ row.port ?? '全部' }}</span>
+                <span class="nx-mono">{{ row.port ?? t('network.colAll') }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="动作" width="90">
+            <el-table-column :label="t('common.action')" width="90">
               <template #default="{ row }">
                 <el-tag :type="actionTag(row.action)" size="small">{{ row.action.toUpperCase() }}</el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="来源" min-width="140">
+            <el-table-column :label="t('common.source')" min-width="140">
               <template #default="{ row }">
-                <span class="nx-mono">{{ row.source ?? '任意' }}</span>
+                <span class="nx-mono">{{ row.source ?? t('network.colAny') }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="comment" label="备注" min-width="160" />
-            <el-table-column label="操作" width="80" fixed="right">
+            <el-table-column prop="comment" :label="t('common.remark')" min-width="160" />
+            <el-table-column :label="t('common.ops')" width="80" fixed="right">
               <template #default="{ row }">
-                <el-button size="small" text type="danger" @click="removeRule(row.id)">删除</el-button>
+                <el-button size="small" text type="danger" @click="removeRule(row.id)">{{ t('common.delete') }}</el-button>
               </template>
             </el-table-column>
           </el-table>
           <div class="nv-add">
-            <el-button :icon="Plus" type="primary" @click="ruleDialogVisible = true">添加规则</el-button>
+            <el-button :icon="Plus" type="primary" @click="ruleDialogVisible = true">{{ t('network.addRuleTitle') }}</el-button>
           </div>
         </div>
       </el-tab-pane>
 
       <!-- 标签 3：端口 -->
       <el-tab-pane name="ports">
-        <template #label><span class="nv-tab-label">端口</span></template>
+        <template #label><span class="nv-tab-label">{{ t('network.tabPorts') }}</span></template>
         <div class="nx-panel">
           <el-input
             v-model="portSearch"
-            placeholder="搜索端口 / 进程 / 地址…"
+            :placeholder="t('network.searchPorts')"
             clearable
             class="nv-port-search"
           />
           <el-table v-loading="network.loading" :data="filteredPorts" size="small" stripe>
-            <el-table-column prop="protocol" label="协议" width="80">
+            <el-table-column prop="protocol" :label="t('common.protocol')" width="80">
               <template #default="{ row }">
                 <span class="nx-mono">{{ row.protocol.toUpperCase() }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="地址:端口" min-width="180">
+            <el-table-column :label="t('network.addrPort')" min-width="180">
               <template #default="{ row }">
                 <span class="nx-mono">{{ row.localAddress }}:{{ row.port }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="process" label="进程" min-width="140">
+            <el-table-column prop="process" :label="t('common.process')" min-width="140">
               <template #default="{ row }">
                 <span class="nx-mono">{{ row.process ?? '—' }}</span>
               </template>
@@ -304,31 +306,31 @@ onMounted(() => {
 
       <!-- 标签 4：WoL -->
       <el-tab-pane name="wol">
-        <template #label><span class="nv-tab-label">网络唤醒</span></template>
+        <template #label><span class="nv-tab-label">{{ t('network.tabWol') }}</span></template>
         <div class="nx-panel">
-          <div v-if="network.wolDevices.length === 0" class="nv-empty">暂无已保存设备</div>
+          <div v-if="network.wolDevices.length === 0" class="nv-empty">{{ t('network.noWolDevices') }}</div>
           <div class="nv-wol-list">
             <div v-for="dev in network.wolDevices" :key="dev.mac" class="nv-wol">
               <div class="nv-wol__info">
                 <div class="nv-wol__name">{{ dev.name }}</div>
                 <div class="nv-wol__meta nx-mono">
                   {{ dev.mac }}
-                  <span v-if="dev.lastWake"> · 上次唤醒 {{ formatTime(dev.lastWake) }}</span>
+                  <span v-if="dev.lastWake">{{ t('network.lastWake', { time: formatTime(dev.lastWake) }) }}</span>
                 </div>
               </div>
-              <el-button size="small" type="primary" @click="wake(dev.mac)">唤醒</el-button>
+              <el-button size="small" type="primary" @click="wake(dev.mac)">{{ t('common.wake') }}</el-button>
             </div>
           </div>
 
           <div class="nv-wol-add">
-            <el-input v-model="wolName" placeholder="设备名称" class="nv-wol-add__input" />
+            <el-input v-model="wolName" :placeholder="t('network.deviceName')" class="nv-wol-add__input" />
             <el-input
               v-model="wolMac"
-              placeholder="MAC 地址（AA:BB:CC:DD:EE:FF）"
+              :placeholder="t('network.macPh')"
               class="nv-wol-add__input nx-mono"
               :class="{ 'nv-wol-add__input--invalid': wolMac && !macValid }"
             />
-            <el-button :icon="Plus" :disabled="!macValid" @click="addWolDevice">添加并唤醒</el-button>
+            <el-button :icon="Plus" :disabled="!macValid" @click="addWolDevice">{{ t('network.addAndWake') }}</el-button>
           </div>
         </div>
       </el-tab-pane>
@@ -337,76 +339,76 @@ onMounted(() => {
     <!-- 接口配置对话框 -->
     <el-dialog
       v-model="ifaceDialogVisible"
-      :title="`配置接口 — ${editingIface?.name ?? ''}`"
+      :title="t('network.configIface', { name: editingIface?.name ?? '' })"
       width="460px"
       append-to-body
     >
       <el-form label-position="top">
-        <el-form-item label="配置方式">
+        <el-form-item :label="t('network.configMethod')">
           <el-radio-group v-model="ifaceForm.method">
-            <el-radio value="dhcp">DHCP 自动</el-radio>
-            <el-radio value="static">静态 IP</el-radio>
+            <el-radio value="dhcp">{{ t('network.dhcp') }}</el-radio>
+            <el-radio value="static">{{ t('network.static') }}</el-radio>
           </el-radio-group>
         </el-form-item>
         <template v-if="ifaceForm.method === 'static'">
-          <el-form-item label="IP 地址">
+          <el-form-item :label="t('network.ipAddress')">
             <el-input v-model="ifaceForm.ip" placeholder="192.168.50.10" class="nx-mono" />
           </el-form-item>
-          <el-form-item label="子网掩码（前缀长度）">
+          <el-form-item :label="t('network.subnet')">
             <el-input v-model="ifaceForm.netmask" placeholder="24" class="nx-mono" />
           </el-form-item>
-          <el-form-item label="网关">
+          <el-form-item :label="t('network.gateway')">
             <el-input v-model="ifaceForm.gateway" placeholder="192.168.50.1" class="nx-mono" />
           </el-form-item>
-          <el-form-item label="DNS（逗号分隔）">
+          <el-form-item :label="t('network.dns')">
             <el-input v-model="ifaceDnsText" placeholder="223.5.5.5, 119.29.29.29" class="nx-mono" />
           </el-form-item>
         </template>
       </el-form>
       <template #footer>
-        <el-button @click="ifaceDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitIface">应用</el-button>
+        <el-button @click="ifaceDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitIface">{{ t('common.apply') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 防火墙规则对话框 -->
-    <el-dialog v-model="ruleDialogVisible" title="添加防火墙规则" width="460px" append-to-body>
+    <el-dialog v-model="ruleDialogVisible" :title="t('network.addRuleTitle')" width="460px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="链">
+        <el-form-item :label="t('common.chain')">
           <el-select v-model="ruleForm.chain" style="width: 100%">
-            <el-option label="INPUT（入站）" value="input" />
-            <el-option label="FORWARD（转发）" value="forward" />
-            <el-option label="OUTPUT（出站）" value="output" />
+            <el-option :label="t('network.chainInput')" value="input" />
+            <el-option :label="t('network.chainForward')" value="forward" />
+            <el-option :label="t('network.chainOutput')" value="output" />
           </el-select>
         </el-form-item>
-        <el-form-item label="协议">
+        <el-form-item :label="t('common.protocol')">
           <el-select v-model="ruleForm.protocol" style="width: 100%">
             <el-option label="TCP" value="tcp" />
             <el-option label="UDP" value="udp" />
             <el-option label="ICMP" value="icmp" />
-            <el-option label="全部" value="all" />
+            <el-option :label="t('common.all')" value="all" />
           </el-select>
         </el-form-item>
-        <el-form-item label="端口（留空=全部）">
-          <el-input v-model="ruleForm.port" placeholder="如 22 或 8000-8100" class="nx-mono" />
+        <el-form-item :label="t('network.portLabel')">
+          <el-input v-model="ruleForm.port" :placeholder="t('network.portPh')" class="nx-mono" />
         </el-form-item>
-        <el-form-item label="动作">
+        <el-form-item :label="t('common.action')">
           <el-radio-group v-model="ruleForm.action">
-            <el-radio value="accept">允许</el-radio>
-            <el-radio value="drop">丢弃</el-radio>
-            <el-radio value="reject">拒绝</el-radio>
+            <el-radio value="accept">{{ t('network.actionAccept') }}</el-radio>
+            <el-radio value="drop">{{ t('network.actionDrop') }}</el-radio>
+            <el-radio value="reject">{{ t('network.actionReject') }}</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="来源（留空=任意）">
+        <el-form-item :label="t('network.sourceLabel')">
           <el-input v-model="ruleForm.source" placeholder="192.168.50.0/24" class="nx-mono" />
         </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="ruleForm.comment" placeholder="规则用途说明" />
+        <el-form-item :label="t('common.remark')">
+          <el-input v-model="ruleForm.comment" :placeholder="t('network.ruleComment')" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="ruleDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitRule">添加</el-button>
+        <el-button @click="ruleDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitRule">{{ t('common.add') }}</el-button>
       </template>
     </el-dialog>
   </div>

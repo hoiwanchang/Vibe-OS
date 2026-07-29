@@ -1,6 +1,8 @@
 /**
  * 格式化工具函数（纯函数，单元测试覆盖）
+ * 时长格式化经 i18n 输出，随语言切换
  */
+import { t } from '@/i18n';
 
 const UNITS = ['B', 'KB', 'MB', 'GB', 'TB', 'PB'] as const;
 
@@ -40,10 +42,10 @@ export function formatUptime(seconds: number | null | undefined): string {
   const hours = Math.floor((s % 86400) / 3600);
   const minutes = Math.floor((s % 3600) / 60);
 
-  if (days > 0) return `${days} 天 ${hours} 小时`;
-  if (hours > 0) return `${hours} 小时 ${minutes} 分`;
-  if (minutes > 0) return `${minutes} 分 ${s % 60} 秒`;
-  return `${s} 秒`;
+  if (days > 0) return t('format.uptime.days', { days, hours });
+  if (hours > 0) return t('format.uptime.hours', { hours, minutes });
+  if (minutes > 0) return t('format.uptime.minutes', { minutes, seconds: s % 60 });
+  return t('format.uptime.seconds', { seconds: s });
 }
 
 /**

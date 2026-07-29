@@ -9,10 +9,13 @@
  */
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 import { Plus, Setting, VideoPause, VideoPlay } from '@element-plus/icons-vue';
 import { useDownloadStore } from '@/stores/download';
 import type { DownloadTask } from '@/api/types';
 import { formatBytes } from '@/utils/format';
+
+const { t } = useI18n();
 
 const download = useDownloadStore();
 
@@ -29,12 +32,12 @@ const settingsForm = ref<Record<string, string>>({});
 /** 状态中文 + 颜色 */
 function statusText(status: string): string {
   const map: Record<string, string> = {
-    active: '下载中',
-    waiting: '等待中',
-    paused: '已暂停',
-    complete: '已完成',
-    error: '出错',
-    removed: '已删除',
+    active: t('download.statusMap.active'),
+    waiting: t('download.statusMap.waiting'),
+    paused: t('download.statusMap.paused'),
+    complete: t('download.statusMap.complete'),
+    error: t('download.statusMap.error'),
+    removed: t('download.statusMap.removed'),
   };
   return map[status] ?? status;
 }
@@ -76,19 +79,19 @@ async function submitAdd(): Promise<void> {
     .map((l) => l.trim())
     .filter(Boolean);
   if (urls.length === 0) {
-    ElMessage.warning('请输入至少一个下载链接');
+    ElMessage.warning(t('download.enterUrls'));
     return;
   }
   adding.value = true;
   const ok = await download.addTask(urls, addDir.value.trim() || undefined);
   adding.value = false;
   if (ok) {
-    ElMessage.success(`已添加 ${urls.length} 个下载任务`);
+    ElMessage.success(t('download.addedTasks', { count: urls.length }));
     addVisible.value = false;
     addUrls.value = '';
     addDir.value = '';
   } else {
-    ElMessage.error(download.lastError ?? '添加失败');
+    ElMessage.error(download.lastError ?? t('download.addFailed'));
   }
 }
 
@@ -105,16 +108,18 @@ async function toggleTask(task: DownloadTask): Promise<void> {
 async function removeTask(task: DownloadTask): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      task.status === 'complete' ? `删除「${task.name}」的下载记录？` : `确定删除「${task.name}」吗？`,
-      '删除任务',
-      { confirmButtonText: '删除', cancelButtonText: '取消', type: 'warning' },
+      task.status === 'complete'
+        ? t('download.deleteCompleteConfirm', { name: task.name })
+        : t('download.deleteActiveConfirm', { name: task.name }),
+      t('download.deleteTitle'),
+      { confirmButtonText: t('common.delete'), cancelButtonText: t('common.cancel'), type: 'warning' },
     );
   } catch {
     return;
   }
   const ok = await download.removeTask(task.gid);
-  if (ok) ElMessage.success('任务已删除');
-  else ElMessage.error(download.lastError ?? '删除失败');
+  if (ok) ElMessage.success(t('download.taskDeleted'));
+  else ElMessage.error(download.lastError ?? t('download.deleteFailed'));
 }
 
 /** 打开设置抽屉 */
@@ -128,10 +133,10 @@ async function openSettings(): Promise<void> {
 async function saveSettings(): Promise<void> {
   const ok = await download.updateSettings({ ...settingsForm.value });
   if (ok) {
-    ElMessage.success('设置已保存');
+    ElMessage.success(t('download.settingsSaved'));
     settingsVisible.value = false;
   } else {
-    ElMessage.error(download.lastError ?? '保存失败');
+    ElMessage.error(download.lastError ?? t('download.saveFailed'));
   }
 }
 
@@ -173,9 +178,9 @@ onUnmounted(() => {
   <div class="dv-view">
     <!-- 工具栏 -->
     <div class="dv-toolbar">
-      <el-button :icon="Plus" type="primary" size="small" @click="addVisible = true">新建下载</el-button>
-      <el-button :icon="VideoPause" size="small" @click="download.pauseAll()">全部暂停</el-button>
-      <el-button :icon="VideoPlay" size="small" @click="download.resumeAll()">全部开始</el-button>
+      <el-button :icon="Plus" type="primary" size="small" @click="addVisible = true">{{ t('download.newDownload') }}</el-button>
+      <el-button :icon="VideoPause" size="small" @click="download.pauseAll()">{{ t('download.pauseAll') }}</el-button>
+      <el-button :icon="VideoPlay" size="small" @click="download.resumeAll()">{{ t('download.resumeAll') }}</el-button>
       <div class="dv-toolbar__spacer" />
       <el-button :icon="Setting" size="small" circle @click="openSettings" />
     </div>
@@ -183,7 +188,7 @@ onUnmounted(() => {
     <!-- 下载列表 -->
     <div v-loading="download.loading" class="dv-list">
       <div v-if="sortedTasks.length === 0 && !download.loading" class="dv-empty">
-        暂无下载任务，点击「新建下载」开始
+        {{ t('download.noTasks') }}
       </div>
 
       <div
@@ -213,12 +218,12 @@ onUnmounted(() => {
             {{ task.progress.toFixed(0) }}% · {{ speedText(task.downloadSpeed) }} · ETA {{ etaText(task.eta) }}
           </template>
           <template v-else-if="task.status === 'complete'">
-            完成 · {{ formatBytes(task.totalBytes) }}
+            {{ t('download.done', { size: formatBytes(task.totalBytes) }) }}
           </template>
           <template v-else>
             {{ formatBytes(task.completedBytes) }} / {{ formatBytes(task.totalBytes) }}
           </template>
-          <span v-if="task.connections > 0"> · {{ task.connections }} 连接</span>
+          <span v-if="task.connections > 0">{{ t('download.connCount', { count: task.connections }) }}</span>
         </div>
 
         <!-- 错误信息 -->
@@ -240,15 +245,15 @@ onUnmounted(() => {
             size="small"
             :icon="VideoPause"
             @click="toggleTask(task)"
-          >暂停</el-button>
+          >{{ t('common.pause') }}</el-button>
           <el-button
             v-else-if="task.status === 'paused'"
             size="small"
             :icon="VideoPlay"
             @click="toggleTask(task)"
-          >继续</el-button>
+          >{{ t('common.resume') }}</el-button>
           <el-button size="small" type="danger" plain @click="removeTask(task)">
-            {{ task.status === 'complete' ? '删除记录' : '删除' }}
+            {{ task.status === 'complete' ? t('download.deleteRecord') : t('common.delete') }}
           </el-button>
         </div>
       </div>
@@ -256,16 +261,16 @@ onUnmounted(() => {
 
     <!-- 状态栏 -->
     <div class="dv-statusbar nx-mono">
-      <span>活动 {{ download.summary.active }}</span>
-      <span>等待 {{ download.summary.waiting }}</span>
-      <span>已完成 {{ download.summary.complete }}</span>
-      <span class="dv-statusbar__speed">总速度 {{ speedText(download.summary.totalSpeed) }}</span>
+      <span>{{ t('download.activeCount', { count: download.summary.active }) }}</span>
+      <span>{{ t('download.waitingCount', { count: download.summary.waiting }) }}</span>
+      <span>{{ t('download.completeCount', { count: download.summary.complete }) }}</span>
+      <span class="dv-statusbar__speed">{{ t('download.totalSpeed', { speed: speedText(download.summary.totalSpeed) }) }}</span>
     </div>
 
     <!-- 新建下载对话框 -->
-    <el-dialog v-model="addVisible" title="新建下载" width="520px" append-to-body>
+    <el-dialog v-model="addVisible" :title="t('download.addTitle')" width="520px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="下载链接（每行一个，支持 HTTP/BT/磁力链接）">
+        <el-form-item :label="t('download.urlsLabel')">
           <el-input
             v-model="addUrls"
             type="textarea"
@@ -274,35 +279,35 @@ onUnmounted(() => {
             class="nx-mono"
           />
         </el-form-item>
-        <el-form-item label="保存目录（留空使用默认）">
+        <el-form-item :label="t('download.saveDirLabel')">
           <el-input v-model="addDir" placeholder="/data/1000/files/downloads" class="nx-mono" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="addVisible = false">取消</el-button>
-        <el-button type="primary" :loading="adding" @click="submitAdd">添加</el-button>
+        <el-button @click="addVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :loading="adding" @click="submitAdd">{{ t('common.add') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 全局设置抽屉 -->
-    <el-drawer v-model="settingsVisible" title="下载设置" size="400px" append-to-body>
+    <el-drawer v-model="settingsVisible" :title="t('download.settingsTitle')" size="400px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="最大并发下载数">
+        <el-form-item :label="t('download.maxConcurrent')">
           <el-input-number v-model="maxConcurrent" :min="1" :max="16" />
         </el-form-item>
-        <el-form-item label="全局下载限速（MB/s，0=不限）">
+        <el-form-item :label="t('download.globalLimit')">
           <el-input-number v-model="speedLimitMB" :min="0" :max="1024" />
         </el-form-item>
-        <el-form-item label="默认下载目录">
+        <el-form-item :label="t('download.defaultDir')">
           <el-input v-model="settingsForm['dir']" class="nx-mono" />
         </el-form-item>
-        <el-form-item label="BT 监听端口">
+        <el-form-item :label="t('download.btPort')">
           <el-input v-model="settingsForm['bt-listen-port']" placeholder="6881-6999" class="nx-mono" />
         </el-form-item>
-        <el-form-item label="做种比率">
+        <el-form-item :label="t('download.seedRatio')">
           <el-input v-model="settingsForm['seed-ratio']" placeholder="1.0" class="nx-mono" />
         </el-form-item>
-        <el-button type="primary" @click="saveSettings">保存</el-button>
+        <el-button type="primary" @click="saveSettings">{{ t('common.save') }}</el-button>
       </el-form>
     </el-drawer>
   </div>

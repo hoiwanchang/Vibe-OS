@@ -10,9 +10,12 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, VideoPlay } from '@element-plus/icons-vue';
+import { useI18n } from 'vue-i18n';
 import { useSchedulerStore } from '@/stores/scheduler';
 import type { CreateScheduledJobRequest, ScheduledJob } from '@/api/types';
 import { formatTime } from '@/utils/format';
+
+const { t } = useI18n();
 
 const scheduler = useSchedulerStore();
 
@@ -39,19 +42,19 @@ const nextRuns = computed(() => computeNextRuns(form.schedule, 5));
 
 /** 简易 cron 表达式人类可读描述 */
 function describeCron(expr: string): string {
-  if (!expr.trim()) return '（请输入 cron 表达式）';
+  if (!expr.trim()) return t('scheduler.cron.empty');
   const parts = expr.trim().split(/\s+/);
-  if (parts.length !== 5) return '（格式应为：分 时 日 月 周）';
+  if (parts.length !== 5) return t('scheduler.cron.badFormat');
   const [min, hour, dom, , dow] = parts as [string, string, string, string, string];
   const time = `${hour.padStart(2, '0')}:${min.padStart(2, '0')}`;
-  if (dom === '*' && dow === '*') return `每天 ${time}`;
-  if (dom === '*' && dow === '0') return `每周日 ${time}`;
-  if (dom === '*' && dow === '1') return `每周一 ${time}`;
-  if (dom === '*' && dow === '6') return `每周六 ${time}`;
-  if (dom === '1' && dow === '*') return `每月 1 日 ${time}`;
-  if (min === '0' && hour === '*') return `每小时整点`;
-  if (min === '*/30') return `每 30 分钟`;
-  return `自定义计划（${expr}）`;
+  if (dom === '*' && dow === '*') return t('scheduler.cron.daily', { time });
+  if (dom === '*' && dow === '0') return t('scheduler.cron.sunday', { time });
+  if (dom === '*' && dow === '1') return t('scheduler.cron.monday', { time });
+  if (dom === '*' && dow === '6') return t('scheduler.cron.saturday', { time });
+  if (dom === '1' && dow === '*') return t('scheduler.cron.monthly', { time });
+  if (min === '0' && hour === '*') return t('scheduler.cron.hourly');
+  if (min === '*/30') return t('scheduler.cron.every30');
+  return t('scheduler.cron.custom', { expr });
 }
 
 /** 估算下次 N 次执行时间（仅支持"每天 HH:MM"类简单表达式） */
@@ -91,8 +94,12 @@ function statusTag(status: string | null): 'success' | 'danger' | 'warning' | 'i
 }
 
 function statusText(status: string | null): string {
-  const map: Record<string, string> = { success: '成功', failed: '失败', running: '运行中' };
-  return status ? (map[status] ?? status) : '从未运行';
+  const map: Record<string, string> = {
+    success: t('scheduler.statusMap.success'),
+    failed: t('scheduler.statusMap.failed'),
+    running: t('scheduler.statusMap.running'),
+  };
+  return status ? (map[status] ?? status) : t('scheduler.neverRun');
 }
 
 /** 执行历史节点类型 */
@@ -124,7 +131,7 @@ function openEdit(job: ScheduledJob): void {
 /** 提交表单 */
 async function submit(): Promise<void> {
   if (!form.name.trim() || !form.command.trim() || !form.schedule.trim()) {
-    ElMessage.warning('请填写名称、命令和 cron 表达式');
+    ElMessage.warning(t('scheduler.fillRequired'));
     return;
   }
   const payload: CreateScheduledJobRequest = {
@@ -139,40 +146,40 @@ async function submit(): Promise<void> {
     : await scheduler.createJob(payload);
   submitting.value = false;
   if (ok) {
-    ElMessage.success(editingId.value ? '任务已更新' : '任务已创建');
+    ElMessage.success(editingId.value ? t('scheduler.taskUpdated') : t('scheduler.taskCreated'));
     dialogVisible.value = false;
   } else {
-    ElMessage.error(scheduler.lastError ?? '操作失败');
+    ElMessage.error(scheduler.lastError ?? t('scheduler.opFailed'));
   }
 }
 
 /** 启用/禁用切换 */
 async function toggleEnabled(job: ScheduledJob): Promise<void> {
   const ok = await scheduler.updateJob(job.id, { enabled: !job.enabled });
-  if (!ok) ElMessage.error(scheduler.lastError ?? '切换失败');
+  if (!ok) ElMessage.error(scheduler.lastError ?? t('scheduler.toggleFailed'));
 }
 
 /** 立即执行 */
 async function runJob(job: ScheduledJob): Promise<void> {
   const ok = await scheduler.runJob(job.id);
-  if (ok) ElMessage.success(`已启动「${job.name}」`);
-  else ElMessage.error(scheduler.lastError ?? '启动失败');
+  if (ok) ElMessage.success(t('scheduler.jobStarted', { name: job.name }));
+  else ElMessage.error(scheduler.lastError ?? t('scheduler.startFailed'));
 }
 
 /** 删除任务 */
 async function deleteJob(job: ScheduledJob): Promise<void> {
   try {
-    await ElMessageBox.confirm(`确定删除计划任务「${job.name}」吗？`, '删除任务', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('scheduler.deleteConfirm', { name: job.name }), t('scheduler.deleteTitle'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
   } catch {
     return;
   }
   const ok = await scheduler.deleteJob(job.id);
-  if (ok) ElMessage.success('任务已删除');
-  else ElMessage.error(scheduler.lastError ?? '删除失败');
+  if (ok) ElMessage.success(t('scheduler.taskDeleted'));
+  else ElMessage.error(scheduler.lastError ?? t('scheduler.deleteFailed'));
 }
 
 /** 打开历史抽屉 */
@@ -196,65 +203,65 @@ onMounted(() => {
 <template>
   <div class="sc-view">
     <div class="nx-panel">
-      <div class="sc-section-title">计划任务（Cron）</div>
+      <div class="sc-section-title">{{ t('scheduler.title') }}</div>
 
       <el-table v-loading="scheduler.loading" :data="scheduler.jobs" size="small" stripe>
-        <el-table-column prop="name" label="名称" min-width="120">
+        <el-table-column prop="name" :label="t('common.name')" min-width="120">
           <template #default="{ row }">
             <span class="sc-name">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="command" label="命令" min-width="220">
+        <el-table-column prop="command" :label="t('scheduler.colCommand')" min-width="220">
           <template #default="{ row }">
             <span class="nx-mono sc-cmd" :title="row.command">{{ row.command }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="计划" width="110">
+        <el-table-column :label="t('scheduler.colSchedule')" width="110">
           <template #default="{ row }">
             <span class="nx-mono">{{ row.schedule }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="启用" width="80">
+        <el-table-column :label="t('scheduler.colEnabled')" width="80">
           <template #default="{ row }">
             <el-switch size="small" :model-value="row.enabled" @change="toggleEnabled(row)" />
           </template>
         </el-table-column>
-        <el-table-column label="上次执行" width="140">
+        <el-table-column :label="t('scheduler.colLastRun')" width="140">
           <template #default="{ row }">
             <el-tag v-if="row.lastStatus" :type="statusTag(row.lastStatus)" size="small">
               {{ statusText(row.lastStatus) }}
             </el-tag>
-            <span v-else class="sc-never">从未运行</span>
+            <span v-else class="sc-never">{{ t('scheduler.neverRun') }}</span>
             <div class="nx-mono sc-last-time">{{ formatTime(row.lastRun) }}</div>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column :label="t('common.ops')" width="200" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" text :icon="VideoPlay" @click="runJob(row)">执行</el-button>
-            <el-button size="small" text @click="showHistory(row)">历史</el-button>
-            <el-button size="small" text @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" text type="danger" @click="deleteJob(row)">删除</el-button>
+            <el-button size="small" text :icon="VideoPlay" @click="runJob(row)">{{ t('common.execute') }}</el-button>
+            <el-button size="small" text @click="showHistory(row)">{{ t('common.history') }}</el-button>
+            <el-button size="small" text @click="openEdit(row)">{{ t('common.edit') }}</el-button>
+            <el-button size="small" text type="danger" @click="deleteJob(row)">{{ t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <div class="sc-create">
-        <el-button :icon="Plus" type="primary" @click="openCreate">新建任务</el-button>
+        <el-button :icon="Plus" type="primary" @click="openCreate">{{ t('scheduler.newTask') }}</el-button>
       </div>
     </div>
 
     <!-- 新建/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="editingId ? '编辑计划任务' : '新建计划任务'"
+      :title="editingId ? t('scheduler.editTask') : t('scheduler.createTask')"
       width="560px"
       append-to-body
     >
       <el-form label-position="top">
-        <el-form-item label="任务名称">
-          <el-input v-model="form.name" placeholder="如 日志清理" />
+        <el-form-item :label="t('scheduler.taskName')">
+          <el-input v-model="form.name" :placeholder="t('scheduler.taskNamePh')" />
         </el-form-item>
-        <el-form-item label="命令">
+        <el-form-item :label="t('scheduler.colCommand')">
           <el-input
             v-model="form.command"
             type="textarea"
@@ -263,24 +270,24 @@ onMounted(() => {
             class="nx-mono"
           />
         </el-form-item>
-        <el-form-item label="Cron 表达式">
+        <el-form-item :label="t('scheduler.cronExpr')">
           <el-input v-model="form.schedule" placeholder="0 3 * * *" class="nx-mono" />
           <div class="sc-cron-preview">{{ cronPreview }}</div>
           <div v-if="nextRuns.length > 0" class="sc-next-runs">
-            <span class="sc-next-runs__label">下次执行：</span>
+            <span class="sc-next-runs__label">{{ t('scheduler.nextRuns') }}</span>
             <span v-for="(d, i) in nextRuns" :key="i" class="nx-mono sc-next-runs__item">
               {{ nextRunText(d) }}
             </span>
           </div>
         </el-form-item>
-        <el-form-item label="启用">
+        <el-form-item :label="t('scheduler.colEnabled')">
           <el-switch v-model="form.enabled" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="submitting" @click="submit">
-          {{ editingId ? '保存' : '创建' }}
+          {{ editingId ? t('common.save') : t('common.create') }}
         </el-button>
       </template>
     </el-dialog>
@@ -288,12 +295,12 @@ onMounted(() => {
     <!-- 执行历史抽屉 -->
     <el-drawer
       v-model="historyVisible"
-      :title="`执行历史 — ${historyJob?.name ?? ''}`"
+      :title="t('scheduler.execHistory', { name: historyJob?.name ?? '' })"
       size="480px"
       append-to-body
     >
       <div v-if="(scheduler.executions[historyJob?.id ?? ''] ?? []).length === 0" class="sc-empty">
-        暂无执行记录
+        {{ t('scheduler.noExec') }}
       </div>
       <el-timeline v-else>
         <el-timeline-item
@@ -305,7 +312,7 @@ onMounted(() => {
         >
           <div class="sc-exec">
             <span class="sc-exec__status">{{ statusText(exec.status) }}</span>
-            <span class="nx-mono sc-exec__code">退出码 {{ exec.exitCode ?? '—' }}</span>
+            <span class="nx-mono sc-exec__code">{{ t('common.exitCode') }} {{ exec.exitCode ?? '—' }}</span>
           </div>
           <div v-if="exec.stdout" class="sc-exec__block">
             <div class="sc-exec__block-label">stdout</div>

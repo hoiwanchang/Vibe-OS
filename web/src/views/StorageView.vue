@@ -11,11 +11,13 @@
 import { computed, onMounted, onUnmounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Coin, Plus } from '@element-plus/icons-vue';
+import { useI18n } from 'vue-i18n';
 import { useStorageStore } from '@/stores/storage';
 import type { CreatePoolRequest, DiskSmartDetail } from '@/api/types';
 import { formatBytes, usageLevel } from '@/utils/format';
 
 const storage = useStorageStore();
+const { t } = useI18n();
 
 /** 创建池对话框 */
 const createVisible = ref(false);
@@ -37,12 +39,12 @@ let scrubTimer: ReturnType<typeof setInterval> | null = null;
 
 /** RAID 级别选项（含最少盘数约束） */
 const raidLevels = [
-  { value: 'raid0', label: 'RAID 0（条带，≥2 盘）', min: 2 },
-  { value: 'raid1', label: 'RAID 1（镜像，≥2 盘）', min: 2 },
-  { value: 'raid5', label: 'RAID 5（奇偶校验，≥3 盘）', min: 3 },
-  { value: 'raid6', label: 'RAID 6（双重校验，≥4 盘）', min: 4 },
-  { value: 'raid10', label: 'RAID 10（镜像+条带，≥4 盘）', min: 4 },
-  { value: 'jbod', label: 'JBOD（线性合并，≥1 盘）', min: 1 },
+  { value: 'raid0', label: t('storage.raidLabels.raid0'), min: 2 },
+  { value: 'raid1', label: t('storage.raidLabels.raid1'), min: 2 },
+  { value: 'raid5', label: t('storage.raidLabels.raid5'), min: 3 },
+  { value: 'raid6', label: t('storage.raidLabels.raid6'), min: 4 },
+  { value: 'raid10', label: t('storage.raidLabels.raid10'), min: 4 },
+  { value: 'jbod', label: t('storage.raidLabels.jbod'), min: 1 },
 ] as const;
 
 /** 可选磁盘（未加入任何池） */
@@ -64,10 +66,10 @@ function poolTagType(state: string): 'success' | 'warning' | 'danger' | 'info' {
 /** 池状态中文 */
 function poolStateText(state: string): string {
   const map: Record<string, string> = {
-    active: '正常',
-    degraded: '降级',
-    rebuilding: '重建中',
-    inactive: '未激活',
+    active: t('common.normal'),
+    degraded: t('common.degraded'),
+    rebuilding: t('common.rebuilding'),
+    inactive: t('common.inactive'),
   };
   return map[state] ?? state;
 }
@@ -81,22 +83,22 @@ const createDiskValid = computed(() => {
 /** 提交创建池 */
 async function submitCreate(): Promise<void> {
   if (!createForm.value.name.trim()) {
-    ElMessage.warning('请输入存储池名称');
+    ElMessage.warning(t('storage.enterPoolName'));
     return;
   }
   if (!createDiskValid.value) {
-    ElMessage.warning('所选磁盘数量不满足该 RAID 级别要求');
+    ElMessage.warning(t('storage.diskCountMismatch'));
     return;
   }
   creating.value = true;
   const ok = await storage.createPool({ ...createForm.value });
   creating.value = false;
   if (ok) {
-    ElMessage.success(`存储池 ${createForm.value.name} 创建成功`);
+    ElMessage.success(t('storage.poolCreated', { name: createForm.value.name }));
     createVisible.value = false;
     createForm.value = { name: '', level: 'raid1', disks: [] };
   } else {
-    ElMessage.error(storage.lastError ?? '创建失败');
+    ElMessage.error(storage.lastError ?? t('storage.createFailed'));
   }
 }
 
@@ -104,32 +106,32 @@ async function submitCreate(): Promise<void> {
 async function destroyPool(name: string): Promise<void> {
   try {
     await ElMessageBox.prompt(
-      `此操作将永久销毁存储池「${name}」及其全部数据，且不可恢复。请输入池名确认：`,
-      '销毁存储池',
+      t('storage.destroyConfirm', { name }),
+      t('storage.destroyTitle'),
       {
-        confirmButtonText: '销毁',
-        cancelButtonText: '取消',
+        confirmButtonText: t('storage.destroy'),
+        cancelButtonText: t('common.cancel'),
         type: 'error',
         inputPlaceholder: name,
-        inputValidator: (v: string) => v === name || '池名不匹配',
+        inputValidator: (v: string) => v === name || t('storage.poolNameMismatch'),
       },
     );
   } catch {
     return;
   }
   const ok = await storage.destroyPool(name);
-  if (ok) ElMessage.success(`存储池 ${name} 已销毁`);
-  else ElMessage.error(storage.lastError ?? '销毁失败');
+  if (ok) ElMessage.success(t('storage.poolDestroyed', { name }));
+  else ElMessage.error(storage.lastError ?? t('storage.destroyFailed'));
 }
 
 /** 启动 Scrub 并开始轮询 */
 async function startScrub(name: string): Promise<void> {
   const ok = await storage.startScrub(name);
   if (ok) {
-    ElMessage.success(`已启动 ${name} 的 Scrub 校验`);
+    ElMessage.success(t('storage.scrubStarted', { name }));
     startScrubPolling();
   } else {
-    ElMessage.error(storage.lastError ?? '启动失败');
+    ElMessage.error(storage.lastError ?? t('storage.startFailed'));
   }
 }
 
@@ -174,15 +176,15 @@ function openExpand(name: string): void {
 /** 提交扩容 */
 async function submitExpand(): Promise<void> {
   if (expandDisks.value.length === 0) {
-    ElMessage.warning('请至少选择一块磁盘');
+    ElMessage.warning(t('storage.selectAtLeastOneDisk'));
     return;
   }
   const ok = await storage.expandPool(expandPool.value, expandDisks.value);
   if (ok) {
-    ElMessage.success('扩容指令已下发');
+    ElMessage.success(t('storage.expandIssued'));
     expandVisible.value = false;
   } else {
-    ElMessage.error(storage.lastError ?? '扩容失败');
+    ElMessage.error(storage.lastError ?? t('storage.expandFailed'));
   }
 }
 
@@ -199,9 +201,9 @@ onUnmounted(() => {
   <div class="sv-view">
     <!-- 物理磁盘 -->
     <div class="nx-panel">
-      <div class="sv-section-title">物理磁盘</div>
+      <div class="sv-section-title">{{ t('storage.physicalDisks') }}</div>
       <div v-if="storage.disks.length === 0 && !storage.loading" class="sv-empty">
-        未检测到磁盘
+        {{ t('storage.noDisks') }}
       </div>
       <div class="sv-disk-row">
         <div
@@ -215,7 +217,7 @@ onUnmounted(() => {
             <span
               class="nx-dot"
               :style="{ background: smartColor(disk.smart.healthy) }"
-              :title="disk.smart.healthy ? 'SMART 正常' : 'SMART 告警'"
+              :title="disk.smart.healthy ? t('storage.smartOk') : t('storage.smartAlert')"
             />
           </div>
           <div class="sv-disk__model" :title="disk.model">{{ disk.model }}</div>
@@ -224,9 +226,9 @@ onUnmounted(() => {
             <span v-if="disk.smart.temperature !== null"> · {{ disk.smart.temperature }}°C</span>
           </div>
           <div class="sv-disk__pool nx-mono">
-            <template v-if="disk.inPool">池: {{ disk.inPool }}</template>
-            <template v-else-if="disk.mountPoint">挂载: {{ disk.mountPoint }}</template>
-            <template v-else>未使用</template>
+            <template v-if="disk.inPool">{{ t('storage.inPool', { pool: disk.inPool }) }}</template>
+            <template v-else-if="disk.mountPoint">{{ t('storage.mounted', { mount: disk.mountPoint }) }}</template>
+            <template v-else>{{ t('storage.unused') }}</template>
           </div>
         </div>
       </div>
@@ -234,9 +236,9 @@ onUnmounted(() => {
 
     <!-- 存储池列表 -->
     <div class="nx-panel">
-      <div class="sv-section-title">存储池</div>
+      <div class="sv-section-title">{{ t('storage.pools') }}</div>
       <div v-if="storage.pools.length === 0 && !storage.loading" class="sv-empty">
-        暂无存储池，点击下方按钮创建
+        {{ t('storage.noPools') }}
       </div>
       <div class="sv-pool-list">
         <div v-for="pool in storage.pools" :key="pool.name" class="sv-pool">
@@ -244,7 +246,7 @@ onUnmounted(() => {
             <el-icon class="sv-pool__icon"><Coin /></el-icon>
             <span class="sv-pool__name">{{ pool.name }}</span>
             <el-tag :type="poolTagType(pool.state)" size="small">{{ poolStateText(pool.state) }}</el-tag>
-            <span class="sv-pool__raid nx-mono">{{ pool.level.toUpperCase() }} · {{ pool.devices.length }} 盘</span>
+            <span class="sv-pool__raid nx-mono">{{ pool.level.toUpperCase() }} · {{ t('storage.diskCount', { count: pool.devices.length }) }}</span>
           </div>
 
           <div class="sv-pool__usage">
@@ -267,36 +269,36 @@ onUnmounted(() => {
               :stroke-width="6"
               status="success"
             />
-            <span class="nx-mono sv-pool__scrub-label">Scrub 校验中…</span>
+            <span class="nx-mono sv-pool__scrub-label">{{ t('storage.scrubbing') }}</span>
           </div>
 
           <div class="sv-pool__ops">
-            <el-button size="small" @click="openExpand(pool.name)">扩容</el-button>
-            <el-button size="small" @click="startScrub(pool.name)">校验</el-button>
-            <el-button size="small" @click="showSmart(pool.name)">SMART 详情</el-button>
-            <el-button size="small" type="danger" plain @click="destroyPool(pool.name)">销毁</el-button>
+            <el-button size="small" @click="openExpand(pool.name)">{{ t('storage.expand') }}</el-button>
+            <el-button size="small" @click="startScrub(pool.name)">{{ t('storage.scrub') }}</el-button>
+            <el-button size="small" @click="showSmart(pool.name)">{{ t('storage.smartDetail') }}</el-button>
+            <el-button size="small" type="danger" plain @click="destroyPool(pool.name)">{{ t('storage.destroy') }}</el-button>
           </div>
         </div>
       </div>
 
       <div class="sv-create">
-        <el-button :icon="Plus" type="primary" @click="createVisible = true">创建存储池</el-button>
+        <el-button :icon="Plus" type="primary" @click="createVisible = true">{{ t('storage.createPool') }}</el-button>
       </div>
     </div>
 
     <!-- 创建池对话框 -->
-    <el-dialog v-model="createVisible" title="创建存储池" width="520px" append-to-body>
+    <el-dialog v-model="createVisible" :title="t('storage.createPool')" width="520px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="池名称">
-          <el-input v-model="createForm.name" placeholder="如 data-pool" />
+        <el-form-item :label="t('storage.poolName')">
+          <el-input v-model="createForm.name" :placeholder="t('storage.poolNamePh')" />
         </el-form-item>
-        <el-form-item label="RAID 级别">
+        <el-form-item :label="t('storage.raidLevel')">
           <el-select v-model="createForm.level" style="width: 100%">
             <el-option v-for="l in raidLevels" :key="l.value" :label="l.label" :value="l.value" />
           </el-select>
         </el-form-item>
-        <el-form-item label="选择磁盘（未使用）">
-          <div v-if="freeDisks.length === 0" class="sv-empty">无可用磁盘</div>
+        <el-form-item :label="t('storage.selectDisks')">
+          <div v-if="freeDisks.length === 0" class="sv-empty">{{ t('storage.noFreeDisks') }}</div>
           <el-checkbox-group v-model="createForm.disks" class="sv-disk-checks">
             <el-checkbox v-for="d in freeDisks" :key="d.device" :value="d.device">
               <span class="nx-mono">{{ d.device }}</span> · {{ formatBytes(d.sizeBytes) }} · {{ d.model }}
@@ -305,29 +307,35 @@ onUnmounted(() => {
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="createVisible = false">取消</el-button>
+        <el-button @click="createVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="creating" :disabled="!createDiskValid" @click="submitCreate">
-          创建
+          {{ t('common.create') }}
         </el-button>
       </template>
     </el-dialog>
 
     <!-- SMART 详情对话框 -->
-    <el-dialog v-model="smartVisible" :title="`SMART 详情 — ${smartPool}`" width="640px" append-to-body>
-      <div v-if="smartDetails.length === 0" class="sv-empty">无 SMART 数据</div>
+    <el-dialog v-model="smartVisible" :title="`${t('storage.smartDetail')} — ${smartPool}`" width="640px" append-to-body>
+      <div v-if="smartDetails.length === 0" class="sv-empty">{{ t('storage.noSmartData') }}</div>
       <div v-for="d in smartDetails" :key="d.device" class="sv-smart">
         <div class="sv-smart__head">
           <span class="nx-mono">{{ d.device }}</span>
           <el-tag :type="d.healthy ? 'success' : 'danger'" size="small">
-            {{ d.healthy ? '健康' : '告警' }}
+            {{ d.healthy ? t('common.healthy') : t('common.alert') }}
           </el-tag>
           <span class="nx-mono sv-smart__meta">
-            {{ d.temperature ?? '—' }}°C · 通电 {{ d.powerOnHours ?? '—' }} h
+            {{ d.temperature ?? '—' }}°C · {{ t('storage.poweredOn') }} {{ d.powerOnHours ?? '—' }} h
           </span>
         </div>
         <table class="sv-smart__table nx-mono">
           <thead>
-            <tr><th>属性</th><th>当前值</th><th>最差</th><th>阈值</th><th>原始值</th></tr>
+            <tr>
+              <th>{{ t('storage.smartAttrs.attr') }}</th>
+              <th>{{ t('storage.smartAttrs.current') }}</th>
+              <th>{{ t('storage.smartAttrs.worst') }}</th>
+              <th>{{ t('storage.smartAttrs.threshold') }}</th>
+              <th>{{ t('storage.smartAttrs.raw') }}</th>
+            </tr>
           </thead>
           <tbody>
             <tr v-for="(attr, key) in d.attributes" :key="key">
@@ -343,16 +351,16 @@ onUnmounted(() => {
     </el-dialog>
 
     <!-- 扩容对话框 -->
-    <el-dialog v-model="expandVisible" :title="`扩容 — ${expandPool}`" width="480px" append-to-body>
-      <div v-if="freeDisks.length === 0" class="sv-empty">无可用磁盘</div>
+    <el-dialog v-model="expandVisible" :title="`${t('storage.expand')} — ${expandPool}`" width="480px" append-to-body>
+      <div v-if="freeDisks.length === 0" class="sv-empty">{{ t('storage.noFreeDisks') }}</div>
       <el-checkbox-group v-else v-model="expandDisks" class="sv-disk-checks">
         <el-checkbox v-for="d in freeDisks" :key="d.device" :value="d.device">
           <span class="nx-mono">{{ d.device }}</span> · {{ formatBytes(d.sizeBytes) }}
         </el-checkbox>
       </el-checkbox-group>
       <template #footer>
-        <el-button @click="expandVisible = false">取消</el-button>
-        <el-button type="primary" :disabled="expandDisks.length === 0" @click="submitExpand">确认扩容</el-button>
+        <el-button @click="expandVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" :disabled="expandDisks.length === 0" @click="submitExpand">{{ t('storage.confirmExpand') }}</el-button>
       </template>
     </el-dialog>
   </div>

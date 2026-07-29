@@ -4,9 +4,12 @@
  * 提交后由 store 自动创建 /data/naisys/{appname}/ 并绑定容器卷
  */
 import { reactive, ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { listAppTemplates } from '@/utils/nl-parser';
 import { useAppsStore } from '@/stores/apps';
+
+const { t } = useI18n();
 
 const visible = defineModel<boolean>('visible', { default: false });
 
@@ -26,7 +29,7 @@ const submitting = ref(false);
 
 /** 选择模板后自动填充 */
 function applyTemplate(name: string): void {
-  const tpl = templates.find((t) => t.name === name);
+  const tpl = templates.find((item) => item.name === name);
   if (!tpl) return;
   form.name = tpl.name;
   form.image = tpl.image;
@@ -47,7 +50,7 @@ watch(visible, (v) => {
 
 async function submit(): Promise<void> {
   if (!form.name || !form.image) {
-    ElMessage.warning('请填写应用名与镜像');
+    ElMessage.warning(t('deployDialog.fillRequired'));
     return;
   }
   submitting.value = true;
@@ -62,7 +65,7 @@ async function submit(): Promise<void> {
       memoryLimit: form.memoryLimit || undefined,
       cpuLimit: form.cpuLimit,
     });
-    ElMessage.success(`应用 ${form.name} 部署成功，数据目录已创建于 /data/naisys/${form.name}/`);
+    ElMessage.success(t('deployDialog.success', { name: form.name }));
     visible.value = false;
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
@@ -75,15 +78,15 @@ async function submit(): Promise<void> {
 <template>
   <el-dialog
     v-model="visible"
-    title="部署 AI 应用"
+    :title="t('deployDialog.title')"
     width="560px"
     :close-on-click-modal="false"
     destroy-on-close
   >
     <el-form label-position="top" size="default">
-      <el-form-item label="应用模板">
+      <el-form-item :label="t('deployDialog.template')">
         <el-select
-          placeholder="选择模板自动填充配置"
+          :placeholder="t('deployDialog.templatePh')"
           style="width: 100%"
           @change="applyTemplate"
         >
@@ -96,28 +99,28 @@ async function submit(): Promise<void> {
         </el-select>
       </el-form-item>
 
-      <el-form-item label="应用名（容器名）" required>
-        <el-input v-model="form.name" placeholder="如 ollama" />
+      <el-form-item :label="t('deployDialog.appName')" required>
+        <el-input v-model="form.name" :placeholder="t('deployDialog.appNamePh')" />
       </el-form-item>
 
-      <el-form-item label="Docker 镜像" required>
-        <el-input v-model="form.image" placeholder="如 ollama/ollama:latest" />
+      <el-form-item :label="t('deployDialog.dockerImage')" required>
+        <el-input v-model="form.image" :placeholder="t('deployDialog.imagePh')" />
       </el-form-item>
 
       <div style="display: flex; gap: 12px">
-        <el-form-item label="主机端口" style="flex: 1">
+        <el-form-item :label="t('deployDialog.hostPort')" style="flex: 1">
           <el-input-number v-model="form.hostPort" :min="0" :max="65535" style="width: 100%" />
         </el-form-item>
-        <el-form-item label="容器端口" style="flex: 1">
+        <el-form-item :label="t('deployDialog.containerPort')" style="flex: 1">
           <el-input-number v-model="form.containerPort" :min="0" :max="65535" style="width: 100%" />
         </el-form-item>
       </div>
 
       <div style="display: flex; gap: 12px">
-        <el-form-item label="内存限制（如 2g）" style="flex: 1">
-          <el-input v-model="form.memoryLimit" placeholder="留空为不限制" />
+        <el-form-item :label="t('deployDialog.memoryLimit')" style="flex: 1">
+          <el-input v-model="form.memoryLimit" :placeholder="t('deployDialog.memoryPh')" />
         </el-form-item>
-        <el-form-item label="CPU 核数限制" style="flex: 1">
+        <el-form-item :label="t('deployDialog.cpuLimit')" style="flex: 1">
           <el-input-number v-model="form.cpuLimit" :min="0.5" :max="64" :step="0.5" style="width: 100%" />
         </el-form-item>
       </div>
@@ -126,22 +129,22 @@ async function submit(): Promise<void> {
         type="info"
         :closable="false"
         show-icon
-        title="部署时自动执行"
+        :title="t('deployDialog.autoExecTitle')"
       >
         <template #default>
           <div class="nx-mono" style="line-height: 1.9">
-            ① 创建 /data/naisys/{{ form.name || '{appname}' }}/models、data、logs<br />
-            ② 绑定卷挂载：/models（只读）、/data、/logs<br />
-            ③ 重启策略：unless-stopped
+            {{ t('deployDialog.autoExec1', { app: form.name || '{appname}' }) }}<br />
+            {{ t('deployDialog.autoExec2') }}<br />
+            {{ t('deployDialog.autoExec3') }}
           </div>
         </template>
       </el-alert>
     </el-form>
 
     <template #footer>
-      <el-button @click="visible = false">取消</el-button>
+      <el-button @click="visible = false">{{ t('common.cancel') }}</el-button>
       <el-button type="primary" :loading="submitting" @click="submit">
-        确认部署
+        {{ t('common.confirmDeploy') }}
       </el-button>
     </template>
   </el-dialog>

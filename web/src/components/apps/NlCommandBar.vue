@@ -5,9 +5,12 @@
  * 示例："部署 ollama，端口 11434，内存限制 4g，总是重启"
  */
 import { computed, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { useAppsStore } from '@/stores/apps';
 import type { ParseResult } from '@/utils/nl-parser';
+
+const { t, tm } = useI18n();
 
 const store = useAppsStore();
 
@@ -37,7 +40,7 @@ async function confirm(): Promise<void> {
   if (!result.value) return;
   const params = result.value.params;
   if (!params.name || !params.image) {
-    ElMessage.warning('解析结果缺少应用名或镜像，无法执行');
+    ElMessage.warning(t('nl.commandBar.missingParams'));
     return;
   }
   submitting.value = true;
@@ -51,7 +54,7 @@ async function confirm(): Promise<void> {
       cpuLimit: params.cpuLimit,
       restartPolicy: params.restartPolicy ?? 'unless-stopped',
     });
-    ElMessage.success(`指令已执行：${params.name} 部署完成`);
+    ElMessage.success(t('nl.commandBar.executed', { name: params.name }));
     input.value = '';
     result.value = null;
   } catch (err) {
@@ -61,25 +64,21 @@ async function confirm(): Promise<void> {
   }
 }
 
-const examples = [
-  '部署 ollama，端口 11434，内存限制 4g',
-  '部署 dify，映射 5001:5001，总是重启',
-  '部署 whisper，端口 9000，CPU 2 核，环境变量 MODELS=base',
-];
+const examples = computed(() => tm('nl.commandBar.examples') as string[]);
 </script>
 
 <template>
   <div class="nx-panel nl-panel">
     <div class="nx-panel-title">
-      <el-icon><MagicStick /></el-icon>自然语言配置
-      <span class="nl-hint">输入指令，自动解析为部署参数并调用后端 API</span>
+      <el-icon><MagicStick /></el-icon>{{ t('nl.commandBar.title') }}
+      <span class="nl-hint">{{ t('nl.commandBar.hint') }}</span>
     </div>
 
     <div class="nl-input-row">
       <el-input
         v-model="input"
         size="large"
-        placeholder="例如：部署 ollama，端口 11434，内存限制 4g，总是重启"
+        :placeholder="t('nl.commandBar.placeholder')"
         clearable
         @input="parse"
         @keyup.enter="parse"
@@ -89,7 +88,7 @@ const examples = [
         </template>
       </el-input>
       <el-button type="primary" size="large" @click="parse">
-        解析
+        {{ t('nl.commandBar.parse') }}
       </el-button>
     </div>
 
@@ -125,7 +124,7 @@ const examples = [
           :disabled="!canConfirm"
           @click="confirm"
         >
-          确认执行
+          {{ t('nl.commandBar.confirmExec') }}
         </el-button>
       </template>
     </div>

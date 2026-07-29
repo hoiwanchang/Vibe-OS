@@ -3,10 +3,12 @@
  * 网络设置：接口概览 + DNS + 代理
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { systemApi } from '@/api';
 import type { NetworkDriversResponse } from '@/api/types';
 
+const { t } = useI18n();
 const netData = ref<NetworkDriversResponse | null>(null);
 const dns1 = ref('223.5.5.5');
 const dns2 = ref('8.8.8.8');
@@ -21,13 +23,13 @@ onMounted(async () => {
 });
 
 function save(): void {
-  ElMessage.success('网络设置已保存');
+  ElMessage.success(t('settings.network.saved'));
 }
 </script>
 
 <template>
   <div class="nx-panel settings-section">
-    <div class="nx-panel-title">网络接口</div>
+    <div class="nx-panel-title">{{ t('settings.network.interfaces') }}</div>
     <div v-if="netData" class="net-interfaces">
       <div v-for="iface in netData.interfaces" :key="iface.name" class="net-iface-card">
         <div class="net-iface-head">
@@ -38,33 +40,33 @@ function save(): void {
         </div>
       </div>
     </div>
-    <div v-else class="nx-text-dim">加载中…</div>
+    <div v-else class="nx-text-dim">{{ t('common.loading') }}</div>
 
-    <div class="nx-panel-title" style="margin-top: 24px">DNS 配置</div>
+    <div class="nx-panel-title" style="margin-top: 24px">{{ t('settings.network.dnsConfig') }}</div>
     <el-form label-position="top" class="settings-form">
-      <el-form-item label="首选 DNS">
+      <el-form-item :label="t('settings.network.primaryDns')">
         <el-input v-model="dns1" />
       </el-form-item>
-      <el-form-item label="备用 DNS">
+      <el-form-item :label="t('settings.network.secondaryDns')">
         <el-input v-model="dns2" />
       </el-form-item>
     </el-form>
 
-    <div class="nx-panel-title" style="margin-top: 24px">代理设置</div>
+    <div class="nx-panel-title" style="margin-top: 24px">{{ t('settings.network.proxy') }}</div>
     <el-form label-position="top" class="settings-form">
-      <el-form-item label="启用 HTTP 代理">
+      <el-form-item :label="t('settings.network.enableProxy')">
         <el-switch v-model="proxyEnabled" />
       </el-form-item>
       <template v-if="proxyEnabled">
-        <el-form-item label="代理地址">
+        <el-form-item :label="t('settings.network.proxyAddr')">
           <el-input v-model="proxyHost" placeholder="127.0.0.1" />
         </el-form-item>
-        <el-form-item label="端口">
+        <el-form-item :label="t('settings.network.proxyPort')">
           <el-input-number v-model="proxyPort" :min="1" :max="65535" />
         </el-form-item>
       </template>
       <el-form-item>
-        <el-button type="primary" @click="save">保存修改</el-button>
+        <el-button type="primary" @click="save">{{ t('common.saveChanges') }}</el-button>
       </el-form-item>
     </el-form>
   </div>

@@ -2,7 +2,9 @@
  * 自然语言指令解析器（纯函数，单元测试覆盖）
  * 将中英文混合的自然语言指令解析为结构化部署参数，
  * 供 AI 应用管理中心的"自然语言配置"调用后端 API 完成变更
+ * 摘要/警告/模板标签经 i18n 输出，随语言切换
  */
+import { t } from '@/i18n';
 
 /** 端口映射条目 */
 export interface PortMapping {
@@ -30,20 +32,21 @@ export interface ParseResult {
   warnings: string[];
 }
 
-/** 应用模板注册表：名称 → 默认镜像与端口 */
+/** 应用模板注册表：名称 → 默认镜像与端口（labelKey 为 i18n 键，无则用 label 品牌名） */
 const APP_TEMPLATES: Record<
   string,
-  { image: string; port: number; label: string }
+  { image: string; port: number; label: string; labelKey?: string }
 > = {
-  ollama: { image: 'ollama/ollama:latest', port: 11434, label: 'Ollama 本地大模型' },
-  dify: { image: 'langgenius/dify-api:latest', port: 5001, label: 'Dify AI 应用平台' },
+  ollama: { image: 'ollama/ollama:latest', port: 11434, label: 'Ollama', labelKey: 'nl.templates.ollama' },
+  dify: { image: 'langgenius/dify-api:latest', port: 5001, label: 'Dify', labelKey: 'nl.templates.dify' },
   'open-webui': { image: 'ghcr.io/open-webui/open-webui:main', port: 8080, label: 'Open WebUI' },
   whisper: {
     image: 'onerahmet/openai-whisper-asr-webservice:latest',
     port: 9000,
-    label: 'Whisper 语音识别',
+    label: 'Whisper',
+    labelKey: 'nl.templates.whisper',
   },
-  comfyui: { image: 'ghcr.io/ai-dock/comfyui:latest', port: 8188, label: 'ComfyUI 图像生成' },
+  comfyui: { image: 'ghcr.io/ai-dock/comfyui:latest', port: 8188, label: 'ComfyUI', labelKey: 'nl.templates.comfyui' },
   'stable-diffusion': {
     image: 'lscr.io/linuxserver/stable-diffusion-webui:latest',
     port: 7860,
@@ -52,6 +55,11 @@ const APP_TEMPLATES: Record<
   lobechat: { image: 'lobehub/lobe-chat:latest', port: 3210, label: 'LobeChat' },
   anythingllm: { image: 'mintplexlabs/anythingllm:latest', port: 3001, label: 'AnythingLLM' },
 };
+
+/** 模板显示标签（优先 i18n 翻译） */
+function templateLabel(tpl: { label: string; labelKey?: string }): string {
+  return tpl.labelKey ? t(tpl.labelKey) : tpl.label;
+}
 
 /**
  * 从指令中提取应用名（优先匹配模板关键词）
@@ -179,18 +187,20 @@ export function parseDeployCommand(input: string): ParseResult {
   const warnings: string[] = [];
 
   if (!text) {
-    return { params, summary, warnings: ['指令为空'] };
+    return { params, summary, warnings: [t('nl.emptyCommand')] };
   }
 
   // 应用名（模板匹配）
+  let defaultImageIdx = -1;
   const appName = extractAppName(text);
   if (appName) {
     params.name = appName;
     const template = APP_TEMPLATES[appName];
     if (template) {
       params.image = template.image;
-      summary.push(`应用：${template.label}（${appName}）`);
-      summary.push(`默认镜像：${template.image}`);
+      summary.push(t('nl.app', { label: templateLabel(template), name: appName }));
+      defaultImageIdx = summary.length;
+      summary.push(t('nl.defaultImage', { image: template.image }));
     }
   }
 
@@ -198,24 +208,24 @@ export function parseDeployCommand(input: string): ParseResult {
   const image = extractImage(text);
   if (image) {
     params.image = image;
-    const idx = summary.findIndex((s) => s.startsWith('默认镜像'));
-    if (idx >= 0) summary.splice(idx, 1);
-    summary.push(`镜像：${image}`);
+    if (defaultImageIdx >= 0) summary.splice(defaultImageIdx, 1);
+    summary.push(t('nl.image', { image }));
   }
 
   // 端口
+  const sep = t('nl.listSep');
   const ports = extractPorts(text);
   if (ports) {
     params.ports = ports;
     summary.push(
-      `端口映射：${ports.map((p) => `${p.host} → ${p.container}`).join('、')}`,
+      t('nl.ports', { ports: ports.map((p) => `${p.host} → ${p.container}`).join(sep) }),
     );
   } else if (appName && APP_TEMPLATES[appName]) {
     // 模板默认端口
     const defaultPort = APP_TEMPLATES[appName]?.port;
     if (defaultPort) {
       params.ports = [{ host: defaultPort, container: defaultPort }];
-      summary.push(`端口映射：${defaultPort} → ${defaultPort}（模板默认）`);
+      summary.push(t('nl.defaultPort', { port: defaultPort }));
     }
   }
 
@@ -224,7 +234,7 @@ export function parseDeployCommand(input: string): ParseResult {
   if (env) {
     params.env = env;
     summary.push(
-      `环境变量：${Object.entries(env).map(([k, v]) => `${k}=${v}`).join('、')}`,
+      t('nl.env', { env: Object.entries(env).map(([k, v]) => `${k}=${v}`).join(sep) }),
     );
   }
 
@@ -232,25 +242,25 @@ export function parseDeployCommand(input: string): ParseResult {
   const memoryLimit = extractMemory(text);
   if (memoryLimit) {
     params.memoryLimit = memoryLimit;
-    summary.push(`内存限制：${memoryLimit}`);
+    summary.push(t('nl.memoryLimit', { limit: memoryLimit }));
   }
 
   // CPU
   const cpuLimit = extractCpu(text);
   if (cpuLimit !== undefined) {
     params.cpuLimit = cpuLimit;
-    summary.push(`CPU 限制：${cpuLimit} 核`);
+    summary.push(t('nl.cpuLimit', { limit: cpuLimit }));
   }
 
   // 重启策略
   const restartPolicy = extractRestartPolicy(text);
   if (restartPolicy) {
     params.restartPolicy = restartPolicy;
-    summary.push(`重启策略：${restartPolicy}`);
+    summary.push(t('nl.restartPolicy', { policy: restartPolicy }));
   }
 
   if (!params.name && !params.image) {
-    warnings.push('未识别到应用名或镜像，请指明要部署的应用（如 ollama、dify）');
+    warnings.push(t('nl.unrecognized'));
   }
 
   return { params, summary, warnings };
@@ -265,10 +275,10 @@ export function listAppTemplates(): Array<{
   port: number;
   label: string;
 }> {
-  return Object.entries(APP_TEMPLATES).map(([name, t]) => ({
+  return Object.entries(APP_TEMPLATES).map(([name, tpl]) => ({
     name,
-    image: t.image,
-    port: t.port,
-    label: t.label,
+    image: tpl.image,
+    port: tpl.port,
+    label: templateLabel(tpl),
   }));
 }

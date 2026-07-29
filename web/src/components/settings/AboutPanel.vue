@@ -3,11 +3,14 @@
  * 关于：版本信息、系统摘要、重启/关机
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { settingsApi } from '@/api';
 import { formatBytes, formatUptime } from '@/utils/format';
+
+const { t } = useI18n();
 
 const store = useSettingsStore();
 const { about } = storeToRefs(store);
@@ -24,29 +27,29 @@ onMounted(async () => {
 
 async function doReboot(): Promise<void> {
   try {
-    await ElMessageBox.prompt('输入 "confirm" 确认重启系统', '重启确认', {
-      confirmButtonText: '重启',
-      cancelButtonText: '取消',
+    await ElMessageBox.prompt(t('settings.about.rebootConfirm'), t('settings.about.rebootTitle'), {
+      confirmButtonText: t('common.reboot'),
+      cancelButtonText: t('common.cancel'),
       inputPattern: /^confirm$/,
-      inputErrorMessage: '请输入 confirm',
+      inputErrorMessage: t('settings.about.enterConfirm'),
       type: 'warning',
     });
     await settingsApi.reboot();
-    ElMessage.warning('系统正在重启…');
+    ElMessage.warning(t('settings.about.rebooting'));
   } catch { /* 取消 */ }
 }
 
 async function doShutdown(): Promise<void> {
   try {
-    await ElMessageBox.prompt('输入 "confirm" 确认关机', '关机确认', {
-      confirmButtonText: '关机',
-      cancelButtonText: '取消',
+    await ElMessageBox.prompt(t('settings.about.shutdownConfirm'), t('settings.about.shutdownTitle'), {
+      confirmButtonText: t('common.shutdown'),
+      cancelButtonText: t('common.cancel'),
       inputPattern: /^confirm$/,
-      inputErrorMessage: '请输入 confirm',
+      inputErrorMessage: t('settings.about.enterConfirm'),
       type: 'warning',
     });
     await settingsApi.shutdown();
-    ElMessage.warning('系统正在关机…');
+    ElMessage.warning(t('settings.about.shuttingDown'));
   } catch { /* 取消 */ }
 }
 </script>
@@ -59,22 +62,22 @@ async function doShutdown(): Promise<void> {
     </div>
 
     <dl v-if="about" class="about-list">
-      <div><dt>版本</dt><dd class="nx-mono">v{{ about.version }}</dd></div>
-      <div><dt>构建日期</dt><dd class="nx-mono">{{ about.buildDate }}</dd></div>
+      <div><dt>{{ t('common.version') }}</dt><dd class="nx-mono">v{{ about.version }}</dd></div>
+      <div><dt>{{ t('common.buildDate') }}</dt><dd class="nx-mono">{{ about.buildDate }}</dd></div>
       <div><dt>Node.js</dt><dd class="nx-mono">{{ about.nodeVersion }}</dd></div>
-      <div><dt>操作系统</dt><dd class="nx-mono">{{ about.osVersion }}</dd></div>
-      <div><dt>内核</dt><dd class="nx-mono">{{ about.kernel }}</dd></div>
-      <div><dt>CPU</dt><dd class="nx-mono">{{ about.cpuModel }} · {{ about.cpuCores }} 核</dd></div>
-      <div><dt>内存</dt><dd class="nx-mono">{{ formatBytes(about.totalMemoryBytes) }}</dd></div>
-      <div><dt>主机名</dt><dd class="nx-mono">{{ about.hostname }}</dd></div>
-      <div><dt>运行时长</dt><dd class="nx-mono">{{ formatUptime(about.uptimeSeconds) }}</dd></div>
-      <div><dt>数据目录</dt><dd class="nx-mono">{{ about.dataRoot }}</dd></div>
-      <div><dt>许可证</dt><dd class="nx-mono">{{ about.license }}</dd></div>
+      <div><dt>{{ t('common.os') }}</dt><dd class="nx-mono">{{ about.osVersion }}</dd></div>
+      <div><dt>{{ t('common.kernel') }}</dt><dd class="nx-mono">{{ about.kernel }}</dd></div>
+      <div><dt>{{ t('common.cpu') }}</dt><dd class="nx-mono">{{ about.cpuModel }} · {{ about.cpuCores }} {{ t('common.cores') }}</dd></div>
+      <div><dt>{{ t('common.memory') }}</dt><dd class="nx-mono">{{ formatBytes(about.totalMemoryBytes) }}</dd></div>
+      <div><dt>{{ t('common.hostname') }}</dt><dd class="nx-mono">{{ about.hostname }}</dd></div>
+      <div><dt>{{ t('common.uptime') }}</dt><dd class="nx-mono">{{ formatUptime(about.uptimeSeconds) }}</dd></div>
+      <div><dt>{{ t('common.dataDir') }}</dt><dd class="nx-mono">{{ about.dataRoot }}</dd></div>
+      <div><dt>{{ t('common.license') }}</dt><dd class="nx-mono">{{ about.license }}</dd></div>
     </dl>
 
     <div class="about-actions">
-      <el-button type="warning" @click="doReboot">重启系统</el-button>
-      <el-button type="danger" @click="doShutdown">关机</el-button>
+      <el-button type="warning" @click="doReboot">{{ t('common.reboot') }}</el-button>
+      <el-button type="danger" @click="doShutdown">{{ t('common.shutdown') }}</el-button>
     </div>
   </div>
 </template>

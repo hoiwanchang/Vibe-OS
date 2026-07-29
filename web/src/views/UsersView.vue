@@ -7,6 +7,7 @@
  */
 import { onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import AclEditor from '@/components/users/AclEditor.vue';
 import CreateUserDialog from '@/components/users/CreateUserDialog.vue';
 import SectionHead from '@/components/common/SectionHead.vue';
@@ -16,6 +17,8 @@ import { formatBytes, usageLevel } from '@/utils/format';
 
 const store = useUsersStore();
 const { users, loading } = storeToRefs(store);
+
+const { t } = useI18n();
 
 const createVisible = ref(false);
 
@@ -31,7 +34,7 @@ function quotaProgressType(percent: number): 'success' | 'warning' | 'danger' {
 
 <template>
   <div class="users-view">
-    <SectionHead title="用户列表" icon="UserFilled">
+    <SectionHead :title="t('users.userList')" icon="UserFilled">
       <template #actions>
         <el-button
           circle
@@ -42,14 +45,14 @@ function quotaProgressType(percent: number): 'success' | 'warning' | 'danger' {
           <el-icon><Refresh /></el-icon>
         </el-button>
         <el-button type="primary" @click="createVisible = true">
-          <el-icon><Plus /></el-icon>创建用户
+          <el-icon><Plus /></el-icon>{{ t('users.createUser') }}
         </el-button>
       </template>
     </SectionHead>
 
     <div class="nx-panel">
       <el-table v-loading="loading" :data="users" size="default">
-        <el-table-column label="用户" min-width="150">
+        <el-table-column :label="t('users.colUser')" min-width="150">
           <template #default="{ row }">
             <div class="user-cell">
               <div class="user-avatar">{{ row.username.charAt(0).toUpperCase() }}</div>
@@ -60,20 +63,20 @@ function quotaProgressType(percent: number): 'success' | 'warning' | 'danger' {
             </div>
           </template>
         </el-table-column>
-        <el-table-column label="数据目录" min-width="160">
+        <el-table-column :label="t('users.colDataDir')" min-width="160">
           <template #default="{ row }">
             <span class="nx-mono dir-cell">{{ row.dataDir }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="目录状态" width="110">
+        <el-table-column :label="t('users.colDirStatus')" width="110">
           <template #default="{ row }">
             <StatusBadge
               :tone="row.dirExists ? 'ok' : 'error'"
-              :text="row.dirExists ? '已初始化' : '缺失'"
+              :text="row.dirExists ? t('users.initialized') : t('users.missing')"
             />
           </template>
         </el-table-column>
-        <el-table-column label="配额使用" min-width="220">
+        <el-table-column :label="t('users.colQuota')" min-width="220">
           <template #default="{ row }">
             <div class="quota-cell">
               <el-progress
@@ -92,7 +95,7 @@ function quotaProgressType(percent: number): 'success' | 'warning' | 'danger' {
       </el-table>
     </div>
 
-    <SectionHead title="访问控制" icon="Lock" />
+    <SectionHead :title="t('users.accessControl')" icon="Lock" />
     <AclEditor />
 
     <CreateUserDialog v-model:visible="createVisible" />

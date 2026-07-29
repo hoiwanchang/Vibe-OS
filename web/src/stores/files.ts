@@ -5,6 +5,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { filesApi } from '@/api';
+import { t } from '@/i18n';
 import type { FileEntry, FileReadResult, TrashListResult } from '@/api/types';
 
 /** 排序键 */
@@ -35,9 +36,10 @@ export const useFilesStore = defineStore('files', () => {
 
   /** 面包屑层级（从根到当前） */
   const breadcrumbs = computed(() => {
-    if (!currentPath.value) return [{ name: '根目录', path: '' }];
+    const root = t('files.root');
+    if (!currentPath.value) return [{ name: root, path: '' }];
     const parts = currentPath.value.split('/').filter(Boolean);
-    const crumbs = [{ name: '根目录', path: '' }];
+    const crumbs = [{ name: root, path: '' }];
     let acc = '';
     for (const p of parts) {
       acc = acc ? `${acc}/${p}` : p;

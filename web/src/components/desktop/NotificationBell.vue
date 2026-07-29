@@ -11,11 +11,13 @@
 import { computed, ref } from 'vue';
 import { ElMessage } from 'element-plus';
 import { Bell, Check, Setting } from '@element-plus/icons-vue';
+import { useI18n } from 'vue-i18n';
 import { useNotificationStore } from '@/stores/notification';
 import type { NotificationItem } from '@/api/types';
 import { formatTime } from '@/utils/format';
 
 const notification = useNotificationStore();
+const { t } = useI18n();
 
 /** 面板开关 */
 const panelVisible = ref(false);
@@ -39,21 +41,12 @@ function severityClass(sev: NotificationItem['severity']): string {
 
 /** severity 文本 */
 function severityText(sev: NotificationItem['severity']): string {
-  const map: Record<string, string> = { info: '信息', warning: '警告', critical: '严重' };
-  return map[sev] ?? sev;
+  return t('desktop.notifications.severity.' + sev);
 }
 
 /** category 文本 */
 function categoryText(cat: NotificationItem['category']): string {
-  const map: Record<string, string> = {
-    disk: '磁盘',
-    service: '服务',
-    backup: '备份',
-    network: '网络',
-    security: '安全',
-    system: '系统',
-  };
-  return map[cat] ?? cat;
+  return t('desktop.notifications.category.' + cat);
 }
 
 /** 打开面板并加载第一页 */
@@ -74,7 +67,7 @@ async function onItemClick(item: NotificationItem): Promise<void> {
 /** 全部已读 */
 async function markAll(): Promise<void> {
   await notification.markAllRead();
-  ElMessage.success('已全部标记为已读');
+  ElMessage.success(t('desktop.notifications.markedAllRead'));
 }
 
 /** 打开设置（从 store 填充表单） */
@@ -101,10 +94,10 @@ async function saveSettings(): Promise<void> {
 
   const ok = await notification.updateSettings({ channels });
   if (ok) {
-    ElMessage.success('通知设置已保存');
+    ElMessage.success(t('desktop.notifications.settingsSaved'));
     settingsVisible.value = false;
   } else {
-    ElMessage.error(notification.lastError ?? '保存失败');
+    ElMessage.error(notification.lastError ?? t('desktop.notifications.saveFailed'));
   }
 }
 </script>
@@ -120,7 +113,7 @@ async function saveSettings(): Promise<void> {
       @show="onPanelShow"
     >
       <template #reference>
-        <button class="nb-bell" :class="{ 'nb-bell--active': panelVisible }" title="通知中心">
+        <button class="nb-bell" :class="{ 'nb-bell--active': panelVisible }" :title="t('desktop.notifications.center')">
           <el-icon :size="16"><Bell /></el-icon>
           <span v-if="unread > 0" class="nb-badge">{{ unread > 99 ? '99+' : unread }}</span>
         </button>
@@ -129,9 +122,9 @@ async function saveSettings(): Promise<void> {
       <div class="nb-panel">
         <!-- 面板头 -->
         <div class="nb-panel__head">
-          <span class="nb-panel__title">通知中心</span>
+          <span class="nb-panel__title">{{ t('desktop.notifications.center') }}</span>
           <div class="nb-panel__actions">
-            <el-button size="small" text :icon="Check" @click="markAll">全部已读</el-button>
+            <el-button size="small" text :icon="Check" @click="markAll">{{ t('desktop.notifications.markAllRead') }}</el-button>
             <el-button size="small" text :icon="Setting" @click="openSettings" />
           </div>
         </div>
@@ -139,7 +132,7 @@ async function saveSettings(): Promise<void> {
         <!-- 通知列表 -->
         <div v-loading="notification.loading" class="nb-list">
           <div v-if="notification.notifications.length === 0 && !notification.loading" class="nb-empty">
-            暂无通知
+            {{ t('desktop.notifications.empty') }}
           </div>
           <div
             v-for="item in notification.notifications"
@@ -167,16 +160,16 @@ async function saveSettings(): Promise<void> {
         <!-- 加载更多 -->
         <div v-if="hasMore" class="nb-panel__footer">
           <el-button size="small" text :loading="notification.loading" @click="loadMore">
-            加载更多（{{ notification.total - notification.notifications.length }}）
+            {{ t('desktop.notifications.loadMore', { count: notification.total - notification.notifications.length }) }}
           </el-button>
         </div>
       </div>
     </el-popover>
 
     <!-- 设置面板 -->
-    <el-drawer v-model="settingsVisible" title="通知设置" size="380px" append-to-body>
+    <el-drawer v-model="settingsVisible" :title="t('desktop.notifications.settings')" size="380px" append-to-body>
       <el-form label-position="top">
-        <el-form-item label="Webhook 通知地址（留空=禁用）">
+        <el-form-item :label="t('desktop.notifications.webhookUrl')">
           <el-input
             v-model="webhookUrl"
             placeholder="https://example.com/hook"
@@ -184,14 +177,14 @@ async function saveSettings(): Promise<void> {
             clearable
           />
         </el-form-item>
-        <el-form-item label="最低告警级别">
+        <el-form-item :label="t('desktop.notifications.minLevel')">
           <el-select v-model="minSeverity" style="width: 100%">
-            <el-option label="信息（info）及以上" value="info" />
-            <el-option label="警告（warning）及以上" value="warning" />
-            <el-option label="仅严重（critical）" value="critical" />
+            <el-option :label="t('desktop.notifications.levelInfo')" value="info" />
+            <el-option :label="t('desktop.notifications.levelWarning')" value="warning" />
+            <el-option :label="t('desktop.notifications.levelCritical')" value="critical" />
           </el-select>
         </el-form-item>
-        <el-button type="primary" @click="saveSettings">保存</el-button>
+        <el-button type="primary" @click="saveSettings">{{ t('common.save') }}</el-button>
       </el-form>
     </el-drawer>
   </div>

@@ -3,8 +3,11 @@
  * 应用卡片：展示容器运行状态与快捷操作（重启/停止/日志/卸载）
  */
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import StatusBadge from '@/components/common/StatusBadge.vue';
 import type { ContainerInfo } from '@/api/types';
+
+const { t } = useI18n();
 
 const props = defineProps<{
   container: ContainerInfo;
@@ -47,8 +50,8 @@ const initial = computed(() =>
 
     <div class="app-meta nx-mono">
       <span v-if="container.ports">{{ container.ports }}</span>
-      <span v-else class="app-meta-dim">无端口映射</span>
-      <span class="app-meta-dim">创建于 {{ container.createdAt }}</span>
+      <span v-else class="app-meta-dim">{{ t('appCard.noPorts') }}</span>
+      <span class="app-meta-dim">{{ t('appCard.createdAt', { time: container.createdAt }) }}</span>
     </div>
 
     <div class="app-actions">
@@ -58,17 +61,17 @@ const initial = computed(() =>
         :loading="busy"
         @click="emit('restart', container.name)"
       >
-        <el-icon><RefreshRight /></el-icon>重启
+        <el-icon><RefreshRight /></el-icon>{{ t('common.restart') }}
       </el-button>
       <el-button
         size="small"
         :disabled="busy || !running"
         @click="emit('stop', container.name)"
       >
-        <el-icon><VideoPause /></el-icon>停止
+        <el-icon><VideoPause /></el-icon>{{ t('common.stop') }}
       </el-button>
       <el-button size="small" :disabled="busy" @click="emit('logs', container.name)">
-        <el-icon><Document /></el-icon>日志
+        <el-icon><Document /></el-icon>{{ t('appCard.logs') }}
       </el-button>
       <el-button
         size="small"
@@ -77,7 +80,7 @@ const initial = computed(() =>
         :disabled="busy"
         @click="emit('remove', container.name)"
       >
-        <el-icon><Delete /></el-icon>卸载
+        <el-icon><Delete /></el-icon>{{ t('common.uninstall') }}
       </el-button>
     </div>
   </div>

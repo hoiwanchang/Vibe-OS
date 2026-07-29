@@ -8,6 +8,7 @@
  */
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import SectionHead from '@/components/common/SectionHead.vue';
 import StatusBadge from '@/components/common/StatusBadge.vue';
 import StorageBar from '@/components/common/StorageBar.vue';
@@ -15,6 +16,8 @@ import TrendSparkline from '@/components/common/TrendSparkline.vue';
 import UsageGauge from '@/components/common/UsageGauge.vue';
 import { useSystemStore } from '@/stores/system';
 import { formatBytes, formatTime, formatUptime } from '@/utils/format';
+
+const { t } = useI18n();
 
 const store = useSystemStore();
 const {
@@ -114,7 +117,7 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
           text
           @click="store.acknowledgeAlert(alert.id)"
         >
-          忽略
+          {{ t('common.dismiss') }}
         </el-button>
       </div>
     </div>
@@ -127,7 +130,7 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
           <UsageGauge
             :percent="dataPool.percent"
             :label="`${dataPool.percent.toFixed(1)}%`"
-            caption="存储池"
+            :caption="t('dashboard.storagePools')"
           />
         </div>
         <div class="stat-meta">
@@ -149,8 +152,7 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
         <div class="stat-meta">
           <div class="nx-metric-label">PROCESSOR</div>
           <div class="stat-line nx-mono">
-            {{ overview?.cpu.cores ?? '—' }} 核 ·
-            负载 {{ overview?.system.loadAvg[0] ?? '—' }}
+            {{ t('monitor.coresLoad', { cores: overview?.cpu.cores ?? '—', load: overview?.system.loadAvg[0] ?? '—' }) }}
           </div>
           <TrendSparkline
             v-if="cpuHistory.length >= 2"
@@ -168,7 +170,7 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
           <UsageGauge
             :percent="memPercent"
             :label="`${memPercent.toFixed(1)}%`"
-            caption="内存"
+            :caption="t('dashboard.memory')"
           />
         </div>
         <div class="stat-meta">
@@ -195,7 +197,7 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
               {{ runningContainers
               }}<span class="nx-metric-unit">/ {{ containers.length }}</span>
             </div>
-            <div class="nx-metric-label">DOCKER 容器运行中</div>
+            <div class="nx-metric-label">{{ t('dashboard.dockerRunning') }}</div>
           </div>
           <el-divider />
           <div>
@@ -203,18 +205,18 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
               {{ onlinePeers.online
               }}<span class="nx-metric-unit">/ {{ onlinePeers.total }}</span>
             </div>
-            <div class="nx-metric-label">TAILSCALE 节点在线</div>
+            <div class="nx-metric-label">{{ t('dashboard.tailscaleOnline') }}</div>
           </div>
         </div>
       </div>
     </div>
 
     <!-- 存储池 + Tailscale -->
-    <SectionHead title="存储池" icon="Box" />
+    <SectionHead :title="t('dashboard.storagePools')" icon="Box" />
     <div class="nx-grid nx-grid--dash">
       <div class="nx-panel">
         <div class="nx-panel-title">
-          <el-icon><Box /></el-icon>挂载点使用率
+          <el-icon><Box /></el-icon>{{ t('dashboard.mountUsage') }}
         </div>
         <div v-if="overview && overview.storage.length > 0">
           <StorageBar
@@ -223,17 +225,17 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
             :pool="pool"
           />
         </div>
-        <el-empty v-else description="暂无存储池数据" :image-size="60" />
+        <el-empty v-else :description="t('dashboard.noPoolData')" :image-size="60" />
       </div>
 
       <div class="nx-panel">
         <div class="nx-panel-title">
-          <el-icon><Connection /></el-icon>Tailscale 网络
+          <el-icon><Connection /></el-icon>{{ t('dashboard.tailscaleNet') }}
         </div>
         <div class="ts-self">
           <StatusBadge
             :tone="tsSelfOnline ? 'ok' : 'error'"
-            :text="tailscale?.status.self?.hostname ?? '本节点'"
+            :text="tailscale?.status.self?.hostname ?? t('dashboard.thisNode')"
           />
           <span class="nx-mono ts-ip">
             {{ tailscale?.status.self?.ips.join(' / ') ?? '—' }}
@@ -255,12 +257,12 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
             </div>
           </div>
         </div>
-        <el-empty v-else description="暂无对等节点" :image-size="50" />
+        <el-empty v-else :description="t('dashboard.noPeers')" :image-size="50" />
       </div>
     </div>
 
     <!-- Docker 容器 + 系统信息 -->
-    <SectionHead title="Docker 容器概览" icon="Cpu" />
+    <SectionHead :title="t('dashboard.dockerOverview')" icon="Cpu" />
     <div class="nx-grid nx-grid--dash">
       <div class="nx-panel">
         <el-table
@@ -270,22 +272,22 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
           stripe
           :header-cell-style="{ background: 'transparent' }"
         >
-          <el-table-column prop="name" label="容器" min-width="120">
+          <el-table-column prop="name" :label="t('dashboard.container')" min-width="120">
             <template #default="{ row }">
               <span class="nx-mono">{{ row.name }}</span>
             </template>
           </el-table-column>
-          <el-table-column prop="image" label="镜像" min-width="180" show-overflow-tooltip>
+          <el-table-column prop="image" :label="t('common.image')" min-width="180" show-overflow-tooltip>
             <template #default="{ row }">
               <span class="nx-mono img-cell">{{ row.image }}</span>
             </template>
           </el-table-column>
-          <el-table-column label="状态" width="130">
+          <el-table-column :label="t('common.status')" width="130">
             <template #default="{ row }">
               <StatusBadge :tone="containerTone(row.state)" :text="row.status" />
             </template>
           </el-table-column>
-          <el-table-column prop="ports" label="端口" min-width="160" show-overflow-tooltip>
+          <el-table-column prop="ports" :label="t('common.port')" min-width="160" show-overflow-tooltip>
             <template #default="{ row }">
               <span class="nx-mono">{{ row.ports || '—' }}</span>
             </template>
@@ -295,30 +297,30 @@ function peerTone(online: boolean, active: boolean): 'ok' | 'warn' | 'off' {
 
       <div class="nx-panel">
         <div class="nx-panel-title">
-          <el-icon><InfoFilled /></el-icon>系统信息
+          <el-icon><InfoFilled /></el-icon>{{ t('dashboard.systemInfo') }}
         </div>
         <dl class="sys-info">
-          <div><dt>主机名</dt><dd class="nx-mono">{{ overview?.system.hostname ?? '—' }}</dd></div>
-          <div><dt>系统</dt><dd class="nx-mono">{{ overview?.system.platform ?? '—' }}</dd></div>
+          <div><dt>{{ t('common.hostname') }}</dt><dd class="nx-mono">{{ overview?.system.hostname ?? '—' }}</dd></div>
+          <div><dt>{{ t('common.os') }}</dt><dd class="nx-mono">{{ overview?.system.platform ?? '—' }}</dd></div>
           <div><dt>CPU</dt><dd>{{ overview?.system.cpuModel ?? '—' }}</dd></div>
-          <div><dt>运行时长</dt><dd>{{ formatUptime(overview?.system.uptimeSeconds) }}</dd></div>
-          <div><dt>磁盘健康</dt>
+          <div><dt>{{ t('common.uptime') }}</dt><dd>{{ formatUptime(overview?.system.uptimeSeconds) }}</dd></div>
+          <div><dt>{{ t('common.diskHealth') }}</dt>
             <dd>
               <StatusBadge
                 :tone="diskHealth && diskHealth.healthyDisks < diskHealth.totalDisks ? 'error' : 'ok'"
-                :text="diskHealth ? `${diskHealth.healthyDisks}/${diskHealth.totalDisks} 健康` : '—'"
+                :text="diskHealth ? t('dashboard.healthyDisks', { healthy: diskHealth.healthyDisks, total: diskHealth.totalDisks }) : '—'"
               />
             </dd>
           </div>
-          <div><dt>网卡链路</dt>
+          <div><dt>{{ t('common.nicLink') }}</dt>
             <dd>
               <StatusBadge
                 :tone="network?.interfaces.some((i) => i.driver && i.driver !== 'tun' && !i.linkDetected) ? 'warn' : 'ok'"
-                :text="network ? `${network.interfaces.filter((i) => i.linkDetected).length}/${network.interfaces.length} 连通` : '—'"
+                :text="network ? t('dashboard.linkedNics', { linked: network.interfaces.filter((i) => i.linkDetected).length, total: network.interfaces.length }) : '—'"
               />
             </dd>
           </div>
-          <div><dt>数据更新于</dt><dd class="nx-mono">{{ formatTime(overview?.timestamp) }}</dd></div>
+          <div><dt>{{ t('common.dataUpdated') }}</dt><dd class="nx-mono">{{ formatTime(overview?.timestamp) }}</dd></div>
         </dl>
       </div>
     </div>

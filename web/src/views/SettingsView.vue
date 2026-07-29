@@ -6,6 +6,7 @@
  */
 import { computed } from 'vue';
 import { ElMessageBox } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 import {
   Setting, User, Connection, Operation, Lock, Coin,
   Lightning, Bell, Upload, Document, InfoFilled, MagicStick,
@@ -28,6 +29,8 @@ import LlmSettings from '@/components/settings/LlmSettings.vue';
 
 const store = useSettingsStore();
 const { activeSection, sectionList, dirty } = storeToRefs(store);
+
+const { t } = useI18n();
 
 const iconMap: Record<string, typeof Setting> = {
   Setting, User, Connection, Operation, Lock, Coin,
@@ -56,9 +59,9 @@ async function switchSection(id: string): Promise<void> {
   if (dirty.value && activeSection.value !== id) {
     try {
       await ElMessageBox.confirm(
-        '当前页面有未保存的修改，切换将丢失更改。',
-        '未保存修改',
-        { confirmButtonText: '放弃修改', cancelButtonText: '留在当前页', type: 'warning' },
+        t('settings.unsavedConfirm'),
+        t('settings.unsavedTitle'),
+        { confirmButtonText: t('settings.discardChanges'), cancelButtonText: t('settings.stayOnPage'), type: 'warning' },
       );
       dirty.value = false;
     } catch {

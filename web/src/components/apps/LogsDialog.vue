@@ -3,8 +3,11 @@
  * 容器日志对话框：终端风格展示 stdout/stderr
  */
 import { ref, watch } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { containerApi } from '@/api';
 import type { ContainerLogResult } from '@/api/types';
+
+const { t } = useI18n();
 
 const props = defineProps<{ name: string | null }>();
 const visible = defineModel<boolean>('visible', { default: false });
@@ -28,7 +31,7 @@ watch(visible, async (v) => {
 <template>
   <el-dialog
     v-model="visible"
-    :title="`容器日志 — ${name ?? ''}`"
+    :title="t('appCard.containerLogs', { name: name ?? '' })"
     width="760px"
     destroy-on-close
   >
@@ -39,10 +42,10 @@ watch(visible, async (v) => {
           <span style="color: var(--nx-red)">{{ logs.stderr }}</span>
         </template>
         <span v-if="!logs.stdout && !logs.stderr" style="color: var(--nx-text-faint)">
-          （无日志输出）
+          {{ t('appCard.noLogOutput') }}
         </span>
       </div>
-      <el-empty v-else-if="!loading" description="暂无日志" :image-size="60" />
+      <el-empty v-else-if="!loading" :description="t('appCard.noLogs')" :image-size="60" />
     </div>
   </el-dialog>
 </template>

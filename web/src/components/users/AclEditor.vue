@@ -5,10 +5,12 @@
  * 下发调用 POST /api/tailscale/acl
  */
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useUsersStore } from '@/stores/users';
 
+const { t } = useI18n();
 const store = useUsersStore();
 const { aclRules, aclHosts, aclDirty, aclPushing } = storeToRefs(store);
 
@@ -65,7 +67,7 @@ function removeHost(index: number): void {
 async function push(): Promise<void> {
   try {
     await store.pushAcl();
-    ElMessage.success('ACL 策略已下发');
+    ElMessage.success(t('users.acl.applied'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -75,18 +77,18 @@ async function push(): Promise<void> {
 <template>
   <div class="nx-panel acl-panel">
     <div class="nx-panel-title">
-      <el-icon><Lock /></el-icon>Tailscale ACL 策略
+      <el-icon><Lock /></el-icon>{{ t('users.acl.title') }}
       <el-tag v-if="aclDirty" type="warning" size="small" effect="plain">
-        未保存
+        {{ t('users.acl.unsaved') }}
       </el-tag>
     </div>
 
     <!-- 规则列表 -->
     <div class="acl-rules">
       <div class="acl-rule acl-rule--head">
-        <span class="acl-col-action">动作</span>
-        <span class="acl-col-src">来源（src）</span>
-        <span class="acl-col-dst">目标（dst）</span>
+        <span class="acl-col-action">{{ t('users.acl.colAction') }}</span>
+        <span class="acl-col-src">{{ t('users.acl.colSrc') }}</span>
+        <span class="acl-col-dst">{{ t('users.acl.colDst') }}</span>
         <span class="acl-col-op" />
       </div>
       <div v-for="rule in aclRules" :key="rule.id" class="acl-rule">
@@ -96,21 +98,21 @@ async function push(): Promise<void> {
           class="acl-col-action"
           @update:model-value="updateAction(rule.id, $event)"
         >
-          <el-option label="允许" value="accept" />
-          <el-option label="拒绝" value="deny" />
+          <el-option :label="t('users.acl.accept')" value="accept" />
+          <el-option :label="t('users.acl.deny')" value="deny" />
         </el-select>
         <el-input
           :model-value="joinList(rule.src)"
           size="small"
           class="acl-col-src nx-mono"
-          placeholder="如 kane@, 100.64.0.0/10, *"
+          :placeholder="t('users.acl.srcPh')"
           @update:model-value="updateSrc(rule.id, String($event))"
         />
         <el-input
           :model-value="joinList(rule.dst)"
           size="small"
           class="acl-col-dst nx-mono"
-          placeholder="如 naisys-node-01:443, *:22"
+          :placeholder="t('users.acl.dstPh')"
           @update:model-value="updateDst(rule.id, String($event))"
         />
         <el-button
@@ -128,10 +130,10 @@ async function push(): Promise<void> {
 
     <div class="acl-toolbar">
       <el-button size="small" @click="store.addAclRule()">
-        <el-icon><Plus /></el-icon>添加规则
+        <el-icon><Plus /></el-icon>{{ t('users.acl.addRule') }}
       </el-button>
       <el-button size="small" @click="addHost()">
-        <el-icon><CollectionTag /></el-icon>添加主机别名
+        <el-icon><CollectionTag /></el-icon>{{ t('users.acl.addHostAlias') }}
       </el-button>
     </div>
 
@@ -141,7 +143,7 @@ async function push(): Promise<void> {
         <el-input
           v-model="host.name"
           size="small"
-          placeholder="别名（如 nas）"
+          :placeholder="t('users.acl.aliasPh')"
           class="nx-mono"
           @input="store.markAclDirty()"
         />
@@ -160,14 +162,14 @@ async function push(): Promise<void> {
     </div>
 
     <!-- JSON 预览 -->
-    <div class="acl-preview-head">策略 JSON 预览</div>
+    <div class="acl-preview-head">{{ t('users.acl.jsonPreview') }}</div>
     <pre class="nx-terminal acl-preview">{{ jsonPreview }}</pre>
 
     <div class="acl-footer">
       <el-button type="primary" :loading="aclPushing" @click="push">
-        <el-icon><Upload /></el-icon>下发策略
+        <el-icon><Upload /></el-icon>{{ t('users.acl.apply') }}
       </el-button>
-      <span class="acl-tip">下发后由 tailscale up --apply-acl 生效，规则自上而下匹配</span>
+      <span class="acl-tip">{{ t('users.acl.tip') }}</span>
     </div>
   </div>
 </template>

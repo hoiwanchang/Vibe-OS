@@ -6,6 +6,7 @@
  */
 import axios, { type AxiosRequestConfig } from 'axios';
 import { demoActive } from './state';
+import { t } from '@/i18n';
 import type { ApiEnvelope } from './types';
 
 /** 业务 API 错误（含 HTTP 状态码与机器可读错误码） */
@@ -48,7 +49,10 @@ function toApiError(err: unknown): ApiError {
     return new ApiError(
       err.response?.status ?? 0,
       body?.error?.code ?? (err.response ? 'HTTP_ERROR' : 'NETWORK_ERROR'),
-      body?.error?.message ?? (err.response ? `请求失败 (${err.response.status})` : '无法连接后端服务'),
+      body?.error?.message ??
+        (err.response
+          ? t('api.requestFailed', { status: err.response.status })
+          : t('api.cannotConnect')),
     );
   }
   return new ApiError(

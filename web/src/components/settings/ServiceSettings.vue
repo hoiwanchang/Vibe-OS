@@ -3,10 +3,12 @@
  * 服务管理：开关、重启、状态
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 
+const { t } = useI18n();
 const store = useSettingsStore();
 const { services } = storeToRefs(store);
 const loading = ref(false);
@@ -26,15 +28,15 @@ async function toggle(name: string, enabled: boolean): Promise<void> {
   if (!enabled && CORE_SERVICES.includes(name)) {
     try {
       await ElMessageBox.confirm(
-        `停止 ${name} 可能导致管理中断，确定继续？`,
-        '警告',
-        { type: 'warning', confirmButtonText: '确定停止', cancelButtonText: '取消' },
+        t('settings.services.stopConfirm', { name }),
+        t('settings.services.warning'),
+        { type: 'warning', confirmButtonText: t('settings.services.confirmStop'), cancelButtonText: t('common.cancel') },
       );
     } catch { return; }
   }
   try {
     await store.toggleService(name, enabled);
-    ElMessage.success(`${name} 已${enabled ? '启用' : '停止'}`);
+    ElMessage.success(t('settings.services.toggled', { name, state: enabled ? t('settings.services.stateEnabled') : t('settings.services.stateStopped') }));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -43,7 +45,7 @@ async function toggle(name: string, enabled: boolean): Promise<void> {
 async function restart(name: string): Promise<void> {
   try {
     await store.restartService(name);
-    ElMessage.success(`${name} 已重启`);
+    ElMessage.success(t('settings.services.restarted', { name }));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -52,16 +54,16 @@ async function restart(name: string): Promise<void> {
 
 <template>
   <div class="nx-panel settings-section">
-    <div class="nx-panel-title">系统服务</div>
+    <div class="nx-panel-title">{{ t('settings.services.title') }}</div>
     <el-table :data="services" v-loading="loading" stripe size="small">
-      <el-table-column prop="displayName" label="服务" min-width="140" />
-      <el-table-column label="状态" width="100">
+      <el-table-column prop="displayName" :label="t('settings.services.colService')" min-width="140" />
+      <el-table-column :label="t('common.status')" width="100">
         <template #default="{ row }">
           <span :class="row.running ? 'dot dot--green' : 'dot dot--gray'" />
-          {{ row.running ? '运行中' : '已停止' }}
+          {{ row.running ? t('common.running') : t('common.stopped') }}
         </template>
       </el-table-column>
-      <el-table-column label="开机启动" width="100">
+      <el-table-column :label="t('settings.services.colAutostart')" width="100">
         <template #default="{ row }">
           <el-switch
             :model-value="row.enabled"
@@ -70,21 +72,21 @@ async function restart(name: string): Promise<void> {
           />
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="120">
+      <el-table-column :label="t('common.ops')" width="120">
         <template #default="{ row }">
           <el-button
             v-if="row.running"
             size="small"
             text
             @click="restart(row.name)"
-          >重启</el-button>
+          >{{ t('common.restart') }}</el-button>
           <el-button
             v-else
             size="small"
             text
             type="primary"
             @click="toggle(row.name, true)"
-          >启动</el-button>
+          >{{ t('common.start') }}</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -92,7 +94,7 @@ async function restart(name: string): Promise<void> {
       type="warning"
       :closable="false"
       show-icon
-      title="停止核心服务（SSH / Docker）可能导致管理中断"
+      :title="t('settings.services.coreServiceTip')"
       style="margin-top: 12px"
     />
   </div>

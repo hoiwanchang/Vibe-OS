@@ -13,6 +13,7 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import AlertsPanel from '@/components/desktop/AlertsPanel.vue';
 import AppWindow from '@/components/desktop/AppWindow.vue';
 import { DESKTOP_APPS } from '@/components/desktop/desktop-registry';
@@ -37,6 +38,7 @@ import { useWmStore } from '@/stores/wm';
 
 const wm = useWmStore();
 const system = useSystemStore();
+const { t } = useI18n();
 const { orderedWindows } = storeToRefs(wm);
 const { activeAlerts } = storeToRefs(system);
 
@@ -92,7 +94,7 @@ watch(activeAlerts, (alerts) => {
   const critical = fresh[0];
   if (critical) {
     ElMessageBox.alert(critical.detail, critical.title, {
-      confirmButtonText: '知道了',
+      confirmButtonText: t('common.gotIt'),
       type: 'error',
       customClass: 'nx-critical-dialog',
     }).catch(() => {
@@ -121,7 +123,7 @@ onBeforeUnmount(() => {
         <DesktopIcon
           v-for="app in desktopApps"
           :key="app.id"
-          :label="app.title"
+          :label="t('wm.titles.' + app.title)"
           :app-id="app.id"
           @open="wm.open"
         >

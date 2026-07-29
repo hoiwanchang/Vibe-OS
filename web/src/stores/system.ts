@@ -6,6 +6,7 @@
 import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { containerApi, systemApi, tailscaleApi } from '@/api';
+import { t } from '@/i18n';
 import type {
   ContainerInfo,
   DiskHealthResponse,
@@ -53,8 +54,13 @@ export const useSystemStore = defineStore('system', () => {
         list.push({
           id: `disk:${disk.device}`,
           severity: 'critical',
-          title: `磁盘 SMART 告警：${disk.device}`,
-          detail: `${disk.model ?? '未知型号'}（SN ${disk.serial ?? '—'}）SMART 健康检查未通过，通电 ${disk.powerOnHours ?? '—'} 小时，温度 ${disk.temperature ?? '—'}°C。请尽快备份数据并更换磁盘。`,
+          title: t('systemAlerts.smartTitle', { device: disk.device }),
+          detail: t('systemAlerts.smartDetail', {
+            model: disk.model ?? t('systemAlerts.unknownModel'),
+            serial: disk.serial ?? '—',
+            hours: disk.powerOnHours ?? '—',
+            temp: disk.temperature ?? '—',
+          }),
         });
       }
     }
@@ -65,8 +71,8 @@ export const useSystemStore = defineStore('system', () => {
         list.push({
           id: `nic:${nic.name}`,
           severity: 'warning',
-          title: `网卡掉线：${nic.name}`,
-          detail: `接口 ${nic.name}（驱动 ${nic.driver}）链路未检测到，请检查网线连接或交换机端口。`,
+          title: t('systemAlerts.nicDownTitle', { name: nic.name }),
+          detail: t('systemAlerts.nicDownDetail', { name: nic.name, driver: nic.driver }),
         });
       }
     }

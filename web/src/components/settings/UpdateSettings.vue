@@ -3,11 +3,13 @@
  * 系统更新：版本信息、通道、检查更新
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { settingsApi } from '@/api';
 
+const { t, locale } = useI18n();
 const store = useSettingsStore();
 const { settings, saving } = storeToRefs(store);
 
@@ -24,7 +26,7 @@ async function checkUpdate(): Promise<void> {
   try {
     updateResult.value = await settingsApi.checkUpdate();
     if (!updateResult.value.updateAvailable) {
-      ElMessage.success('当前已是最新版本');
+      ElMessage.success(t('common.upToDate'));
     }
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
@@ -41,7 +43,7 @@ async function save(): Promise<void> {
       autoInstall: settings.value.update.autoInstall,
       channel: settings.value.update.channel,
     });
-    ElMessage.success('更新设置已保存');
+    ElMessage.success(t('settings.update.saved'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -50,25 +52,25 @@ async function save(): Promise<void> {
 
 <template>
   <div class="nx-panel settings-section">
-    <div class="nx-panel-title">当前版本</div>
+    <div class="nx-panel-title">{{ t('settings.update.currentVersion') }}</div>
     <div class="version-card">
       <div class="version-name">NAISys v{{ settings?.update.currentVersion ?? '—' }}</div>
       <div class="version-meta nx-mono">
-        上次检查：{{ settings?.update.lastCheck ? new Date(settings.update.lastCheck).toLocaleString('zh-CN') : '从未' }}
+        {{ settings?.update.lastCheck ? t('settings.update.lastCheck', { time: new Date(settings.update.lastCheck).toLocaleString(locale) }) : t('settings.update.lastCheckNever') }}
       </div>
     </div>
 
     <el-form label-position="top" class="settings-form" style="margin-top: 16px">
-      <el-form-item label="更新通道">
+      <el-form-item :label="t('settings.update.channel')">
         <el-select v-model="settings!.update.channel" style="width: 160px" @change="store.markDirty()">
-          <el-option label="稳定版" value="stable" />
-          <el-option label="测试版" value="beta" />
+          <el-option :label="t('settings.update.channelStable')" value="stable" />
+          <el-option :label="t('settings.update.channelBeta')" value="beta" />
         </el-select>
       </el-form-item>
-      <el-form-item label="自动检查更新">
+      <el-form-item :label="t('settings.update.autoCheck')">
         <el-switch v-model="settings!.update.autoCheck" @change="store.markDirty()" />
       </el-form-item>
-      <el-form-item label="自动安装更新（不推荐）">
+      <el-form-item :label="t('settings.update.autoInstall')">
         <el-switch v-model="settings!.update.autoInstall" @change="store.markDirty()" />
       </el-form-item>
     </el-form>
@@ -79,7 +81,7 @@ async function save(): Promise<void> {
         type="success"
         :closable="false"
         show-icon
-        :title="`发现新版本 ${updateResult.latestVersion}`"
+        :title="t('settings.update.newVersion', { version: updateResult.latestVersion })"
         :description="updateResult.changelog"
       />
       <el-alert
@@ -87,13 +89,13 @@ async function save(): Promise<void> {
         type="info"
         :closable="false"
         show-icon
-        title="当前已是最新版本"
+        :title="t('common.upToDate')"
       />
     </div>
 
     <div style="display: flex; gap: 12px; margin-top: 16px">
-      <el-button :loading="checking" @click="checkUpdate">检查更新</el-button>
-      <el-button type="primary" :loading="saving" @click="save">保存修改</el-button>
+      <el-button :loading="checking" @click="checkUpdate">{{ t('common.checkUpdate') }}</el-button>
+      <el-button type="primary" :loading="saving" @click="save">{{ t('common.saveChanges') }}</el-button>
     </div>
 
     <el-alert
@@ -101,7 +103,7 @@ async function save(): Promise<void> {
       :closable="false"
       show-icon
       style="margin-top: 16px"
-      title="离线环境：将升级包放入 /data/naisys/update/ 目录后点击「检查更新」即可识别"
+      :title="t('settings.update.offlineTip')"
     />
   </div>
 </template>

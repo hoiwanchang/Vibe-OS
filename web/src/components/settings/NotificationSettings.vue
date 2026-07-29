@@ -3,12 +3,14 @@
  * 通知设置：渠道管理、全局级别、免打扰、测试
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { settingsApi } from '@/api';
 import type { SettingsNotificationChannel } from '@/api/types';
 
+const { t } = useI18n();
 const store = useSettingsStore();
 const { settings, saving } = storeToRefs(store);
 
@@ -50,8 +52,8 @@ async function testChannel(type: string): Promise<void> {
   testing.value = true;
   try {
     const res = await settingsApi.testNotification(type);
-    if (res.sent) ElMessage.success('测试通知已发送');
-    else ElMessage.warning(res.error ?? '发送失败');
+    if (res.sent) ElMessage.success(t('settings.notification.testSent'));
+    else ElMessage.warning(res.error ?? t('settings.notification.sendFailed'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   } finally {
@@ -67,7 +69,7 @@ async function save(): Promise<void> {
       quietHoursStart: quietStart.value,
       quietHoursEnd: quietEnd.value,
     });
-    ElMessage.success('通知设置已保存');
+    ElMessage.success(t('settings.notification.saved'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -76,11 +78,11 @@ async function save(): Promise<void> {
 
 <template>
   <div class="nx-panel settings-section">
-    <div class="nx-panel-title">通知渠道</div>
+    <div class="nx-panel-title">{{ t('settings.notification.channels') }}</div>
     <div v-for="ch in channels" :key="ch.id" class="channel-card">
       <div class="channel-head">
         <el-switch v-model="ch.enabled" size="small" @change="store.markDirty()" />
-        <el-input v-model="ch.name" placeholder="渠道名称" size="small" style="width: 140px" @input="store.markDirty()" />
+        <el-input v-model="ch.name" :placeholder="t('settings.notification.channelName')" size="small" style="width: 140px" @input="store.markDirty()" />
         <el-select v-model="ch.type" size="small" style="width: 100px" @change="store.markDirty()">
           <el-option label="Webhook" value="webhook" />
           <el-option label="Email" value="email" />
@@ -90,8 +92,8 @@ async function save(): Promise<void> {
           <el-option label="Warning" value="warning" />
           <el-option label="Critical" value="critical" />
         </el-select>
-        <el-button size="small" text :loading="testing" @click="testChannel(ch.type)">测试</el-button>
-        <el-button size="small" text type="danger" @click="removeChannel(ch.id)">删除</el-button>
+        <el-button size="small" text :loading="testing" @click="testChannel(ch.type)">{{ t('common.test') }}</el-button>
+        <el-button size="small" text type="danger" @click="removeChannel(ch.id)">{{ t('common.delete') }}</el-button>
       </div>
       <el-input
         v-if="ch.type === 'webhook'"
@@ -102,33 +104,33 @@ async function save(): Promise<void> {
         @input="store.markDirty()"
       />
       <template v-else>
-        <el-input v-model="ch.emailTo" placeholder="收件邮箱" size="small" style="margin-top: 8px" @input="store.markDirty()" />
+        <el-input v-model="ch.emailTo" :placeholder="t('settings.notification.recipientEmail')" size="small" style="margin-top: 8px" @input="store.markDirty()" />
         <div style="display: flex; gap: 8px; margin-top: 8px">
-          <el-input v-model="ch.emailSmtpHost" placeholder="SMTP 主机" size="small" @input="store.markDirty()" />
+          <el-input v-model="ch.emailSmtpHost" :placeholder="t('settings.notification.smtpHost')" size="small" @input="store.markDirty()" />
           <el-input-number v-model="ch.emailSmtpPort" :min="1" :max="65535" size="small" style="width: 100px" @change="store.markDirty()" />
         </div>
       </template>
     </div>
-    <el-button size="small" style="margin-top: 8px" @click="addChannel">+ 添加渠道</el-button>
+    <el-button size="small" style="margin-top: 8px" @click="addChannel">{{ t('settings.notification.addChannel') }}</el-button>
 
-    <div class="nx-panel-title" style="margin-top: 24px">全局设置</div>
+    <div class="nx-panel-title" style="margin-top: 24px">{{ t('settings.notification.globalSection') }}</div>
     <el-form label-position="top" class="settings-form">
-      <el-form-item label="默认最低级别">
+      <el-form-item :label="t('settings.notification.defaultLevel')">
         <el-select v-model="globalMinSeverity" style="width: 160px" @change="store.markDirty()">
           <el-option label="Info" value="info" />
           <el-option label="Warning" value="warning" />
           <el-option label="Critical" value="critical" />
         </el-select>
       </el-form-item>
-      <el-form-item label="免打扰时段">
+      <el-form-item :label="t('settings.notification.dnd')">
         <div style="display: flex; align-items: center; gap: 8px">
           <el-time-picker v-model="quietStart" format="HH:mm" value-format="HH:mm" style="width: 120px" @change="store.markDirty()" />
-          <span>至</span>
+          <span>{{ t('settings.notification.dndTo') }}</span>
           <el-time-picker v-model="quietEnd" format="HH:mm" value-format="HH:mm" style="width: 120px" @change="store.markDirty()" />
         </div>
       </el-form-item>
       <el-form-item>
-        <el-button type="primary" :loading="saving" @click="save">保存修改</el-button>
+        <el-button type="primary" :loading="saving" @click="save">{{ t('common.saveChanges') }}</el-button>
       </el-form-item>
     </el-form>
   </div>

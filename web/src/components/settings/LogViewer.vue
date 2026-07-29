@@ -3,10 +3,13 @@
  * 日志查看器：多源、级别过滤、导出、清空
  */
 import { onMounted, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { settingsApi } from '@/api';
+
+const { t } = useI18n();
 
 const store = useSettingsStore();
 const { logs, logSources, logTotal } = storeToRefs(store);
@@ -32,9 +35,9 @@ async function fetchLogs(): Promise<void> {
 
 async function clearLogs(): Promise<void> {
   try {
-    await ElMessageBox.confirm(`确定清空 ${source.value} 日志？`, '确认', { type: 'warning' });
+    await ElMessageBox.confirm(t('settings.logs.clearConfirm', { source: source.value }), t('settings.logs.confirmTitle'), { type: 'warning' });
     await settingsApi.clearLogs(source.value);
-    ElMessage.success('日志已清空');
+    ElMessage.success(t('settings.logs.cleared'));
     await fetchLogs();
   } catch { /* 取消 */ }
 }
@@ -42,7 +45,7 @@ async function clearLogs(): Promise<void> {
 async function exportDiag(): Promise<void> {
   try {
     const res = await settingsApi.exportDiagnostics();
-    ElMessage.success(`诊断包已生成：${res.path}（${(res.sizeBytes / 1024).toFixed(1)} KB）`);
+    ElMessage.success(t('settings.logs.diagGenerated', { path: res.path, size: (res.sizeBytes / 1024).toFixed(1) }));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
   }
@@ -59,20 +62,20 @@ function levelClass(lv: string): string {
 
 <template>
   <div class="nx-panel settings-section">
-    <div class="nx-panel-title">日志查看器</div>
+    <div class="nx-panel-title">{{ t('settings.logs.title') }}</div>
     <div class="log-toolbar">
       <el-select v-model="source" size="small" style="width: 140px" @change="fetchLogs()">
         <el-option v-for="s in logSources" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
-      <el-select v-model="level" size="small" style="width: 100px" clearable placeholder="全部级别" @change="fetchLogs()">
+      <el-select v-model="level" size="small" style="width: 100px" clearable :placeholder="t('settings.logs.allLevels')" @change="fetchLogs()">
         <el-option label="Info" value="info" />
         <el-option label="Warn" value="warn" />
         <el-option label="Error" value="error" />
       </el-select>
       <el-input-number v-model="lines" size="small" :min="50" :max="1000" :step="50" style="width: 110px" @change="fetchLogs()" />
-      <el-button size="small" @click="fetchLogs()">刷新</el-button>
-      <el-button size="small" @click="exportDiag()">导出诊断包</el-button>
-      <el-button size="small" type="danger" text @click="clearLogs()">清空日志</el-button>
+      <el-button size="small" @click="fetchLogs()">{{ t('common.refresh') }}</el-button>
+      <el-button size="small" @click="exportDiag()">{{ t('settings.logs.exportDiag') }}</el-button>
+      <el-button size="small" type="danger" text @click="clearLogs()">{{ t('settings.logs.clearLogs') }}</el-button>
     </div>
 
     <div v-loading="loading" class="log-container nx-mono">
@@ -87,10 +90,10 @@ function levelClass(lv: string): string {
         <span class="log-msg">{{ line.message }}</span>
       </div>
       <div v-if="logs.length === 0 && !loading" class="nx-text-dim" style="padding: 20px; text-align: center">
-        暂无日志
+        {{ t('settings.logs.noLogs') }}
       </div>
     </div>
-    <div class="log-footer nx-text-dim">共 {{ logTotal }} 条 · 显示最近 {{ logs.length }} 条</div>
+    <div class="log-footer nx-text-dim">{{ t('settings.logs.footer', { total: logTotal, shown: logs.length }) }}</div>
   </div>
 </template>
 

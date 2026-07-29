@@ -5,6 +5,7 @@
 import { defineStore } from 'pinia';
 import { ref, computed } from 'vue';
 import { settingsApi } from '@/api';
+import { t } from '@/i18n';
 import type {
   SystemSettings,
   SettingsSection,
@@ -35,18 +36,18 @@ export const useSettingsStore = defineStore('settings', () => {
 
   /* ---------- getters ---------- */
   const sectionList = computed<SectionItem[]>(() => [
-    { id: 'general', label: '常规', icon: 'Setting' },
-    { id: 'users', label: '用户', icon: 'User' },
-    { id: 'network', label: '网络', icon: 'Connection' },
-    { id: 'services', label: '服务', icon: 'Operation' },
-    { id: 'security', label: '安全', icon: 'Lock' },
-    { id: 'storage', label: '存储', icon: 'Coin' },
-    { id: 'power', label: '电源', icon: 'Lightning' },
-    { id: 'notification', label: '通知', icon: 'Bell' },
-    { id: 'llm', label: 'AI 助手', icon: 'MagicStick' },
-    { id: 'update', label: '更新', icon: 'Upload' },
-    { id: 'logs', label: '日志', icon: 'Document' },
-    { id: 'about', label: '关于', icon: 'InfoFilled' },
+    { id: 'general', label: t('settings.sections.general'), icon: 'Setting' },
+    { id: 'users', label: t('settings.sections.users'), icon: 'User' },
+    { id: 'network', label: t('settings.sections.network'), icon: 'Connection' },
+    { id: 'services', label: t('settings.sections.services'), icon: 'Operation' },
+    { id: 'security', label: t('settings.sections.security'), icon: 'Lock' },
+    { id: 'storage', label: t('settings.sections.storage'), icon: 'Coin' },
+    { id: 'power', label: t('settings.sections.power'), icon: 'Lightning' },
+    { id: 'notification', label: t('settings.sections.notification'), icon: 'Bell' },
+    { id: 'llm', label: t('settings.sections.llm'), icon: 'MagicStick' },
+    { id: 'update', label: t('settings.sections.update'), icon: 'Upload' },
+    { id: 'logs', label: t('settings.sections.logs'), icon: 'Document' },
+    { id: 'about', label: t('settings.sections.about'), icon: 'InfoFilled' },
   ]);
 
   /* ---------- actions ---------- */

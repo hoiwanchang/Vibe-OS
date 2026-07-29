@@ -9,6 +9,7 @@
  */
 import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import TrendSparkline from '@/components/common/TrendSparkline.vue';
 import { useSystemStore } from '@/stores/system';
 import { useWmStore } from '@/stores/wm';
@@ -16,6 +17,7 @@ import { formatBytes } from '@/utils/format';
 
 const system = useSystemStore();
 const wm = useWmStore();
+const { t } = useI18n();
 const { overview, tailscale, cpuHistory, memHistory } = storeToRefs(system);
 
 /** 时钟（独立 1s 计时，不依赖系统轮询） */
@@ -41,14 +43,14 @@ const seconds = ref('');
 const dateLine = ref('');
 const weekday = ref('');
 
-const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+const WEEKDAYS = ['common.weekdays.sun', 'common.weekdays.mon', 'common.weekdays.tue', 'common.weekdays.wed', 'common.weekdays.thu', 'common.weekdays.fri', 'common.weekdays.sat'];
 
 function tick(): void {
   const d = now.value;
   hhmm.value = `${pad(d.getHours())}:${pad(d.getMinutes())}`;
   seconds.value = pad(d.getSeconds());
   dateLine.value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  weekday.value = WEEKDAYS[d.getDay()] ?? '';
+  weekday.value = t(WEEKDAYS[d.getDay()] ?? '');
 }
 
 watch(now, tick, { immediate: true });
@@ -98,7 +100,7 @@ function levelColor(pct: number): string {
 
     <!-- 资源监视 -->
     <button class="nx-widget nx-widget--clickable" @click="wm.open('dashboard')">
-      <div class="nx-widget__title">资源监视</div>
+      <div class="nx-widget__title">{{ t('desktop.widgets.resourceMonitor') }}</div>
       <div class="nx-widget-res">
         <div class="nx-widget-res__row">
           <span class="nx-widget-res__label">CPU</span>
@@ -145,7 +147,7 @@ function levelColor(pct: number): string {
 
     <!-- 存储池 -->
     <button class="nx-widget nx-widget--clickable" @click="wm.open('dashboard')">
-      <div class="nx-widget__title">存储池</div>
+      <div class="nx-widget__title">{{ t('desktop.widgets.storagePools') }}</div>
       <div class="nx-widget-storage__percent" :style="{ color: levelColor(dataPool.percent) }">
         {{ dataPool.percent.toFixed(1) }}%
       </div>
@@ -162,13 +164,13 @@ function levelColor(pct: number): string {
 
     <!-- 网络 / Tailscale -->
     <button class="nx-widget nx-widget--clickable" @click="wm.open('tailscale')">
-      <div class="nx-widget__title">TAILSCALE 网络</div>
+      <div class="nx-widget__title">{{ t('desktop.widgets.tailscaleNet') }}</div>
       <div class="nx-widget-net__status">
         <span class="nx-dot" :class="tsStats.selfOnline ? 'nx-dot--ok' : 'nx-dot--error'" />
-        <span class="nx-widget-net__state">{{ tsStats.selfOnline ? '已连接' : '未连接' }}</span>
+        <span class="nx-widget-net__state">{{ tsStats.selfOnline ? t('common.connected') : t('common.disconnected') }}</span>
       </div>
       <div class="nx-widget-net__peers nx-mono">
-        节点 {{ tsStats.online }} / {{ tsStats.total }} 在线
+        {{ t('desktop.widgets.nodesOnline', { online: tsStats.online, total: tsStats.total }) }}
       </div>
     </button>
   </div>

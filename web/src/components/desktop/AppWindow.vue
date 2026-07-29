@@ -4,6 +4,7 @@
  * 拖拽与缩放通过 pointer 事件实现，几何统一交由 wm store 钳制管理
  */
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { useWmStore, type DesktopWindow } from '@/stores/wm';
 
 const props = defineProps<{
@@ -11,8 +12,12 @@ const props = defineProps<{
 }>();
 
 const wm = useWmStore();
+const { t } = useI18n();
 
 const isFocused = computed(() => wm.focusedId === props.win.id);
+
+/** 窗口标题（i18n 键 → 实时翻译，切换语言即时生效） */
+const title = computed(() => t('wm.titles.' + props.win.title));
 
 /** 窗口定位样式（最大化时铺满工作区） */
 const style = computed(() => {
@@ -94,12 +99,12 @@ function onResizeDown(e: PointerEvent): void {
     @pointerdown="wm.focus(win.id)"
   >
     <div class="wm-titlebar" @pointerdown="onTitlebarDown" @dblclick="wm.toggleMaximize(win.id)">
-      <span class="wm-titlebar__title">{{ win.title }}</span>
-      <button class="wm-titlebar__btn" title="最小化" @click.stop="wm.minimize(win.id)">—</button>
-      <button class="wm-titlebar__btn" title="最大化/还原" @click.stop="wm.toggleMaximize(win.id)">
+      <span class="wm-titlebar__title">{{ title }}</span>
+      <button class="wm-titlebar__btn" :title="t('desktop.window.minimize')" @click.stop="wm.minimize(win.id)">—</button>
+      <button class="wm-titlebar__btn" :title="t('desktop.window.maximize')" @click.stop="wm.toggleMaximize(win.id)">
         {{ win.maximized ? '❐' : '□' }}
       </button>
-      <button class="wm-titlebar__btn wm-titlebar__btn--close" title="关闭" @click.stop="wm.close(win.id)">✕</button>
+      <button class="wm-titlebar__btn wm-titlebar__btn--close" :title="t('desktop.window.close')" @click.stop="wm.close(win.id)">✕</button>
     </div>
     <div class="wm-body">
       <slot />

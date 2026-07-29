@@ -3,8 +3,11 @@
  * 存储池条目：设备名 + 挂载点 + 语义色进度条 + 容量明细
  */
 import { computed } from 'vue';
+import { useI18n } from 'vue-i18n';
 import type { StoragePool } from '@/api/types';
 import { formatBytes, usageLevel } from '@/utils/format';
+
+const { t } = useI18n();
 
 const props = defineProps<{ pool: StoragePool }>();
 
@@ -34,7 +37,7 @@ const statusType = computed(() =>
     />
     <div class="pool-detail">
       <span>
-        已用 <b>{{ formatBytes(pool.usedBytes) }}</b>
+        {{ t('storageBar.used') }} <b>{{ formatBytes(pool.usedBytes) }}</b>
         / {{ formatBytes(pool.totalBytes) }}
       </span>
       <span class="pool-percent" :class="`pool-percent--${level}`">

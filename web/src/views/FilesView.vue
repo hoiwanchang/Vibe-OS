@@ -11,6 +11,7 @@
  */
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
+import { useI18n } from 'vue-i18n';
 import {
   ArrowLeft,
   Delete,
@@ -28,6 +29,8 @@ import type { FileEntry, UserQuotaInfo } from '@/api/types';
 import { useFilesStore } from '@/stores/files';
 import type { FileSortKey } from '@/stores/files';
 import { formatBytes, formatTime } from '@/utils/format';
+
+const { t } = useI18n();
 
 const files = useFilesStore();
 
@@ -108,10 +111,10 @@ async function saveEditor(): Promise<void> {
   const ok = await files.writeFile(editorPath.value, editorContent.value);
   editorSaving.value = false;
   if (ok) {
-    ElMessage.success('已保存');
+    ElMessage.success(t('files.saved'));
     await files.fetchList();
   } else {
-    ElMessage.error(files.lastError ?? '保存失败');
+    ElMessage.error(files.lastError ?? t('files.saveFailed'));
   }
 }
 
@@ -146,8 +149,8 @@ async function ctxCopy(): Promise<void> {
   if (!entry) return;
   const dest = `${entry.path}.copy`;
   const ok = await files.copy(entry.path, dest);
-  if (ok) ElMessage.success(`已复制为 ${dest.split('/').pop()}`);
-  else ElMessage.error(files.lastError ?? '复制失败');
+  if (ok) ElMessage.success(t('files.copiedAs', { name: dest.split('/').pop() }));
+  else ElMessage.error(files.lastError ?? t('files.copyFailed'));
 }
 
 /** 右键操作：删除（到回收站） */
@@ -156,17 +159,17 @@ async function ctxDelete(): Promise<void> {
   closeCtxMenu();
   if (!entry) return;
   try {
-    await ElMessageBox.confirm(`确定将「${entry.name}」移入回收站吗？`, '删除确认', {
-      confirmButtonText: '移入回收站',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('files.trashConfirm', { name: entry.name }), t('files.trashConfirmTitle'), {
+      confirmButtonText: t('files.moveToTrash'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
   } catch {
     return;
   }
   const ok = await files.remove(entry.path, false);
-  if (ok) ElMessage.success('已移入回收站');
-  else ElMessage.error(files.lastError ?? '删除失败');
+  if (ok) ElMessage.success(t('files.movedToTrash'));
+  else ElMessage.error(files.lastError ?? t('files.deleteFailed'));
 }
 
 /** 行内操作：删除 */
@@ -186,8 +189,8 @@ async function submitMkdir(): Promise<void> {
   const ok = await files.mkdir(mkdirName.value.trim());
   mkdirVisible.value = false;
   mkdirName.value = '';
-  if (ok) ElMessage.success('文件夹已创建');
-  else ElMessage.error(files.lastError ?? '创建失败');
+  if (ok) ElMessage.success(t('files.folderCreated'));
+  else ElMessage.error(files.lastError ?? t('files.createFailed'));
 }
 
 /** 提交重命名 */
@@ -195,8 +198,8 @@ async function submitRename(): Promise<void> {
   if (!renameEntry.value || !renameNewName.value.trim()) return;
   const ok = await files.rename(renameEntry.value.path, renameNewName.value.trim());
   renameVisible.value = false;
-  if (ok) ElMessage.success('已重命名');
-  else ElMessage.error(files.lastError ?? '重命名失败');
+  if (ok) ElMessage.success(t('files.renamed'));
+  else ElMessage.error(files.lastError ?? t('files.renameFailed'));
 }
 
 /** 上传处理（el-upload http-request 自定义） */
@@ -205,10 +208,10 @@ async function handleUpload(options: UploadRequestOptions): Promise<void> {
   if (!raw) return;
   const ok = await files.upload([raw]);
   if (ok > 0) {
-    ElMessage.success(`已上传 ${raw.name}`);
+    ElMessage.success(t('files.uploaded', { name: raw.name }));
     uploadVisible.value = false;
   } else {
-    ElMessage.error(files.lastError ?? '上传失败');
+    ElMessage.error(files.lastError ?? t('files.uploadFailed'));
   }
 }
 
@@ -221,16 +224,16 @@ async function openTrash(): Promise<void> {
 /** 回收站：恢复 */
 async function restoreItem(entry: FileEntry): Promise<void> {
   const ok = await files.restoreFromTrash(entry.path);
-  if (ok) ElMessage.success('已恢复');
-  else ElMessage.error(files.lastError ?? '恢复失败');
+  if (ok) ElMessage.success(t('files.restored'));
+  else ElMessage.error(files.lastError ?? t('files.restoreFailed'));
 }
 
 /** 回收站：永久删除 */
 async function purgeItem(entry: FileEntry): Promise<void> {
   try {
-    await ElMessageBox.confirm(`确定永久删除「${entry.name}」吗？此操作不可恢复。`, '永久删除', {
-      confirmButtonText: '永久删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('files.purgeConfirm', { name: entry.name }), t('files.purgeTitle'), {
+      confirmButtonText: t('files.purgeTitle'),
+      cancelButtonText: t('common.cancel'),
       type: 'error',
     });
   } catch {
@@ -238,27 +241,27 @@ async function purgeItem(entry: FileEntry): Promise<void> {
   }
   const ok = await files.remove(entry.path, true);
   if (ok) {
-    ElMessage.success('已永久删除');
+    ElMessage.success(t('files.purged'));
     await files.fetchTrash();
   } else {
-    ElMessage.error(files.lastError ?? '删除失败');
+    ElMessage.error(files.lastError ?? t('files.deleteFailed'));
   }
 }
 
 /** 回收站：清空 */
 async function emptyTrash(): Promise<void> {
   try {
-    await ElMessageBox.confirm('确定清空回收站吗？所有项目将被永久删除。', '清空回收站', {
-      confirmButtonText: '清空',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('files.clearTrashConfirm'), t('files.clearTrash'), {
+      confirmButtonText: t('common.clear'),
+      cancelButtonText: t('common.cancel'),
       type: 'error',
     });
   } catch {
     return;
   }
   const ok = await files.emptyTrash();
-  if (ok) ElMessage.success('回收站已清空');
-  else ElMessage.error(files.lastError ?? '清空失败');
+  if (ok) ElMessage.success(t('files.cleared'));
+  else ElMessage.error(files.lastError ?? t('files.clearFailed'));
 }
 
 /** 排序表头点击 */
@@ -297,7 +300,7 @@ onMounted(() => {
     <!-- 工具栏 -->
     <div class="fm-toolbar">
       <el-button :icon="ArrowLeft" size="small" :disabled="!files.currentPath" @click="files.goUp()">
-        上级
+        {{ t('files.up') }}
       </el-button>
 
       <div class="fm-breadcrumb nx-mono">
@@ -314,8 +317,8 @@ onMounted(() => {
       <div class="fm-toolbar__spacer" />
 
       <el-button :icon="Refresh" size="small" circle @click="files.fetchList()" />
-      <el-button :icon="Plus" size="small" @click="mkdirVisible = true">新建文件夹</el-button>
-      <el-button :icon="Upload" size="small" type="primary" @click="uploadVisible = !uploadVisible">上传</el-button>
+      <el-button :icon="Plus" size="small" @click="mkdirVisible = true">{{ t('files.newFolder') }}</el-button>
+      <el-button :icon="Upload" size="small" type="primary" @click="uploadVisible = !uploadVisible">{{ t('common.upload') }}</el-button>
     </div>
 
     <!-- 上传面板 -->
@@ -328,7 +331,7 @@ onMounted(() => {
         action=""
       >
         <el-icon class="fm-upload__icon"><Upload /></el-icon>
-        <div class="fm-upload__text">拖拽文件到此处，或点击选择文件上传到当前目录</div>
+        <div class="fm-upload__text">{{ t('files.dragUpload') }}</div>
       </el-upload>
     </div>
 
@@ -337,15 +340,15 @@ onMounted(() => {
       <table class="fm-table">
         <thead>
           <tr>
-            <th class="fm-th fm-th--name" @click="onSort('name')">名称{{ sortIndicator('name') }}</th>
-            <th class="fm-th fm-th--size" @click="onSort('size')">大小{{ sortIndicator('size') }}</th>
-            <th class="fm-th fm-th--time" @click="onSort('modifiedAt')">修改时间{{ sortIndicator('modifiedAt') }}</th>
-            <th class="fm-th fm-th--ops">操作</th>
+            <th class="fm-th fm-th--name" @click="onSort('name')">{{ t('files.colName') }}{{ sortIndicator('name') }}</th>
+            <th class="fm-th fm-th--size" @click="onSort('size')">{{ t('files.colSize') }}{{ sortIndicator('size') }}</th>
+            <th class="fm-th fm-th--time" @click="onSort('modifiedAt')">{{ t('files.colModified') }}{{ sortIndicator('modifiedAt') }}</th>
+            <th class="fm-th fm-th--ops">{{ t('common.ops') }}</th>
           </tr>
         </thead>
         <tbody>
           <tr v-if="files.sortedEntries.length === 0 && !files.loading">
-            <td colspan="4" class="fm-empty">空目录</td>
+            <td colspan="4" class="fm-empty">{{ t('files.emptyDir') }}</td>
           </tr>
           <tr
             v-for="entry in files.sortedEntries"
@@ -395,12 +398,12 @@ onMounted(() => {
 
     <!-- 状态栏 -->
     <div class="fm-statusbar nx-mono">
-      <span>{{ files.sortedEntries.length }} 个项目</span>
+      <span>{{ files.sortedEntries.length }} {{ t('common.items') }}</span>
       <span v-if="quota">
-        已用 {{ formatBytes(Number(quota.usedBytes)) }} / 配额 {{ formatBytes(Number(quota.quotaBytes)) }}
+        {{ t('files.usedQuota', { used: formatBytes(Number(quota.usedBytes)), quota: formatBytes(Number(quota.quotaBytes)) }) }}
       </span>
       <span class="fm-statusbar__trash" @click="openTrash">
-        回收站 ({{ trashCount }})
+        {{ t('files.trashCount', { count: trashCount }) }}
       </span>
     </div>
 
@@ -413,40 +416,40 @@ onMounted(() => {
         @click.stop
       >
         <div v-if="ctxMenu.entry?.type !== 'directory'" class="fm-ctxmenu__item" @click="ctxDownload">
-          <el-icon><Download /></el-icon> 下载
+          <el-icon><Download /></el-icon> {{ t('common.download') }}
         </div>
         <div class="fm-ctxmenu__item" @click="ctxRename">
-          <el-icon><Edit /></el-icon> 重命名
+          <el-icon><Edit /></el-icon> {{ t('common.rename') }}
         </div>
         <div class="fm-ctxmenu__item" @click="ctxCopy">
-          <el-icon><Document /></el-icon> 复制副本
+          <el-icon><Document /></el-icon> {{ t('files.copyDest') }}
         </div>
         <div class="fm-ctxmenu__item fm-ctxmenu__item--danger" @click="ctxDelete">
-          <el-icon><Delete /></el-icon> 删除（到回收站）
+          <el-icon><Delete /></el-icon> {{ t('files.deleteToTrash') }}
         </div>
       </div>
     </Teleport>
 
     <!-- 新建文件夹对话框 -->
-    <el-dialog v-model="mkdirVisible" title="新建文件夹" width="380px" append-to-body>
-      <el-input v-model="mkdirName" placeholder="文件夹名称" @keyup.enter="submitMkdir" />
+    <el-dialog v-model="mkdirVisible" :title="t('files.newFolder')" width="380px" append-to-body>
+      <el-input v-model="mkdirName" :placeholder="t('files.folderName')" @keyup.enter="submitMkdir" />
       <template #footer>
-        <el-button @click="mkdirVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitMkdir">创建</el-button>
+        <el-button @click="mkdirVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitMkdir">{{ t('common.create') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 重命名对话框 -->
-    <el-dialog v-model="renameVisible" title="重命名" width="380px" append-to-body>
-      <el-input v-model="renameNewName" placeholder="新名称" @keyup.enter="submitRename" />
+    <el-dialog v-model="renameVisible" :title="t('common.rename')" width="380px" append-to-body>
+      <el-input v-model="renameNewName" :placeholder="t('files.newName')" @keyup.enter="submitRename" />
       <template #footer>
-        <el-button @click="renameVisible = false">取消</el-button>
-        <el-button type="primary" @click="submitRename">确定</el-button>
+        <el-button @click="renameVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="submitRename">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
 
     <!-- 文本编辑器抽屉 -->
-    <el-drawer v-model="editorVisible" title="文件编辑" size="480px" append-to-body>
+    <el-drawer v-model="editorVisible" :title="t('files.fileEditor')" size="480px" append-to-body>
       <div class="fm-editor">
         <div class="fm-editor__path nx-mono">{{ editorPath }}</div>
         <el-input
@@ -457,25 +460,25 @@ onMounted(() => {
           class="fm-editor__textarea nx-mono"
           spellcheck="false"
         />
-        <div v-else class="fm-editor__loading">加载中…</div>
+        <div v-else class="fm-editor__loading">{{ t('common.loading') }}</div>
         <div class="fm-editor__actions">
-          <el-button type="primary" :loading="editorSaving" @click="saveEditor">保存</el-button>
-          <el-button @click="editorVisible = false">关闭</el-button>
+          <el-button type="primary" :loading="editorSaving" @click="saveEditor">{{ t('common.save') }}</el-button>
+          <el-button @click="editorVisible = false">{{ t('common.close') }}</el-button>
         </div>
       </div>
     </el-drawer>
 
     <!-- 回收站抽屉 -->
-    <el-drawer v-model="trashVisible" title="回收站" size="440px" append-to-body>
+    <el-drawer v-model="trashVisible" :title="t('files.trash')" size="440px" append-to-body>
       <div class="fm-trash">
         <div class="fm-trash__header">
-          <span class="nx-mono">{{ trashCount }} 个项目</span>
+          <span class="nx-mono">{{ trashCount }} {{ t('common.items') }}</span>
           <el-button size="small" type="danger" plain :disabled="trashCount === 0" @click="emptyTrash">
-            清空回收站
+            {{ t('files.clearTrash') }}
           </el-button>
         </div>
         <div v-if="!files.trash || files.trash.entries.length === 0" class="fm-trash__empty">
-          回收站为空
+          {{ t('files.trashEmpty') }}
         </div>
         <div v-else class="fm-trash__list">
           <div v-for="item in files.trash.entries" :key="item.path" class="fm-trash__item">
@@ -486,8 +489,8 @@ onMounted(() => {
                 {{ formatBytes(item.size) }} · {{ formatTime(item.modifiedAt) }}
               </div>
             </div>
-            <el-button size="small" @click="restoreItem(item)">恢复</el-button>
-            <el-button size="small" type="danger" plain @click="purgeItem(item)">永久删除</el-button>
+            <el-button size="small" @click="restoreItem(item)">{{ t('common.restore') }}</el-button>
+            <el-button size="small" type="danger" plain @click="purgeItem(item)">{{ t('files.purgeTitle') }}</el-button>
           </div>
         </div>
       </div>

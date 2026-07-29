@@ -6,6 +6,7 @@
  */
 import { onBeforeUnmount, onMounted, ref } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import { useSystemStore } from '@/stores/system';
 
 const emit = defineEmits<{
@@ -13,6 +14,7 @@ const emit = defineEmits<{
 }>();
 
 const system = useSystemStore();
+const { t } = useI18n();
 const { activeAlerts } = storeToRefs(system);
 
 const panelRef = ref<HTMLElement | null>(null);
@@ -35,13 +37,13 @@ onBeforeUnmount(() => {
 <template>
   <div ref="panelRef" class="nx-alerts-panel">
     <div class="nx-alerts-panel__header">
-      <span>告警中心</span>
+      <span>{{ t('desktop.alerts.title') }}</span>
       <span class="nx-alerts-panel__count">{{ activeAlerts.length }}</span>
     </div>
 
     <div class="nx-alerts-panel__body">
       <div v-if="activeAlerts.length === 0" class="nx-alerts-panel__empty">
-        ✓ 一切正常，无活动告警
+        {{ t('desktop.alerts.allClear') }}
       </div>
 
       <div
@@ -56,7 +58,7 @@ onBeforeUnmount(() => {
           class="nx-alerts-panel__ack"
           @click="system.acknowledgeAlert(alert.id)"
         >
-          确认
+          {{ t('desktop.alerts.ack') }}
         </button>
       </div>
     </div>

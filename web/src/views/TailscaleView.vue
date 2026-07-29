@@ -10,6 +10,7 @@
 import { computed, onMounted, ref } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import { tailscaleApi } from '@/api';
 import type {
   TailscaleAccount,
@@ -20,6 +21,7 @@ import { useSystemStore } from '@/stores/system';
 
 const system = useSystemStore();
 const { tailscale } = storeToRefs(system);
+const { t } = useI18n();
 
 /** 管理综合报告（账户 + 偏好，独立于轮询状态） */
 const manage = ref<TailscaleManageReport | null>(null);
@@ -50,12 +52,12 @@ const pendingAuthUrl = ref<string | null>(null);
 const stateText = computed(() => {
   const s = tailscale.value?.status.backendState ?? 'Unknown';
   const map: Record<string, string> = {
-    Running: '运行中',
-    Stopped: '已停止',
-    NotRunning: '未运行',
-    Starting: '启动中',
-    NeedsLogin: '需要登录',
-    NotInstalled: '未安装',
+    Running: t('tailscale.statusMap.Running'),
+    Stopped: t('tailscale.statusMap.Stopped'),
+    NotRunning: t('tailscale.statusMap.NotRunning'),
+    Starting: t('tailscale.statusMap.Starting'),
+    NeedsLogin: t('tailscale.statusMap.NeedsLogin'),
+    NotInstalled: t('tailscale.statusMap.NotInstalled'),
   };
   return map[s] ?? s;
 });
@@ -106,14 +108,14 @@ async function doLogin(): Promise<void> {
     });
     if (res.authUrl) {
       pendingAuthUrl.value = res.authUrl;
-      ElMessage.warning('请在浏览器中打开认证链接完成授权');
+      ElMessage.warning(t('tailscale.openAuthLink'));
     } else {
-      ElMessage.success(`已登录：${res.account.label}`);
+      ElMessage.success(t('tailscale.loggedIn', { label: res.account.label }));
     }
     await fetchManage();
     await system.fetchAll();
   } catch (e) {
-    ElMessage.error(`登录失败：${e instanceof Error ? e.message : String(e)}`);
+    ElMessage.error(t('tailscale.loginFailed', { msg: e instanceof Error ? e.message : String(e) }));
   } finally {
     loginLoading.value = false;
   }
@@ -122,9 +124,9 @@ async function doLogin(): Promise<void> {
 /** 登出 */
 async function doLogout(): Promise<void> {
   try {
-    await ElMessageBox.confirm('确定要登出当前 Tailscale 账户吗？', '登出确认', {
-      confirmButtonText: '登出',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('tailscale.logoutConfirm'), t('tailscale.logoutTitle'), {
+      confirmButtonText: t('tailscale.logout'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
   } catch {
@@ -132,11 +134,11 @@ async function doLogout(): Promise<void> {
   }
   try {
     await tailscaleApi.logout();
-    ElMessage.success('已登出');
+    ElMessage.success(t('tailscale.loggedOut'));
     await fetchManage();
     await system.fetchAll();
   } catch (e) {
-    ElMessage.error(`登出失败：${e instanceof Error ? e.message : String(e)}`);
+    ElMessage.error(t('tailscale.logoutFailed', { msg: e instanceof Error ? e.message : String(e) }));
   }
 }
 
@@ -146,14 +148,14 @@ async function switchAccount(account: TailscaleAccount): Promise<void> {
     const res = await tailscaleApi.switchAccount(account.id);
     if (res.authUrl) {
       pendingAuthUrl.value = res.authUrl;
-      ElMessage.warning('该账户需要重新授权，请打开认证链接');
+      ElMessage.warning(t('tailscale.needReauth'));
     } else {
-      ElMessage.success(`已切换到：${account.label}`);
+      ElMessage.success(t('tailscale.switchedTo', { label: account.label }));
     }
     await fetchManage();
     await system.fetchAll();
   } catch (e) {
-    ElMessage.error(`切换失败：${e instanceof Error ? e.message : String(e)}`);
+    ElMessage.error(t('tailscale.switchFailed', { msg: e instanceof Error ? e.message : String(e) }));
   }
 }
 
@@ -161,19 +163,19 @@ async function switchAccount(account: TailscaleAccount): Promise<void> {
 async function removeAccount(account: TailscaleAccount): Promise<void> {
   try {
     await ElMessageBox.confirm(
-      `确定移除账户「${account.label}」吗？（仅从列表移除，不影响运行状态）`,
-      '移除账户',
-      { confirmButtonText: '移除', cancelButtonText: '取消', type: 'warning' },
+      t('tailscale.removeConfirm', { label: account.label }),
+      t('tailscale.removeTitle'),
+      { confirmButtonText: t('common.remove'), cancelButtonText: t('common.cancel'), type: 'warning' },
     );
   } catch {
     return;
   }
   try {
     await tailscaleApi.removeAccount(account.id);
-    ElMessage.success('已移除');
+    ElMessage.success(t('tailscale.removed'));
     await fetchManage();
   } catch (e) {
-    ElMessage.error(`移除失败：${e instanceof Error ? e.message : String(e)}`);
+    ElMessage.error(t('tailscale.removeFailed', { msg: e instanceof Error ? e.message : String(e) }));
   }
 }
 
@@ -181,10 +183,10 @@ async function removeAccount(account: TailscaleAccount): Promise<void> {
 async function applyPrefs(): Promise<void> {
   try {
     await tailscaleApi.setPrefs({ ...prefsForm.value });
-    ElMessage.success('偏好设置已应用');
+    ElMessage.success(t('tailscale.prefsApplied'));
     await fetchManage();
   } catch (e) {
-    ElMessage.error(`应用失败：${e instanceof Error ? e.message : String(e)}`);
+    ElMessage.error(t('tailscale.applyFailed', { msg: e instanceof Error ? e.message : String(e) }));
   }
 }
 </script>
@@ -194,34 +196,34 @@ async function applyPrefs(): Promise<void> {
     <!-- 状态总览 -->
     <div class="nx-grid nx-grid--stats ts-overview">
       <div class="nx-panel ts-stat">
-        <div class="nx-metric-label">连接状态</div>
+        <div class="nx-metric-label">{{ t('tailscale.connState') }}</div>
         <div class="ts-stat__value">
           <span class="nx-dot" :class="selfOnline ? 'nx-dot--ok' : 'nx-dot--error'" />
           {{ stateText }}
         </div>
       </div>
       <div class="nx-panel ts-stat">
-        <div class="nx-metric-label">本节点</div>
+        <div class="nx-metric-label">{{ t('tailscale.thisNode') }}</div>
         <div class="ts-stat__value nx-mono">{{ tailscale?.status.self?.hostname ?? '—' }}</div>
         <div class="ts-stat__sub nx-mono">{{ tailscale?.status.self?.ips.join(' / ') ?? '—' }}</div>
       </div>
       <div class="nx-panel ts-stat">
-        <div class="nx-metric-label">在线节点</div>
+        <div class="nx-metric-label">{{ t('tailscale.onlineNodes') }}</div>
         <div class="ts-stat__value nx-mono">
           {{ onlinePeers }} / {{ (tailscale?.status.peers ?? []).length }}
         </div>
       </div>
       <div class="nx-panel ts-stat">
-        <div class="nx-metric-label">当前账户</div>
+        <div class="nx-metric-label">{{ t('tailscale.currentAccount') }}</div>
         <div class="ts-stat__value">
-          {{ manage?.accounts.find((a) => a.active)?.label ?? '未登录' }}
+          {{ manage?.accounts.find((a) => a.active)?.label ?? t('tailscale.notLoggedIn') }}
         </div>
       </div>
     </div>
 
     <!-- 认证 URL 提示 -->
     <div v-if="pendingAuthUrl" class="nx-alert-banner nx-alert-banner--warning ts-authurl">
-      <span class="nx-alert-title">需要浏览器授权</span>
+      <span class="nx-alert-title">{{ t('tailscale.needBrowserAuth') }}</span>
       <a :href="pendingAuthUrl" target="_blank" rel="noopener" class="nx-mono ts-authurl__link">
         {{ pendingAuthUrl }}
       </a>
@@ -230,39 +232,39 @@ async function applyPrefs(): Promise<void> {
     <div class="nx-grid nx-grid--two">
       <!-- 登录控制平面 -->
       <div class="nx-panel">
-        <div class="ts-section-title">登录控制平面</div>
+        <div class="ts-section-title">{{ t('tailscale.loginSection') }}</div>
         <el-form label-position="top" size="default">
-          <el-form-item label="控制平面地址（headscale 服务器 URL，留空使用官方）">
+          <el-form-item :label="t('tailscale.controlPlane')">
             <el-input
               v-model="loginForm.controlUrl"
               placeholder="http://headscale.example.com:8080"
               clearable
             />
           </el-form-item>
-          <el-form-item label="预认证密钥（可选，headscale 免交互登录）">
+          <el-form-item :label="t('tailscale.preauthKey')">
             <el-input v-model="loginForm.authKey" placeholder="authkey…" show-password clearable />
           </el-form-item>
-          <el-form-item label="账户标签（可选，默认取服务器主机名）">
-            <el-input v-model="loginForm.label" placeholder="我的 headscale" clearable />
+          <el-form-item :label="t('tailscale.accountLabel')">
+            <el-input v-model="loginForm.label" :placeholder="t('tailscale.accountLabelPh')" clearable />
           </el-form-item>
           <div class="ts-login-opts">
-            <el-checkbox v-model="loginForm.acceptRoutes">接受子网路由</el-checkbox>
-            <el-checkbox v-model="loginForm.exitNode">通告为 Exit Node</el-checkbox>
+            <el-checkbox v-model="loginForm.acceptRoutes">{{ t('tailscale.acceptRoutes') }}</el-checkbox>
+            <el-checkbox v-model="loginForm.exitNode">{{ t('tailscale.exitNode') }}</el-checkbox>
           </div>
           <div class="ts-actions">
-            <el-button type="primary" :loading="loginLoading" @click="doLogin">登录</el-button>
-            <el-button :disabled="!selfOnline" @click="doLogout">登出</el-button>
+            <el-button type="primary" :loading="loginLoading" @click="doLogin">{{ t('tailscale.login') }}</el-button>
+            <el-button :disabled="!selfOnline" @click="doLogout">{{ t('tailscale.logout') }}</el-button>
           </div>
         </el-form>
       </div>
 
       <!-- 偏好设置 -->
       <div class="nx-panel">
-        <div class="ts-section-title">路由偏好</div>
+        <div class="ts-section-title">{{ t('tailscale.prefsSection') }}</div>
         <el-form label-position="top" size="default">
-          <el-form-item label="Exit Node（出口节点）">
-            <el-select v-model="prefsForm.exitNode" placeholder="不使用 Exit Node" clearable style="width: 100%">
-              <el-option label="不使用" value="" />
+          <el-form-item :label="t('tailscale.exitNodeLabel')">
+            <el-select v-model="prefsForm.exitNode" :placeholder="t('tailscale.noExitNode')" clearable style="width: 100%">
+              <el-option :label="t('tailscale.notUsed')" value="" />
               <el-option
                 v-for="peer in exitNodeOptions"
                 :key="peer.id"
@@ -271,15 +273,15 @@ async function applyPrefs(): Promise<void> {
               />
             </el-select>
           </el-form-item>
-          <el-checkbox v-model="prefsForm.acceptRoutes">接受子网路由</el-checkbox>
+          <el-checkbox v-model="prefsForm.acceptRoutes">{{ t('tailscale.acceptRoutes') }}</el-checkbox>
           <el-checkbox v-model="prefsForm.exitNodeAllowLanAccess" style="margin-left: 16px">
-            Exit Node 允许局域网访问
+            {{ t('tailscale.exitNodeLan') }}
           </el-checkbox>
           <el-checkbox v-model="prefsForm.advertiseExitNode" style="margin-left: 16px">
-            通告自身为 Exit Node
+            {{ t('tailscale.advertiseExit') }}
           </el-checkbox>
           <div class="ts-actions">
-            <el-button type="primary" @click="applyPrefs">应用</el-button>
+            <el-button type="primary" @click="applyPrefs">{{ t('common.apply') }}</el-button>
           </div>
         </el-form>
       </div>
@@ -287,9 +289,9 @@ async function applyPrefs(): Promise<void> {
 
     <!-- 多账户管理 -->
     <div class="nx-panel ts-accounts">
-      <div class="ts-section-title">已登记账户（多账户切换）</div>
+      <div class="ts-section-title">{{ t('tailscale.accountsSection') }}</div>
       <div v-if="!manage || manage.accounts.length === 0" class="ts-empty">
-        暂无已登记账户，登录后自动登记
+        {{ t('tailscale.noAccounts') }}
       </div>
       <div v-else class="ts-account-list">
         <div
@@ -306,9 +308,9 @@ async function applyPrefs(): Promise<void> {
             </div>
           </div>
           <div class="ts-account__ops">
-            <el-button v-if="!account.active" size="small" @click="switchAccount(account)">切换</el-button>
-            <el-tag v-else type="success" size="small">当前</el-tag>
-            <el-button size="small" type="danger" plain @click="removeAccount(account)">移除</el-button>
+            <el-button v-if="!account.active" size="small" @click="switchAccount(account)">{{ t('common.switch') }}</el-button>
+            <el-tag v-else type="success" size="small">{{ t('common.current') }}</el-tag>
+            <el-button size="small" type="danger" plain @click="removeAccount(account)">{{ t('common.remove') }}</el-button>
           </div>
         </div>
       </div>
@@ -316,22 +318,22 @@ async function applyPrefs(): Promise<void> {
 
     <!-- 对等节点 -->
     <div class="nx-panel">
-      <div class="ts-section-title">对等节点</div>
+      <div class="ts-section-title">{{ t('tailscale.peersSection') }}</div>
       <el-table :data="tailscale?.status.peers ?? []" size="small" stripe>
-        <el-table-column label="状态" width="70">
+        <el-table-column :label="t('common.status')" width="70">
           <template #default="{ row }">
             <span class="nx-dot" :class="row.online ? 'nx-dot--ok' : 'nx-dot--off'" />
           </template>
         </el-table-column>
-        <el-table-column prop="hostname" label="主机名" min-width="160" />
-        <el-table-column label="IP 地址" min-width="180">
+        <el-table-column prop="hostname" :label="t('tailscale.colHostname')" min-width="160" />
+        <el-table-column :label="t('tailscale.colIp')" min-width="180">
           <template #default="{ row }">
             <span class="nx-mono">{{ row.ips.join(', ') }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="os" label="系统" width="100" />
-        <el-table-column label="活跃" width="80">
-          <template #default="{ row }">{{ row.active ? '是' : '否' }}</template>
+        <el-table-column prop="os" :label="t('tailscale.colOs')" width="100" />
+        <el-table-column :label="t('common.active')" width="80">
+          <template #default="{ row }">{{ row.active ? t('common.yes') : t('common.no') }}</template>
         </el-table-column>
       </el-table>
     </div>

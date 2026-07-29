@@ -5,9 +5,12 @@
  */
 import { computed } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import TrendSparkline from '@/components/common/TrendSparkline.vue';
 import { useSystemStore } from '@/stores/system';
 import { formatBytes } from '@/utils/format';
+
+const { t } = useI18n();
 
 const system = useSystemStore();
 const { overview, cpuHistory, memHistory } = storeToRefs(system);
@@ -35,7 +38,7 @@ const loadAvg = computed(() =>
     <!-- CPU -->
     <div class="nx-panel monitor-card">
       <div class="monitor-card__head">
-        <span class="nx-metric-label">CPU 使用率</span>
+        <span class="nx-metric-label">{{ t('monitor.cpuUsage') }}</span>
         <span class="monitor-card__value" :style="{ color: levelColor(overview?.cpu.usagePercent ?? 0) }">
           {{ (overview?.cpu.usagePercent ?? 0).toFixed(1) }}%
         </span>
@@ -48,16 +51,16 @@ const loadAvg = computed(() =>
         :height="120"
         class="monitor-spark"
       />
-      <div v-else class="monitor-placeholder">收集数据中…</div>
+      <div v-else class="monitor-placeholder">{{ t('monitor.collecting') }}</div>
       <div class="monitor-meta nx-mono">
-        {{ overview?.system.cpuCores ?? '—' }} 核 · 负载 {{ loadAvg || '—' }}
+        {{ t('monitor.coresLoad', { cores: overview?.system.cpuCores ?? '—', load: loadAvg || '—' }) }}
       </div>
     </div>
 
     <!-- 内存 -->
     <div class="nx-panel monitor-card">
       <div class="monitor-card__head">
-        <span class="nx-metric-label">内存使用率</span>
+        <span class="nx-metric-label">{{ t('monitor.memUsage') }}</span>
         <span class="monitor-card__value" :style="{ color: levelColor(overview?.memory.usedPercent ?? 0) }">
           {{ (overview?.memory.usedPercent ?? 0).toFixed(1) }}%
         </span>
@@ -70,7 +73,7 @@ const loadAvg = computed(() =>
         :height="120"
         class="monitor-spark"
       />
-      <div v-else class="monitor-placeholder">收集数据中…</div>
+      <div v-else class="monitor-placeholder">{{ t('monitor.collecting') }}</div>
       <div class="monitor-meta nx-mono">
         {{ formatBytes(overview?.memory.usedBytes) }} / {{ formatBytes(overview?.memory.totalBytes) }}
       </div>
@@ -79,11 +82,11 @@ const loadAvg = computed(() =>
     <!-- 存储挂载点 -->
     <div class="nx-panel monitor-card">
       <div class="monitor-card__head">
-        <span class="nx-metric-label">数据盘挂载点</span>
-        <span class="monitor-card__value-sm">{{ dataMounts.length }} 个</span>
+        <span class="nx-metric-label">{{ t('monitor.dataMounts') }}</span>
+        <span class="monitor-card__value-sm">{{ t('monitor.mountCount', { count: dataMounts.length }) }}</span>
       </div>
       <div v-if="dataMounts.length === 0" class="monitor-placeholder">
-        未发现 /data 挂载点
+        {{ t('monitor.noDataMounts') }}
       </div>
       <div v-else class="monitor-mounts">
         <div v-for="m in dataMounts" :key="m.mountPoint" class="monitor-mount">

@@ -22,6 +22,7 @@ import type { DesktopAppId } from '@/stores/wm';
 /** 应用元信息 */
 export interface DesktopAppMeta {
   id: DesktopAppId;
+  /** i18n 标题键（`wm.titles.{id}`），由消费组件经 t() 翻译 */
   title: string;
   /** 图标组件（Element Plus icon） */
   icon: Component;
@@ -29,107 +30,107 @@ export interface DesktopAppMeta {
   onDesktop: boolean;
   /** 是否出现在开始菜单 */
   inStartMenu: boolean;
-  /** 开始菜单分组 */
-  group?: '系统' | '网络' | '存储' | '服务';
+  /** 开始菜单分组 i18n 键（`wm.groups.{key}`） */
+  group?: 'system' | 'network' | 'storage' | 'services';
 }
 
 /** 应用注册表（有序，决定桌面图标与开始菜单顺序） */
 export const DESKTOP_APPS: DesktopAppMeta[] = [
   {
     id: 'dashboard',
-    title: '仪表盘',
+    title: 'dashboard',
     icon: Odometer,
     onDesktop: true,
     inStartMenu: true,
-    group: '系统',
+    group: 'system',
   },
   {
     id: 'apps',
-    title: '应用中心',
+    title: 'apps',
     icon: Grid,
     onDesktop: true,
     inStartMenu: true,
-    group: '系统',
+    group: 'system',
   },
   {
     id: 'settings',
-    title: '系统设置',
+    title: 'settings',
     icon: Setting,
     onDesktop: true,
     inStartMenu: true,
-    group: '系统',
+    group: 'system',
   },
   {
     id: 'tailscale',
-    title: 'Tailscale',
+    title: 'tailscale',
     icon: Connection,
     onDesktop: true,
     inStartMenu: true,
-    group: '网络',
+    group: 'network',
   },
   {
     id: 'monitor',
-    title: '资源监视器',
+    title: 'monitor',
     icon: Monitor,
     onDesktop: false,
     inStartMenu: true,
-    group: '系统',
+    group: 'system',
   },
   {
     id: 'files',
-    title: '文件管理',
+    title: 'files',
     icon: FolderOpened,
     onDesktop: true,
     inStartMenu: true,
-    group: '存储',
+    group: 'storage',
   },
   {
     id: 'storage',
-    title: '存储池',
+    title: 'storage',
     icon: Coin,
     onDesktop: true,
     inStartMenu: true,
-    group: '存储',
+    group: 'storage',
   },
   {
     id: 'sharing',
-    title: '共享文件夹',
+    title: 'sharing',
     icon: Share,
     onDesktop: true,
     inStartMenu: true,
-    group: '存储',
+    group: 'storage',
   },
   {
     id: 'backup',
-    title: '备份中心',
+    title: 'backup',
     icon: FolderChecked,
     onDesktop: true,
     inStartMenu: true,
-    group: '存储',
+    group: 'storage',
   },
   {
     id: 'download',
-    title: '下载中心',
+    title: 'download',
     icon: Download,
     onDesktop: true,
     inStartMenu: true,
-    group: '服务',
+    group: 'services',
   },
   {
     id: 'network',
-    title: '网络配置',
+    title: 'network',
     icon: Connection,
     onDesktop: true,
     inStartMenu: true,
-    group: '网络',
+    group: 'network',
   },
   {
     id: 'scheduler',
-    title: '计划任务',
+    title: 'scheduler',
     icon: Timer,
     onDesktop: true,
     inStartMenu: true,
-    group: '服务',
+    group: 'services',
   },
 ];
 

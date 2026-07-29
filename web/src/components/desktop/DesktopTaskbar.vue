@@ -10,6 +10,7 @@
  */
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
+import { useI18n } from 'vue-i18n';
 import { demoActive } from '@/api/state';
 import NotificationBell from '@/components/desktop/NotificationBell.vue';
 import { useSystemStore } from '@/stores/system';
@@ -31,6 +32,7 @@ const emit = defineEmits<{
 
 const wm = useWmStore();
 const system = useSystemStore();
+const { t } = useI18n();
 const { windows, focusedId } = storeToRefs(wm);
 const { overview, activeAlerts } = storeToRefs(system);
 
@@ -87,14 +89,14 @@ watch(now, tick, { immediate: true });
         :class="{ 'nx-taskbar__win--active': focusedId === win.id && !win.minimized }"
         @click="wm.taskbarClick(win.id)"
       >
-        {{ win.title }}
+        {{ t('wm.titles.' + win.title) }}
       </button>
     </div>
 
     <!-- 状态区（可点击跳转） -->
     <div class="nx-taskbar__status">
       <span v-if="demoActive" class="nx-taskbar__status-item nx-taskbar__status-item--demo">
-        演示数据
+        {{ t('desktop.taskbar.demoData') }}
       </span>
 
       <button
@@ -103,19 +105,19 @@ watch(now, tick, { immediate: true });
         :class="{ 'nx-taskbar__status-item--active': alertsOpen }"
         @click="emit('toggle-alerts')"
       >
-        ▲ {{ activeAlerts.length }} 告警
+        {{ t('desktop.taskbar.alerts', { count: activeAlerts.length }) }}
       </button>
 
       <button
         class="nx-taskbar__status-item nx-taskbar__status-item--clickable"
-        title="打开仪表盘"
+        :title="t('desktop.taskbar.openDashboard')"
         @click="emit('open-app', 'dashboard')"
       >
         CPU {{ (overview?.cpu.usagePercent ?? 0).toFixed(0) }}%
       </button>
       <button
         class="nx-taskbar__status-item nx-taskbar__status-item--clickable"
-        title="打开仪表盘"
+        :title="t('desktop.taskbar.openDashboard')"
         @click="emit('open-app', 'dashboard')"
       >
         MEM {{ (overview?.memory.usedPercent ?? 0).toFixed(0) }}%

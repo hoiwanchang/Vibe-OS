@@ -8,12 +8,14 @@
  * - 操作：编辑 / 重启服务 / 删除（二次确认）
  */
 import { onMounted, reactive, ref } from 'vue';
+import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { Plus, Refresh, Share } from '@element-plus/icons-vue';
 import { useSharingStore } from '@/stores/sharing';
 import type { CreateShareRequest, ShareInfo } from '@/api/types';
 import { formatTime } from '@/utils/format';
 
+const { t } = useI18n();
 const sharing = useSharingStore();
 
 /** 编辑对话框 */
@@ -98,7 +100,7 @@ function parseList(text: string): string[] {
 /** 提交表单（新建或更新） */
 async function submit(): Promise<void> {
   if (!form.name.trim() || !form.path.trim()) {
-    ElMessage.warning('请填写名称和路径');
+    ElMessage.warning(t('sharing.fillNamePath'));
     return;
   }
   const payload: CreateShareRequest = {
@@ -118,36 +120,36 @@ async function submit(): Promise<void> {
   submitting.value = false;
 
   if (ok) {
-    ElMessage.success(editingName.value ? '共享已更新' : '共享已创建');
+    ElMessage.success(editingName.value ? t('sharing.updated') : t('sharing.created'));
     dialogVisible.value = false;
     // 刷新状态
     await sharing.fetchStatus(payload.name);
   } else {
-    ElMessage.error(sharing.lastError ?? '操作失败');
+    ElMessage.error(sharing.lastError ?? t('sharing.opFailed'));
   }
 }
 
 /** 删除共享 */
 async function removeShare(share: ShareInfo): Promise<void> {
   try {
-    await ElMessageBox.confirm(`确定删除共享「${share.name}」吗？（不会删除实际文件）`, '删除共享', {
-      confirmButtonText: '删除',
-      cancelButtonText: '取消',
+    await ElMessageBox.confirm(t('sharing.deleteConfirm', { name: share.name }), t('sharing.deleteTitle'), {
+      confirmButtonText: t('common.delete'),
+      cancelButtonText: t('common.cancel'),
       type: 'warning',
     });
   } catch {
     return;
   }
   const ok = await sharing.removeShare(share.name);
-  if (ok) ElMessage.success('共享已删除');
-  else ElMessage.error(sharing.lastError ?? '删除失败');
+  if (ok) ElMessage.success(t('sharing.deleted'));
+  else ElMessage.error(sharing.lastError ?? t('sharing.deleteFailed'));
 }
 
 /** 重启服务 */
 async function restart(share: ShareInfo): Promise<void> {
   const ok = await sharing.restartService(share.name);
-  if (ok) ElMessage.success(`${share.name} 服务已重启`);
-  else ElMessage.error(sharing.lastError ?? '重启失败');
+  if (ok) ElMessage.success(t('sharing.restarted', { name: share.name }));
+  else ElMessage.error(sharing.lastError ?? t('sharing.restartFailed'));
 }
 
 /** 展开连接详情（popover 显示时拉取） */
@@ -157,7 +159,7 @@ async function onConnectionsShow(share: ShareInfo): Promise<void> {
 
 /** 权限文本 */
 function permText(share: ShareInfo): string {
-  return share.readonly ? '只读' : '读写';
+  return share.readonly ? t('sharing.readonly') : t('sharing.readwrite');
 }
 
 onMounted(async () => {
@@ -172,29 +174,29 @@ onMounted(async () => {
     <!-- 共享列表 -->
     <div class="nx-panel sh-list">
       <div class="sh-section-title">
-        <el-icon><Share /></el-icon> 共享文件夹
+        <el-icon><Share /></el-icon> {{ t('sharing.title') }}
       </div>
 
       <el-table v-loading="sharing.loading" :data="sharing.shares" size="small" stripe>
-        <el-table-column prop="name" label="名称" min-width="110">
+        <el-table-column prop="name" :label="t('common.name')" min-width="110">
           <template #default="{ row }">
             <span class="sh-name">{{ row.name }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="path" label="路径" min-width="200">
+        <el-table-column prop="path" :label="t('sharing.colPath')" min-width="200">
           <template #default="{ row }">
             <span class="nx-mono sh-path">{{ row.path }}</span>
           </template>
         </el-table-column>
-        <el-table-column label="协议" width="90">
+        <el-table-column :label="t('sharing.colProtocol')" width="90">
           <template #default="{ row }">
             <el-tag :type="protocolTag(row.protocol)" size="small">{{ protocolText(row.protocol) }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="权限" width="80">
+        <el-table-column :label="t('sharing.colPerm')" width="80">
           <template #default="{ row }">{{ permText(row) }}</template>
         </el-table-column>
-        <el-table-column label="连接数" width="90">
+        <el-table-column :label="t('sharing.colConns')" width="90">
           <template #default="{ row }">
             <el-popover
               placement="bottom"
@@ -206,8 +208,8 @@ onMounted(async () => {
                 <span class="sh-conn nx-mono">{{ connectionCount(row.name) }}</span>
               </template>
               <div class="sh-conn-pop">
-                <div class="sh-conn-pop__title">当前连接 — {{ row.name }}</div>
-                <div v-if="connectionCount(row.name) === 0" class="sh-conn-pop__empty">无活动连接</div>
+                <div class="sh-conn-pop__title">{{ t('sharing.activeConns', { name: row.name }) }}</div>
+                <div v-if="connectionCount(row.name) === 0" class="sh-conn-pop__empty">{{ t('sharing.noActiveConns') }}</div>
                 <div
                   v-for="conn in sharing.status[row.name]?.connections ?? []"
                   :key="conn.host"
@@ -215,74 +217,74 @@ onMounted(async () => {
                 >
                   <span class="nx-mono">{{ conn.user }}@{{ conn.host }}</span>
                   <span class="nx-mono sh-conn-pop__meta">
-                    {{ conn.files }} 文件 · {{ formatTime(conn.openedAt) }}
+                    {{ t('sharing.connFiles', { files: conn.files, time: formatTime(conn.openedAt) }) }}
                   </span>
                 </div>
               </div>
             </el-popover>
           </template>
         </el-table-column>
-        <el-table-column label="状态" width="80">
+        <el-table-column :label="t('common.status')" width="80">
           <template #default="{ row }">
             <span
               class="nx-dot"
               :class="isRunning(row.name) ? 'nx-dot--ok' : 'nx-dot--error'"
-              :title="isRunning(row.name) ? '服务运行中' : '服务已停止'"
+              :title="isRunning(row.name) ? t('sharing.serviceRunning') : t('sharing.serviceStopped')"
             />
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="190" fixed="right">
+        <el-table-column :label="t('common.ops')" width="190" fixed="right">
           <template #default="{ row }">
-            <el-button size="small" text @click="openEdit(row)">编辑</el-button>
-            <el-button size="small" text :icon="Refresh" @click="restart(row)">重启</el-button>
-            <el-button size="small" text type="danger" @click="removeShare(row)">删除</el-button>
+            <el-button size="small" text @click="openEdit(row)">{{ t('common.edit') }}</el-button>
+            <el-button size="small" text :icon="Refresh" @click="restart(row)">{{ t('common.restart') }}</el-button>
+            <el-button size="small" text type="danger" @click="removeShare(row)">{{ t('common.delete') }}</el-button>
           </template>
         </el-table-column>
       </el-table>
 
       <div class="sh-create">
-        <el-button :icon="Plus" type="primary" @click="openCreate">新建共享</el-button>
+        <el-button :icon="Plus" type="primary" @click="openCreate">{{ t('sharing.newShare') }}</el-button>
       </div>
     </div>
 
     <!-- 新建/编辑对话框 -->
     <el-dialog
       v-model="dialogVisible"
-      :title="editingName ? `编辑共享 — ${editingName}` : '新建共享'"
+      :title="editingName ? t('sharing.editShare', { name: editingName }) : t('sharing.newShare')"
       width="520px"
       append-to-body
     >
       <el-form label-position="top">
-        <el-form-item label="共享名称">
-          <el-input v-model="form.name" :disabled="!!editingName" placeholder="如 docs" />
+        <el-form-item :label="t('sharing.shareName')">
+          <el-input v-model="form.name" :disabled="!!editingName" :placeholder="t('sharing.namePh')" />
         </el-form-item>
-        <el-form-item label="共享路径">
+        <el-form-item :label="t('sharing.sharePath')">
           <el-input v-model="form.path" placeholder="/data/1000/files/docs" class="nx-mono" />
         </el-form-item>
-        <el-form-item label="协议">
+        <el-form-item :label="t('sharing.colProtocol')">
           <el-radio-group v-model="form.protocol">
             <el-radio value="smb">SMB</el-radio>
             <el-radio value="nfs">NFS</el-radio>
             <el-radio value="webdav">WebDAV</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="访问权限">
-          <el-switch v-model="form.readonly" active-text="只读" inactive-text="读写" />
+        <el-form-item :label="t('sharing.access')">
+          <el-switch v-model="form.readonly" :active-text="t('sharing.readonly')" :inactive-text="t('sharing.readwrite')" />
         </el-form-item>
-        <el-form-item label="允许用户（逗号分隔，留空=全部）">
+        <el-form-item :label="t('sharing.allowedUsers')">
           <el-input v-model="form.validUsersText" placeholder="kane, alice" />
         </el-form-item>
-        <el-form-item label="主机白名单（逗号分隔，留空=全部）">
+        <el-form-item :label="t('sharing.hostWhitelist')">
           <el-input v-model="form.hostsText" placeholder="192.168.50.0/24" class="nx-mono" />
         </el-form-item>
-        <el-form-item v-if="form.protocol === 'webdav'" label="WebDAV 端口">
+        <el-form-item v-if="form.protocol === 'webdav'" :label="t('sharing.webdavPort')">
           <el-input-number v-model="form.port" :min="1024" :max="65535" />
         </el-form-item>
       </el-form>
       <template #footer>
-        <el-button @click="dialogVisible = false">取消</el-button>
+        <el-button @click="dialogVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" :loading="submitting" @click="submit">
-          {{ editingName ? '保存' : '创建' }}
+          {{ editingName ? t('common.save') : t('common.create') }}
         </el-button>
       </template>
     </el-dialog>
