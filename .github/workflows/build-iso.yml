@@ -1,7 +1,11 @@
 # ============================================================================
 # NAISys ISO 构建流水线
-# 触发：每周六凌晨 2:00（北京时间）自动构建 + 手动 dispatch
-# 流程：构建应用运行时 → 打包混合 ISO（驱动注入 + 无人值守）→ 校验 → 发布 Release
+# 触发方式：
+#   1. 每周六凌晨 2:00（北京时间）定时构建
+#   2. 手动 workflow_dispatch
+#   3. push 触发，但需 commit message 含 [build-iso] 标记才真正构建
+#      （commit message 含 [skip-iso] 或无标记则跳过，避免浪费 CI 配额）
+# 流程：门控判断 → 构建应用运行时 → 打包混合 ISO → 校验 → 发布 Release
 # ============================================================================
 name: Build ISO
 
@@ -9,6 +13,8 @@ on:
   schedule:
     # GitHub cron 使用 UTC。北京时间周六 02:00 = UTC 周五 18:00
     - cron: '0 18 * * 5'
+  push:
+    branches: [main, 'feat/**', 'fix/**', 'refactor/**']
   workflow_dispatch:
     inputs:
       version:
@@ -33,9 +39,48 @@ env:
 
 jobs:
   # --------------------------------------------------------------------------
+  # Job 0: 门控判断 — 决定是否真正执行构建
+  # schedule / workflow_dispatch 总是构建；push 需 commit message 含 [build-iso]
+  # --------------------------------------------------------------------------
+  should-build:
+    runs-on: ubuntu-latest
+    outputs:
+      run_build: ${{ steps.gate.outputs.run_build }}
+    steps:
+      - name: 判断是否构建
+        id: gate
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          COMMIT_MSG: ${{ github.event.head_commit.message }}
+        run: |
+          # 定时与手动触发：无条件构建
+          if [ "$EVENT_NAME" = "schedule" ] || [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            echo "触发来源: $EVENT_NAME → 构建"
+            echo "run_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # push 触发：检查 commit message 标记
+          # 显式跳过标记优先
+          if printf '%s' "$COMMIT_MSG" | grep -qiF '[skip-iso]'; then
+            echo "检测到 [skip-iso] → 跳过构建"
+            echo "run_build=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          # 需显式构建标记
+          if printf '%s' "$COMMIT_MSG" | grep -qiF '[build-iso]'; then
+            echo "检测到 [build-iso] → 构建"
+            echo "run_build=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "commit message 无 [build-iso] 标记 → 跳过构建"
+          echo "run_build=false" >> "$GITHUB_OUTPUT"
+
+  # --------------------------------------------------------------------------
   # Job 1: 构建应用运行时（后端 + Web 控制台），打包为 runtime tarball
   # --------------------------------------------------------------------------
   build-runtime:
+    needs: should-build
+    if: ${{ needs.should-build.outputs.run_build == 'true' }}
     runs-on: ubuntu-latest
     container:
       image: debian:trixie-slim

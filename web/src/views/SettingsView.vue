@@ -8,7 +8,7 @@ import { computed } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import {
   Setting, User, Connection, Operation, Lock, Coin,
-  Lightning, Bell, Upload, Document, InfoFilled,
+  Lightning, Bell, Upload, Document, InfoFilled, MagicStick,
 } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
@@ -24,13 +24,14 @@ import NotificationSettings from '@/components/settings/NotificationSettings.vue
 import UpdateSettings from '@/components/settings/UpdateSettings.vue';
 import LogViewer from '@/components/settings/LogViewer.vue';
 import AboutPanel from '@/components/settings/AboutPanel.vue';
+import LlmSettings from '@/components/settings/LlmSettings.vue';
 
 const store = useSettingsStore();
 const { activeSection, sectionList, dirty } = storeToRefs(store);
 
 const iconMap: Record<string, typeof Setting> = {
   Setting, User, Connection, Operation, Lock, Coin,
-  Lightning, Bell, Upload, Document, InfoFilled,
+  Lightning, Bell, Upload, Document, InfoFilled, MagicStick,
 };
 
 const componentMap: Record<string, typeof GeneralSettings> = {
@@ -42,6 +43,7 @@ const componentMap: Record<string, typeof GeneralSettings> = {
   storage: StorageSettings,
   power: PowerSettings,
   notification: NotificationSettings,
+  llm: LlmSettings,
   update: UpdateSettings,
   logs: LogViewer,
   about: AboutPanel,

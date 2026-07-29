@@ -46,7 +46,7 @@ export interface DesktopWindow {
 const DEFAULT_SIZE: Record<DesktopAppId, { w: number; h: number }> = {
   dashboard: { w: 1040, h: 640 },
   apps: { w: 960, h: 620 },
-  settings: { w: 900, h: 600 },
+  settings: { w: 960, h: 640 },
   tailscale: { w: 980, h: 640 },
   monitor: { w: 860, h: 560 },
   files: { w: 900, h: 600 },
