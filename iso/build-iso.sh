@@ -206,7 +206,22 @@ generate_preseed() {
 }
 
 # ----------------------------------------------------------------------------
-# 5. 复制运行时包（后端 + Web 控制台 + systemd 单元 + 脚本）
+# 5. 构建离线软件仓库（联网下载全部 .deb 及依赖，供离线安装）
+# ----------------------------------------------------------------------------
+build_offline_repo() {
+  log "构建离线软件仓库"
+  local repo_dir="${WORK_DIR}/offline-repo"
+  if [[ -f "${SCRIPT_DIR}/build-offline-repo.sh" ]]; then
+    bash "${SCRIPT_DIR}/build-offline-repo.sh" "$repo_dir" \
+      || log "警告: 离线仓库构建失败，安装期将尝试联网（可能不可用）"
+  else
+    log "警告: 未找到 build-offline-repo.sh，跳过离线仓库"
+  fi
+  OFFLINE_REPO_DIR="$repo_dir"
+}
+
+# ----------------------------------------------------------------------------
+# 6. 复制运行时包（后端 + Web 控制台 + systemd 单元 + 脚本 + 离线仓库）
 # ----------------------------------------------------------------------------
 copy_runtime() {
   log "复制运行时资产到 ISO"
@@ -215,6 +230,15 @@ copy_runtime() {
   cp -r "${SCRIPT_DIR}/runtime/." "$dest/"
   cp -r "${SCRIPT_DIR}/systemd/." "$dest/systemd/"
   cp "${SCRIPT_DIR}/packages/runtime-packages.txt" "$dest/"
+
+  # 嵌入离线软件仓库（安装期离线安装全部软件的关键）
+  if [[ -n "${OFFLINE_REPO_DIR:-}" && -d "$OFFLINE_REPO_DIR" ]]; then
+    cp -r "$OFFLINE_REPO_DIR" "$dest/offline-repo"
+    log "已嵌入离线仓库 ($(du -sh "$dest/offline-repo" | cut -f1))"
+  else
+    log "提示: 无离线仓库，安装期需联网"
+  fi
+
   # 若 CI 已构建出运行时 tarball，则一并嵌入
   if [[ -d "$RUNTIME_BUNDLE" ]]; then
     cp -r "$RUNTIME_BUNDLE/." "$dest/app/"
@@ -320,6 +344,7 @@ main() {
   extract_iso
   generate_preseed
   inject_firmware
+  build_offline_repo
   copy_runtime
   patch_boot
   build_iso

@@ -1,64 +1,95 @@
 #!/usr/bin/env bash
 # ============================================================================
-# install-runtime.sh — 安装后部署 NAISys 运行时
+# install-runtime.sh — 安装后部署 NAISys 运行时（离线优先）
 # 由 preseed late_command 在目标系统（/target）内调用
-# 职责：安装预装软件、部署后端+Web控制台、安装 systemd 单元、启用服务
+# 职责：从 ISO 内嵌离线仓库安装全部软件、部署后端+Web控制台、装 systemd 单元
+#
+# 离线设计：所有 .deb 及依赖已在构建期打入 ISO 的 offline-repo/，
+#          安装期无需任何外网即可装全 docker/tailscale/nodejs/工具。
 # ============================================================================
 set -euo pipefail
 
 log() { printf '[install-runtime] %s\n' "$*"; }
 
-# 判断是否在目标系统内运行（late_command 用 in-target，此处直接操作 /）
 APP_DIR="/opt/naisys"
 SYSTEMD_SRC="${APP_DIR}/systemd"
+OFFLINE_REPO="${APP_DIR}/offline-repo"
+OFFLINE_LIST="/etc/apt/sources.list.d/naisys-offline.list"
 
+# ----------------------------------------------------------------------------
+# 1. 配置本地离线仓库并安装全部软件包
+# ----------------------------------------------------------------------------
 install_packages() {
-  log "安装预装软件包"
-  local pkgs_file="${APP_DIR}/runtime-packages.txt"
-  [[ -f "$pkgs_file" ]] || { log "包清单缺失，跳过"; return 0; }
+  log "配置离线软件仓库"
 
-  # 过滤注释与空行
-  local pkgs
-  pkgs="$(grep -vE '^\s*(#|$)' "$pkgs_file" | tr '\n' ' ')"
+  if [[ ! -d "$OFFLINE_REPO" || ! -f "${OFFLINE_REPO}/Packages" ]]; then
+    log "警告: 未找到离线仓库 $OFFLINE_REPO，尝试联网安装（可能失败）"
+    install_packages_online
+    return
+  fi
 
-  # docker-ce / tailscale 需要官方源；离线环境降级为发行版自带包
+  # 指向 ISO 内嵌仓库的本地源（trusted=yes 跳过签名校验，仓库随介质分发）
+  echo "deb [trusted=yes] file:${OFFLINE_REPO} ./" > "$OFFLINE_LIST"
+
+  # 临时禁用其他源，避免离线环境下 apt update 因外网源失败
+  local disabled=()
+  local f
+  for f in /etc/apt/sources.list /etc/apt/sources.list.d/*.list \
+           /etc/apt/sources.list.d/*.sources; do
+    [[ -f "$f" && "$f" != "$OFFLINE_LIST" ]] || continue
+    mv "$f" "${f}.naisys-bak"
+    disabled+=("$f")
+  done
+
+  log "从离线仓库安装全部软件包"
+  if apt-get update -o Dir::Etc::sourcelist="$OFFLINE_LIST" \
+       -o Dir::Etc::sourceparts=/dev/null -o APT::Get::List-Cleanup=0 -qq; then
+    # 从包清单读取目标包（过滤注释/空行）
+    local pkgs
+    pkgs="$(grep -vE '^\s*(#|$)' "${APP_DIR}/runtime-packages.txt" 2>/dev/null | tr '\n' ' ')"
+    # shellcheck disable=SC2086
+    if apt-get install -y --no-install-recommends \
+         -o Dir::Etc::sourcelist="$OFFLINE_LIST" \
+         -o Dir::Etc::sourceparts=/dev/null \
+         -o APT::Get::List-Cleanup=0 $pkgs; then
+      log "离线安装完成 ✅"
+    else
+      log "警告: 离线安装部分失败，尝试降级安装核心包"
+      apt-get install -y --no-install-recommends \
+        -o Dir::Etc::sourcelist="$OFFLINE_LIST" \
+        -o Dir::Etc::sourceparts=/dev/null \
+        curl jq ca-certificates xfsprogs btrfs-progs || true
+    fi
+  else
+    log "警告: 离线仓库索引加载失败"
+  fi
+
+  # 恢复被禁用的源（安装完成后系统可正常联网更新）
+  for f in "${disabled[@]}"; do
+    mv "${f}.naisys-bak" "$f"
+  done
+  rm -f "$OFFLINE_LIST"
+}
+
+# 降级路径：无离线仓库时尝试联网安装（保留向后兼容）
+install_packages_online() {
+  log "尝试联网安装（降级路径）"
   if apt-get update -qq 2>/dev/null; then
-    install_docker_repo || true
-    install_tailscale_repo || true
-    apt-get update -qq || true
+    local pkgs
+    pkgs="$(grep -vE '^\s*(#|$)' "${APP_DIR}/runtime-packages.txt" 2>/dev/null | tr '\n' ' ')"
     # shellcheck disable=SC2086
     apt-get install -y --no-install-recommends $pkgs || {
-      log "警告: 部分包安装失败，尝试降级安装核心包"
-      apt-get install -y --no-install-recommends curl jq ca-certificates xfsprogs btrfs-progs || true
+      log "警告: 联网安装失败，核心功能可能缺失"
+      apt-get install -y --no-install-recommends curl jq ca-certificates || true
     }
   else
-    log "警告: 无网络，跳过软件包安装（离线环境由 ISO 内嵌或后续 OTA 补齐）"
+    log "警告: 无网络且无离线仓库，跳过软件包安装"
   fi
 }
 
-install_docker_repo() {
-  log "配置 Docker CE 官方源"
-  install -m 0755 -d /etc/apt/keyrings
-  curl -fsSL https://download.docker.com/linux/debian/gpg \
-    -o /etc/apt/keyrings/docker.asc
-  chmod a+r /etc/apt/keyrings/docker.asc
-  echo \
-    "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] \
-    https://download.docker.com/linux/debian $(. /etc/os-release && echo "$VERSION_CODENAME") stable" \
-    > /etc/apt/sources.list.d/docker.list
-}
-
-install_tailscale_repo() {
-  log "配置 Tailscale 官方源"
-  # [修复] 使用实际发行版代号，避免写死 bookworm 导致 trixie 上源冲突
-  local codename
-  codename="$(. /etc/os-release && echo "$VERSION_CODENAME")"
-  curl -fsSL "https://pkgs.tailscale.com/stable/debian/${codename}.noarmor.gpg" \
-    -o /etc/apt/keyrings/tailscale-archive-keyring.gpg 2>/dev/null || true
-  curl -fsSL "https://pkgs.tailscale.com/stable/debian/${codename}.tailscale-keyring.list" \
-    -o /etc/apt/sources.list.d/tailscale.list 2>/dev/null || true
-}
-
+# ----------------------------------------------------------------------------
+# 2. 部署应用运行时
+# ----------------------------------------------------------------------------
 deploy_app() {
   log "部署应用运行时"
 
@@ -71,13 +102,11 @@ deploy_app() {
 
   mkdir -p /data/naisys/{models,data,logs,secrets,cache}
   chmod 700 /data/naisys/secrets
-  # 应用与数据目录归属 naisys 用户
   chown -R naisys:naisys /data/naisys 2>/dev/null || true
 
   if [[ -d "${APP_DIR}/app" ]]; then
     log "检测到内嵌应用包，安装到 /opt/naisys/app"
     chown -R naisys:naisys "${APP_DIR}/app" 2>/dev/null || true
-    # 应用包由 CI 构建期打入，含 dist/ 与 web-dist/
   else
     log "无内嵌应用包，Web 控制台将由 OTA 或手动部署"
   fi
@@ -92,6 +121,9 @@ EOF
   chmod 644 /etc/naisys.env
 }
 
+# ----------------------------------------------------------------------------
+# 3. 安装 systemd 单元
+# ----------------------------------------------------------------------------
 install_systemd_units() {
   log "安装 systemd 单元"
   [[ -d "$SYSTEMD_SRC" ]] || { log "systemd 目录缺失，跳过"; return 0; }
@@ -99,7 +131,6 @@ install_systemd_units() {
   cp -f "${SYSTEMD_SRC}"/naisys-*.service /etc/systemd/system/ 2>/dev/null || true
   cp -f "${SYSTEMD_SRC}"/naisys-*.timer /etc/systemd/system/ 2>/dev/null || true
 
-  # drop-in 覆盖（确保 docker/tailscaled 崩溃自愈）
   mkdir -p /etc/systemd/system/docker.service.d
   mkdir -p /etc/systemd/system/tailscaled.service.d
   cp -f "${SYSTEMD_SRC}/docker.service.d/override.conf" \
@@ -114,7 +145,7 @@ install_systemd_units() {
 }
 
 main() {
-  log "开始部署 NAISys 运行时"
+  log "开始部署 NAISys 运行时（离线优先）"
   install_packages
   deploy_app
   install_systemd_units

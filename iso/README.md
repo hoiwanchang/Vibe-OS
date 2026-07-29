@@ -9,6 +9,7 @@
 iso/
 ├── README.md                     # 本文件
 ├── build-iso.sh                  # 主构建脚本（initrd 驱动注入 + xorriso 混合 ISO）
+├── build-offline-repo.sh         # 离线软件仓库构建（下载全部 .deb 及依赖）
 ├── verify-iso.sh                 # 校验脚本（SHA256 + 安装验证报告）
 ├── config.env                    # 构建参数（Debian 版本、镜像 URL、固件包列表）
 ├── preseed/

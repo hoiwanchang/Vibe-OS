@@ -27,7 +27,7 @@ NAISys ISO 基于官方 Debian 13 netinst 镜像重打包，核心改造：
 | 零交互安装 | 嵌入式 preseed + `auto=true priority=critical` 启动参数 |
 | 网卡驱动 | 固件构建期注入 initrd（安装阶段即有网络） |
 | 混合启动 | xorriso 生成 UEFI（El Torito EFI）+ Legacy（isolinux）双启动 |
-| 预装软件 | tailscale / docker-ce / curl / jq 等安装即可用 |
+| 预装软件 | tailscale / docker-ce / curl / jq 等，**离线安装即可用** |
 | 运行时自愈 | systemd 单元 + drop-in 保证开机自启与崩溃重启 |
 | OTA 升级 | 定时从 GitHub Releases 拉取、校验、原地升级 |
 
@@ -95,7 +95,7 @@ sudo ./build-iso.sh                 # 需 root
 | 变量 | 默认 | 说明 |
 |------|------|------|
 | `NAISYS_HOSTNAME` | `ai-nas` | 默认主机名 |
-| `NAISYS_USERNAME` | `admin` | 默认用户 |
+| `NAISYS_USERNAME` | `vibeuser` | 默认用户 |
 | `NAISYS_DATA_FSTYPE` | `xfs` | /data 文件系统 |
 | `NAISYS_SYS_SIZE_MB` | `30000` | 系统分区上限（MB） |
 | `NAISYS_INIT_PASSWORD` | 随机 | 初始密码（不设置则随机生成） |
@@ -103,6 +103,22 @@ sudo ./build-iso.sh                 # 需 root
 
 > ⚠️ 初始密码绝不硬编码。未指定时构建期随机生成，烘焙进安装介质，
 > 首启引导页显示，**用户须立即在 Web 控制台修改**。
+
+### 3.3 离线部署（关键能力）
+
+NAISys 面向内网/离线环境，**安装与部署全程无需外网**。构建期通过
+`iso/build-offline-repo.sh` 联网下载全部软件包及其递归依赖，
+打包成 apt 仓库嵌入 ISO：
+
+- **覆盖范围**：docker-ce / containerd / tailscale / nodejs / curl / jq /
+  xfsprogs / btrfs-progs / smartmontools 及全部依赖
+- **第三方源**：构建期临时配置 Docker CE、Tailscale、NodeSource 源拉取官方包
+- **索引**：`dpkg-scanpackages` 生成 `Packages` 索引
+- **安装期**：`install-runtime.sh` 指向 ISO 内嵌的 `file://` 本地仓库，
+  临时禁用外网源后离线 `apt-get install`，装完恢复源配置
+
+> 离线仓库会显著增大 ISO 体积（约 +300~500MB）。若构建失败，
+> 安装期会降级尝试联网安装（离线环境下该路径不可用）。
 
 ---
 
@@ -163,7 +179,7 @@ http://<设备IP>:3000
 
 | 项 | 值 |
 |----|----|
-| 用户名 | `admin` |
+| 用户名 | `vibeuser` |
 | 初始密码 | 安装介质显示 / 构建产物 `.init-password` |
 
 > 🔴 **首次登录后必须立即修改密码。**
@@ -298,6 +314,7 @@ ls /opt/naisys/app.bak.*        # 自动备份，可手动回滚
 |------|------|
 | `.github/workflows/build-iso.yml` | 构建流水线（定时+手动） |
 | `iso/build-iso.sh` | 主构建脚本 |
+| `iso/build-offline-repo.sh` | 离线软件仓库构建（下载全部 .deb 及依赖） |
 | `iso/verify-iso.sh` | 校验与报告 |
 | `iso/config.env` | 构建参数 |
 | `iso/preseed/preseed.template.cfg` | 无人值守安装模板 |

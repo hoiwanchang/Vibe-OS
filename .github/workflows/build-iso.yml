@@ -143,7 +143,7 @@ jobs:
             /etc/apt/sources.list.d/debian.sources 2>/dev/null || true
           apt-get update
           apt-get install -y --no-install-recommends \
-            curl git ca-certificates \
+            curl git ca-certificates gnupg \
             xorriso cpio gzip zstd dpkg-dev gettext-base file \
             whois openssl isolinux syslinux-common \
             grub-pc-bin grub-efi-amd64-bin mtools \
