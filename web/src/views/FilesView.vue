@@ -14,6 +14,7 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import {
   ArrowLeft,
+  Clock,
   Delete,
   Document,
   Download,
@@ -22,13 +23,16 @@ import {
   Plus,
   Refresh,
   Upload,
+  View,
 } from '@element-plus/icons-vue';
 import type { UploadRequestOptions } from 'element-plus';
-import { userApi } from '@/api';
+import { userApi, filesApi } from '@/api';
 import type { FileEntry, UserQuotaInfo } from '@/api/types';
 import { useFilesStore } from '@/stores/files';
 import type { FileSortKey } from '@/stores/files';
 import { formatBytes, formatTime } from '@/utils/format';
+import VersionHistory from '@/components/files/VersionHistory.vue';
+import FilePreview from '@/components/files/FilePreview.vue';
 
 const { t } = useI18n();
 
@@ -59,6 +63,28 @@ const renameVisible = ref(false);
 const renameEntry = ref<FileEntry | null>(null);
 const renameNewName = ref('');
 
+/** 版本历史抽屉（Phase 1） */
+const versionVisible = ref(false);
+const versionPath = ref('');
+
+/** 文件预览对话框（Phase 1） */
+const previewVisible = ref(false);
+const previewPath = ref('');
+const previewName = ref('');
+
+/** 打开版本历史 */
+function openVersions(entry: FileEntry): void {
+  versionPath.value = entry.path;
+  versionVisible.value = true;
+}
+
+/** 打开文件预览 */
+function openPreview(entry: FileEntry): void {
+  previewPath.value = entry.path;
+  previewName.value = entry.name;
+  previewVisible.value = true;
+}
+
 /** 是否为文本文件（可编辑） */
 function isTextFile(entry: FileEntry): boolean {
   const textTypes = ['text/', 'application/json', 'application/xml', 'application/sql', 'application/x-yaml'];
@@ -81,6 +107,17 @@ function fileIcon(entry: FileEntry): string {
   return 'file';
 }
 
+/** 是否为图片文件（可生成缩略图，Phase 1） */
+function isImageFile(entry: FileEntry): boolean {
+  const ext = entry.name.split('.').pop()?.toLowerCase() ?? '';
+  return ['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg'].includes(ext);
+}
+
+/** 图片缩略图 URL（Phase 1） */
+function thumbUrl(entry: FileEntry): string {
+  return filesApi.thumbnailUrl(files.uid, entry.path);
+}
+
 /** 双击条目 */
 function onDblClick(entry: FileEntry): void {
   if (entry.type === 'directory') {
@@ -90,7 +127,8 @@ function onDblClick(entry: FileEntry): void {
   if (isTextFile(entry)) {
     void openEditor(entry);
   } else {
-    files.download(entry.path);
+    // Phase 1: 非文本文件双击进入预览（图片/视频/音频/PDF）
+    openPreview(entry);
   }
 }
 
@@ -131,6 +169,18 @@ function closeCtxMenu(): void {
 /** 右键操作：下载 */
 function ctxDownload(): void {
   if (ctxMenu.value.entry) files.download(ctxMenu.value.entry.path);
+  closeCtxMenu();
+}
+
+/** 右键操作：预览（Phase 1） */
+function ctxPreview(): void {
+  if (ctxMenu.value.entry) openPreview(ctxMenu.value.entry);
+  closeCtxMenu();
+}
+
+/** 右键操作：版本历史（Phase 1） */
+function ctxVersions(): void {
+  if (ctxMenu.value.entry) openVersions(ctxMenu.value.entry);
   closeCtxMenu();
 }
 
@@ -359,7 +409,14 @@ onMounted(() => {
             @contextmenu="onContextMenu($event, entry)"
           >
             <td class="fm-td fm-td--name">
-              <el-icon class="fm-icon" :class="`fm-icon--${fileIcon(entry)}`">
+              <img
+                v-if="entry.type === 'file' && isImageFile(entry)"
+                :src="thumbUrl(entry)"
+                class="fm-thumb"
+                loading="lazy"
+                alt=""
+              />
+              <el-icon v-else class="fm-icon" :class="`fm-icon--${fileIcon(entry)}`">
                 <FolderOpened v-if="entry.type === 'directory'" />
                 <Document v-else />
               </el-icon>
@@ -417,6 +474,12 @@ onMounted(() => {
       >
         <div v-if="ctxMenu.entry?.type !== 'directory'" class="fm-ctxmenu__item" @click="ctxDownload">
           <el-icon><Download /></el-icon> {{ t('common.download') }}
+        </div>
+        <div v-if="ctxMenu.entry?.type !== 'directory'" class="fm-ctxmenu__item" @click="ctxPreview">
+          <el-icon><View /></el-icon> {{ t('files.preview') }}
+        </div>
+        <div v-if="ctxMenu.entry?.type !== 'directory'" class="fm-ctxmenu__item" @click="ctxVersions">
+          <el-icon><Clock /></el-icon> {{ t('files.versions') }}
         </div>
         <div class="fm-ctxmenu__item" @click="ctxRename">
           <el-icon><Edit /></el-icon> {{ t('common.rename') }}
@@ -495,6 +558,20 @@ onMounted(() => {
         </div>
       </div>
     </el-drawer>
+
+    <!-- Phase 1: 版本历史抽屉 -->
+    <VersionHistory
+      v-model="versionVisible"
+      :path="versionPath"
+      @restored="files.fetchList()"
+    />
+
+    <!-- Phase 1: 文件预览对话框 -->
+    <FilePreview
+      v-model="previewVisible"
+      :path="previewPath"
+      :filename="previewName"
+    />
 
     <!-- 错误提示 -->
     <div v-if="files.lastError" class="fm-error nx-mono">{{ files.lastError }}</div>
@@ -662,6 +739,16 @@ onMounted(() => {
 .fm-icon {
   flex-shrink: 0;
   font-size: 15px;
+}
+
+/* Phase 1: 图片缩略图 */
+.fm-thumb {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border: 1px solid var(--nx-border, #2a2a2a);
+  background: #000;
 }
 
 .fm-icon--dir {

@@ -77,6 +77,13 @@ import type {
   SettingsLogLine,
   SettingsLogSource,
   SystemSettings,
+  VersionListResult,
+  VersionPolicyConfig,
+  VersionRestoreResult,
+  VersionDeleteResult,
+  SearchResult,
+  SearchStatus,
+  FilePreviewResult,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -342,6 +349,98 @@ export const filesApi = {
       url: '/files/trash/empty',
       method: 'delete',
       params: { uid },
+    }),
+
+  /* ---------- Phase 1: 版本控制 ---------- */
+
+  /** 列出文件版本历史 */
+  versions: (uid: number, path: string) =>
+    request<VersionListResult>(
+      { url: '/files/versions', params: { uid, path } },
+      () => demo.demoVersionList(path),
+    ),
+
+  /** 版本下载 URL */
+  versionDownloadUrl: (uid: number, path: string, version: number) =>
+    `/api/files/versions/download?uid=${uid}&path=${encodeURIComponent(path)}&version=${version}`,
+
+  /** 恢复指定版本 */
+  restoreVersion: (uid: number, path: string, version: number) =>
+    request<VersionRestoreResult>({
+      url: '/files/versions/restore',
+      method: 'post',
+      data: { uid, path, version },
+    }),
+
+  /** 删除指定版本 */
+  deleteVersion: (uid: number, path: string, version: number) =>
+    request<VersionDeleteResult>({
+      url: '/files/versions',
+      method: 'delete',
+      params: { uid, path, version },
+    }),
+
+  /** 获取版本策略 */
+  versionPolicy: (share: string) =>
+    request<VersionPolicyConfig>(
+      { url: '/files/versions/policy', params: { share } },
+      () => demo.demoVersionPolicy(),
+    ),
+
+  /** 设置版本策略 */
+  setVersionPolicy: (share: string, policy: Partial<VersionPolicyConfig>) =>
+    request<VersionPolicyConfig>({
+      url: '/files/versions/policy',
+      method: 'put',
+      data: { share, ...policy },
+    }),
+
+  /* ---------- Phase 1: 预览与缩略图 ---------- */
+
+  /** 获取文件预览（按 MIME 分发） */
+  preview: (uid: number, path: string) =>
+    request<FilePreviewResult>(
+      { url: '/files/preview', params: { uid, path } },
+      () => demo.demoFilePreview(path),
+    ),
+
+  /** 缩略图 URL（图片文件 256px） */
+  thumbnailUrl: (uid: number, path: string) =>
+    `/api/files/thumbnail?uid=${uid}&path=${encodeURIComponent(path)}`,
+};
+
+/* ---------- Phase 1: 全文搜索 ---------- */
+
+export const searchApi = {
+  /** 全文搜索 */
+  search: (params: {
+    uid: number;
+    q: string;
+    type?: string;
+    path?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    size?: number;
+  }) =>
+    request<SearchResult>(
+      { url: '/search', params },
+      () => demo.demoSearchResult(params.q),
+    ),
+
+  /** 索引状态 */
+  status: (uid: number) =>
+    request<SearchStatus>(
+      { url: '/search/status', params: { uid } },
+      () => demo.demoSearchStatus(),
+    ),
+
+  /** 手动重建索引 */
+  reindex: (uid: number) =>
+    request<{ indexed: number; durationMs: number }>({
+      url: '/search/reindex',
+      method: 'post',
+      data: { uid },
     }),
 };
 

@@ -93,3 +93,22 @@ export async function handleEmptyTrash(req: Request, res: Response): Promise<voi
   await service.emptyTrash(uid);
   res.json({ success: true, data: { emptied: true } });
 }
+
+/** GET /api/files/preview */
+export async function handlePreview(req: Request, res: Response): Promise<void> {
+  const uid = parseInt(String(req.query['uid'] as string ?? ''), 10);
+  const path = String(req.query['path'] as string ?? '');
+  const result = await service.getPreview(uid, path);
+  res.json({ success: true, data: result });
+}
+
+/** GET /api/files/thumbnail */
+export async function handleThumbnail(req: Request, res: Response): Promise<void> {
+  const uid = parseInt(String(req.query['uid'] as string ?? ''), 10);
+  const path = String(req.query['path'] as string ?? '');
+  const result = await service.getThumbnail(uid, path);
+  res.setHeader('Content-Type', result.mimeType);
+  res.setHeader('Content-Length', result.size);
+  res.setHeader('X-Thumbnail-Cached', result.cached ? 'true' : 'false');
+  res.sendFile(result.absPath);
+}

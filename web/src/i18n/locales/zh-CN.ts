@@ -159,6 +159,7 @@ export default {
       download: '下载中心',
       network: '网络配置',
       scheduler: '计划任务',
+      search: '全文搜索',
     },
     groups: {
       system: '系统',
@@ -302,6 +303,43 @@ export default {
     clearTrashConfirm: '确定清空回收站吗？所有项目将被永久删除。',
     cleared: '回收站已清空',
     clearFailed: '清空失败',
+    /* Phase 1: 版本历史 */
+    versions: '版本历史',
+    versionCol: '版本',
+    versionTime: '时间',
+    versionSize: '大小',
+    versionEmpty: '暂无版本历史',
+    versionRestore: '恢复',
+    versionRestoreConfirm: '确定将文件恢复到版本 v{version} 吗？当前内容将被覆盖。',
+    versionRestored: '已恢复到 v{version}',
+    versionDelete: '删除版本',
+    versionDeleteConfirm: '确定删除版本 v{version} 吗？',
+    versionDeleted: '版本 v{version} 已删除',
+    versionDownload: '下载',
+    /* Phase 1: 预览 */
+    preview: '预览',
+    previewUnsupported: '该文件类型暂不支持预览',
+    previewTruncated: '文件过大，仅显示前 1MB',
+  },
+
+  /* Phase 1: 全文搜索 */
+  search: {
+    title: '全文搜索',
+    placeholder: '搜索文件内容…（Ctrl+K）',
+    searchBtn: '搜索',
+    reindex: '重建索引',
+    reindexConfirm: '确定重建全文索引吗？大文件库可能耗时较久。',
+    reindexed: '索引重建完成（{count} 个文件，{ms}ms）',
+    status: '已索引 {count} 个文件 · {size}',
+    lastIndexed: '最后更新 {time}',
+    noResults: '未找到匹配结果',
+    resultCount: '共 {total} 条结果',
+    colFile: '文件',
+    colPath: '路径',
+    colSnippet: '匹配内容',
+    filterType: '文件类型',
+    filterPath: '路径前缀',
+    allTypes: '全部类型',
   },
 
   storage: {

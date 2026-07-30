@@ -13,6 +13,8 @@ import { containerRoutes } from './modules/container/index.js';
 import { metricsRoutes } from './modules/metrics/index.js';
 import { userRoutes } from './modules/user/index.js';
 import { filemanagerRoutes } from './modules/filemanager/index.js';
+import { fileversionRoutes } from './modules/fileversion/index.js';
+import { searchRoutes } from './modules/search/index.js';
 import { storageRoutes } from './modules/storage/index.js';
 import { sharingRoutes } from './modules/sharing/index.js';
 import { backupRoutes } from './modules/backup/index.js';
@@ -75,6 +77,8 @@ export function createApp(): express.Express {
   app.use('/api', metricsRoutes);
   app.use('/api', userRoutes);
   app.use('/api', filemanagerRoutes);
+  app.use('/api', fileversionRoutes);
+  app.use('/api', searchRoutes);
   app.use('/api', storageRoutes);
   app.use('/api', sharingRoutes);
   app.use('/api', backupRoutes);

@@ -847,3 +847,80 @@ export interface AboutInfo {
   dataRoot: string;
   license: string;
 }
+
+/* ---------- Phase 1: 文件版本控制 ---------- */
+
+export type VersionPolicyMode = 'off' | 'simple' | 'multiversion';
+
+export interface VersionPolicyConfig {
+  mode: VersionPolicyMode;
+  maxVersions: number;
+  maxDays: number;
+}
+
+export interface VersionEntry {
+  version: number;
+  filename: string;
+  size: number;
+  createdAt: string;
+  filePath: string;
+}
+
+export interface VersionListResult {
+  versions: VersionEntry[];
+  path: string;
+  total: number;
+}
+
+export interface VersionRestoreResult {
+  restored: string;
+  version: number;
+  size: number;
+}
+
+export interface VersionDeleteResult {
+  deleted: string;
+  version: number;
+}
+
+/* ---------- Phase 1: 全文搜索 ---------- */
+
+export interface SearchResultItem {
+  filename: string;
+  path: string;
+  size: number;
+  mtime: string;
+  snippet: string;
+}
+
+export interface SearchResult {
+  results: SearchResultItem[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface SearchStatus {
+  indexedFiles: number;
+  totalBytes: number;
+  lastIndexed: string | null;
+}
+
+/* ---------- Phase 1: 文件预览与缩略图 ---------- */
+
+export type PreviewKind = 'image' | 'text' | 'pdf' | 'video' | 'audio' | 'unsupported';
+
+export interface FilePreviewResult {
+  kind: PreviewKind;
+  mimeType: string;
+  size: number;
+  content?: string;
+  truncated?: boolean;
+}
+
+export interface FileThumbnailResult {
+  url: string;
+  mimeType: string;
+  size: number;
+  cached: boolean;
+}

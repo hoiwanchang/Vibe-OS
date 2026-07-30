@@ -4,11 +4,14 @@
  */
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { createHash } from 'node:crypto';
 import { createWriteStream } from 'node:fs';
 import { pipeline } from 'node:stream/promises';
 import { lookup } from 'mime-types';
-import { DATA_ROOT } from '../../config.js';
+import sharp from 'sharp';
+import { DATA_ROOT, VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
+import { saveVersion } from '../fileversion/fileversion.service.js';
 import type {
   FileEntry,
   ListResult,
@@ -16,10 +19,27 @@ import type {
   WriteResult,
   DeleteResult,
   CopyResult,
+  PreviewResult,
+  PreviewKind,
+  ThumbnailResult,
 } from './filemanager.types.js';
 
 /** 文本文件读取上限 1MB */
 const READ_LIMIT = 1024 * 1024;
+
+/**
+ * 在覆盖已存在文件前保存旧版本快照（Phase 1 版本控制集成）
+ * 版本保存失败不应阻断文件写入，故吞掉异常仅记录
+ * @param uid - 用户 UID
+ * @param relativePath - 相对路径
+ */
+async function snapshotBeforeOverwrite(uid: number, relativePath: string): Promise<void> {
+  try {
+    await saveVersion(uid, relativePath);
+  } catch {
+    /* 版本保存失败不阻断写入（如文件首次创建、策略关闭等） */
+  }
+}
 
 /**
  * 解析并校验用户空间内的相对路径
@@ -167,6 +187,8 @@ export async function writeFile(uid: number, relativePath: string, content: stri
   const absPath = resolveUserPath(uid, relativePath);
   // 确保父目录存在
   await fs.mkdir(path.dirname(absPath), { recursive: true });
+  // Phase 1: 覆盖前保存旧版本快照
+  await snapshotBeforeOverwrite(uid, relativePath);
   await fs.writeFile(absPath, content, 'utf-8');
   const stat = await fs.stat(absPath);
   return { written: relativePath, size: stat.size };
@@ -314,11 +336,136 @@ export async function handleUpload(
   // 校验目标路径
   resolveUserPath(uid, path.relative(getUserRoot(uid), destPath));
 
+  // Phase 1: 覆盖已存在文件前保存旧版本快照
+  const userRoot = getUserRoot(uid);
+  const relPath = path.relative(userRoot, destPath);
+  await snapshotBeforeOverwrite(uid, relPath);
+
   await pipeline(fileStream, createWriteStream(destPath));
   const stat = await fs.stat(destPath);
-  const userRoot = getUserRoot(uid);
   return {
     uploaded: path.relative(userRoot, destPath),
     size: stat.size,
   };
+}
+
+/** 可作为文本预览的扩展名集合 */
+const TEXT_EXTENSIONS = new Set([
+  '.txt', '.md', '.json', '.yaml', '.yml', '.csv', '.log',
+  '.js', '.ts', '.py', '.sh', '.html', '.css',
+]);
+
+/** 可生成缩略图的图片扩展名集合 */
+const IMAGE_EXTENSIONS = new Set([
+  '.jpg', '.jpeg', '.png', '.gif', '.webp', '.bmp', '.svg',
+]);
+
+/**
+ * 根据 MIME 类型与扩展名判定预览分类
+ * @param mimeType - 文件的 MIME 类型
+ * @param ext - 小写扩展名（含点）
+ * @returns 预览分类
+ */
+function classifyPreview(mimeType: string, ext: string): PreviewKind {
+  if (mimeType.startsWith('image/')) return 'image';
+  if (mimeType === 'application/pdf') return 'pdf';
+  if (mimeType.startsWith('video/')) return 'video';
+  if (mimeType.startsWith('audio/')) return 'audio';
+  if (mimeType.startsWith('text/') || TEXT_EXTENSIONS.has(ext)) return 'text';
+  return 'unsupported';
+}
+
+/**
+ * 获取文件预览信息（按 MIME 分发）
+ * 文本/代码类读取内容（上限 1MB，带 truncated 标记）；
+ * image/pdf/video/audio 仅返回元信息，前端用 download/thumbnail 端点取流；
+ * 其余返回 unsupported。
+ * @param uid - 用户 UID
+ * @param relativePath - 相对于用户根的路径
+ * @returns 预览结果
+ */
+export async function getPreview(uid: number, relativePath: string): Promise<PreviewResult> {
+  const absPath = resolveUserPath(uid, relativePath);
+
+  let stat;
+  try {
+    stat = await fs.stat(absPath);
+  } catch {
+    throw AppError.notFound(`文件 [${relativePath}]`);
+  }
+  if (stat.isDirectory()) {
+    throw AppError.badRequest('IS_DIR', `[${relativePath}] 是目录，不能预览`);
+  }
+
+  const mimeType = lookup(absPath) || 'application/octet-stream';
+  const ext = path.extname(absPath).toLowerCase();
+  const kind = classifyPreview(mimeType, ext);
+
+  if (kind === 'text') {
+    const truncated = stat.size > READ_LIMIT;
+    const buffer = Buffer.alloc(Math.min(stat.size, READ_LIMIT));
+    const fh = await fs.open(absPath, 'r');
+    try {
+      await fh.read(buffer, 0, buffer.length, 0);
+    } finally {
+      await fh.close();
+    }
+    return {
+      kind,
+      mimeType,
+      size: stat.size,
+      content: buffer.toString('utf-8'),
+      truncated,
+    };
+  }
+
+  return { kind, mimeType, size: stat.size };
+}
+
+/**
+ * 生成图片缩略图（256px PNG，带磁盘缓存）
+ * 仅支持 jpg/png/gif/webp/bmp/svg；svg 由 sharp 直接光栅化为 png。
+ * 缓存路径：VIBEOS_APP_DIR/cache/thumbs/{uid}/{md5(relPath)}.png
+ * @param uid - 用户 UID
+ * @param relativePath - 相对于用户根的图片路径
+ * @returns 缩略图结果（含缓存命中标记）
+ */
+export async function getThumbnail(uid: number, relativePath: string): Promise<ThumbnailResult> {
+  const absPath = resolveUserPath(uid, relativePath);
+  const ext = path.extname(absPath).toLowerCase();
+  if (!IMAGE_EXTENSIONS.has(ext)) {
+    throw AppError.badRequest('NOT_IMAGE', `[${relativePath}] 不是可缩略的图片`);
+  }
+
+  let stat;
+  try {
+    stat = await fs.stat(absPath);
+  } catch {
+    throw AppError.notFound(`文件 [${relativePath}]`);
+  }
+  if (stat.isDirectory()) {
+    throw AppError.badRequest('IS_DIR', `[${relativePath}] 是目录，不能生成缩略图`);
+  }
+
+  const hash = createHash('md5').update(relativePath).digest('hex');
+  const cacheDir = path.join(VIBEOS_APP_DIR, 'cache', 'thumbs', String(uid));
+  const cachePath = path.join(cacheDir, `${hash}.png`);
+
+  // 命中缓存直接返回
+  try {
+    const cachedStat = await fs.stat(cachePath);
+    return { absPath: cachePath, mimeType: 'image/png', size: cachedStat.size, cached: true };
+  } catch {
+    // 未命中，继续生成
+  }
+
+  const pngBuffer = await sharp(absPath, { density: 96 })
+    .resize(256, 256, { fit: 'inside', withoutEnlargement: true })
+    .png()
+    .toBuffer();
+
+  await fs.mkdir(cacheDir, { recursive: true });
+  await fs.writeFile(cachePath, pngBuffer);
+
+  return { absPath: cachePath, mimeType: 'image/png', size: pngBuffer.length, cached: false };
 }

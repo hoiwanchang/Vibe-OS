@@ -29,6 +29,7 @@ import FilesView from '@/views/FilesView.vue';
 import MonitorView from '@/views/MonitorView.vue';
 import NetworkView from '@/views/NetworkView.vue';
 import SchedulerView from '@/views/SchedulerView.vue';
+import SearchView from '@/views/SearchView.vue';
 import SettingsView from '@/views/SettingsView.vue';
 import SharingView from '@/views/SharingView.vue';
 import StorageView from '@/views/StorageView.vue';
@@ -147,6 +148,7 @@ onBeforeUnmount(() => {
         <DownloadView v-else-if="win.id === 'download'" />
         <NetworkView v-else-if="win.id === 'network'" />
         <SchedulerView v-else-if="win.id === 'scheduler'" />
+        <SearchView v-else-if="win.id === 'search'" />
         <MonitorView v-else />
       </AppWindow>
 

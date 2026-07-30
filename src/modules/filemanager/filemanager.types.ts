@@ -56,3 +56,33 @@ export interface UploadResult {
   uploaded: string;
   size: number;
 }
+
+/** 预览类型分类 */
+export type PreviewKind =
+  | 'image'
+  | 'text'
+  | 'pdf'
+  | 'video'
+  | 'audio'
+  | 'unsupported';
+
+/** 文件预览响应 */
+export interface PreviewResult {
+  kind: PreviewKind;
+  mimeType: string;
+  size: number;
+  /** 仅文本/代码类返回内容 */
+  content?: string;
+  /** 文本内容是否被截断（超过 1MB） */
+  truncated?: boolean;
+}
+
+/** 缩略图响应 */
+export interface ThumbnailResult {
+  /** 缩略图 PNG 的绝对路径 */
+  absPath: string;
+  mimeType: 'image/png';
+  size: number;
+  /** 是否命中缓存 */
+  cached: boolean;
+}

@@ -159,6 +159,7 @@ export default {
       download: 'Download Center',
       network: 'Network Config',
       scheduler: 'Scheduled Tasks',
+      search: 'Full-text Search',
     },
     groups: {
       system: 'System',
@@ -302,6 +303,43 @@ export default {
     clearTrashConfirm: 'Empty the Trash? All items will be permanently deleted.',
     cleared: 'Trash emptied',
     clearFailed: 'Clear failed',
+    /* Phase 1: version history */
+    versions: 'Version History',
+    versionCol: 'Version',
+    versionTime: 'Time',
+    versionSize: 'Size',
+    versionEmpty: 'No version history',
+    versionRestore: 'Restore',
+    versionRestoreConfirm: 'Restore the file to version v{version}? Current content will be overwritten.',
+    versionRestored: 'Restored to v{version}',
+    versionDelete: 'Delete Version',
+    versionDeleteConfirm: 'Delete version v{version}?',
+    versionDeleted: 'Version v{version} deleted',
+    versionDownload: 'Download',
+    /* Phase 1: preview */
+    preview: 'Preview',
+    previewUnsupported: 'Preview not supported for this file type',
+    previewTruncated: 'File too large, showing first 1MB only',
+  },
+
+  /* Phase 1: full-text search */
+  search: {
+    title: 'Full-text Search',
+    placeholder: 'Search file contents… (Ctrl+K)',
+    searchBtn: 'Search',
+    reindex: 'Rebuild Index',
+    reindexConfirm: 'Rebuild the full-text index? Large libraries may take a while.',
+    reindexed: 'Index rebuilt ({count} files, {ms}ms)',
+    status: '{count} files indexed · {size}',
+    lastIndexed: 'Last updated {time}',
+    noResults: 'No matching results',
+    resultCount: '{total} results',
+    colFile: 'File',
+    colPath: 'Path',
+    colSnippet: 'Match',
+    filterType: 'File Type',
+    filterPath: 'Path Prefix',
+    allTypes: 'All Types',
   },
 
   storage: {
