@@ -1,0 +1,14 @@
+[Unit]
+Description=Vibe OS First Boot Setup
+Documentation=https://github.com/Vibe OS/Vibe OS
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/vibeos/.firstboot-done
+
+[Service]
+Type=oneshot
+ExecStart=/opt/vibeos/firstboot.sh
+RemainAfterExit=true
+
+[Install]
+WantedBy=multi-user.target

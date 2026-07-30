@@ -6,6 +6,7 @@
 import type {
   BackupExecution,
   BackupJob,
+  CertStatus,
   ContainerInfo,
   ContainerLogResult,
   DiskHealthResponse,
@@ -45,7 +46,7 @@ export function demoOverview(): SystemOverview {
   return {
     timestamp: now(),
     system: {
-      hostname: 'naisys-node-01',
+      hostname: 'vibeos-node-01',
       platform: 'Linux 6.12.0-trixie',
       arch: 'x64',
       cpuModel: 'AMD Ryzen 7 5800X 8-Core Processor',
@@ -231,7 +232,7 @@ export function demoTailscale(): TailscaleStatusResponse {
     status: {
       backendState: 'Running',
       self: {
-        hostname: 'naisys-node-01',
+        hostname: 'vibeos-node-01',
         ips: ['100.64.252.114'],
         os: 'linux',
         online: true,
@@ -310,8 +311,8 @@ export function demoUsers(): UserListResponse {
 /** 模拟容器日志 */
 export function demoLogs(name: string): ContainerLogResult {
   const lines = [
-    `[naisys] container "${name}" — demo log stream`,
-    '[INFO] loading configuration from /data/naisys/' + name + '/data/config.yaml',
+    `[vibeos] container "${name}" — demo log stream`,
+    '[INFO] loading configuration from /data/vibeos/' + name + '/data/config.yaml',
     '[INFO] model cache mounted at /models (read-only)',
     '[INFO] listening on 0.0.0.0:8080',
     '[INFO] worker #0 ready (warmup 1.82s)',
@@ -326,7 +327,7 @@ export function demoLogs(name: string): ContainerLogResult {
 
 /** 模拟健康检查 */
 export function demoHealth(): HealthInfo {
-  return { service: 'naisys-backend', version: '0.1.0', timestamp: now() };
+  return { service: 'vibeos-backend', version: '0.1.0', timestamp: now() };
 }
 
 /* ============================================================
@@ -417,7 +418,7 @@ export function demoFileRead(path: string): { content: string; size: number; tru
     '',
     '--- demo content ---',
     'Lorem ipsum dolor sit amet, consectetur adipiscing elit.',
-    'NAISys 私有 AI NAS — 所有数据完全本地化。',
+    'Vibe OS 私有 AI NAS — 所有数据完全本地化。',
   ].join('\n');
   return { content, size: content.length, truncated: false, mimeType: 'text/plain' };
 }
@@ -577,7 +578,7 @@ export function demoDownloadTasks(): DownloadTask[] {
       gid: 'dl-003', name: 'llama-3.1-8b-instruct-q8.gguf', status: 'waiting',
       totalBytes: 8.5 * 1024 ** 3, completedBytes: 0, progress: 0,
       downloadSpeed: 0, uploadSpeed: 0, connections: 0, eta: null,
-      dir: '/data/naisys/ollama/models', files: [{ path: 'llama-3.1-8b-instruct-q8.gguf', length: 8.5 * 1024 ** 3, completedLength: 0 }],
+      dir: '/data/vibeos/ollama/models', files: [{ path: 'llama-3.1-8b-instruct-q8.gguf', length: 8.5 * 1024 ** 3, completedLength: 0 }],
       startedAt: '2026-07-27T20:35:00Z', completedAt: null,
     },
     {
@@ -643,7 +644,7 @@ export function demoFirewallRules(): FirewallRule[] {
   return [
     { id: 'fw-001', chain: 'input', protocol: 'tcp', port: 22, action: 'accept', source: '192.168.50.0/24', comment: 'SSH 内网访问' },
     { id: 'fw-002', chain: 'input', protocol: 'tcp', port: 445, action: 'accept', source: '192.168.50.0/24', comment: 'SMB 共享' },
-    { id: 'fw-003', chain: 'input', protocol: 'tcp', port: 3000, action: 'accept', source: null, comment: 'NAISys 控制台' },
+    { id: 'fw-003', chain: 'input', protocol: 'tcp', port: 3000, action: 'accept', source: null, comment: 'Vibe OS 控制台' },
     { id: 'fw-004', chain: 'input', protocol: 'udp', port: 41641, action: 'accept', source: null, comment: 'Tailscale DERP' },
     { id: 'fw-005', chain: 'input', protocol: 'all', port: null, action: 'drop', source: null, comment: '默认拒绝入站' },
   ];
@@ -712,9 +713,9 @@ export function demoNotificationSettings(): NotificationSettings {
 /** 模拟计划任务列表 */
 export function demoScheduledJobs(): ScheduledJob[] {
   return [
-    { id: 'cron-001', name: '日志清理', command: '/data/naisys/scripts/clean-logs.sh', schedule: '0 3 * * *', enabled: true, lastRun: '2026-07-27T03:00:00Z', lastStatus: 'success', nextRun: '2026-07-28T03:00:00Z' },
-    { id: 'cron-002', name: 'SMART 巡检', command: '/data/naisys/scripts/smart-check.sh', schedule: '0 6 * * *', enabled: true, lastRun: '2026-07-27T06:00:00Z', lastStatus: 'success', nextRun: '2026-07-28T06:00:00Z' },
-    { id: 'cron-003', name: '模型缓存预热', command: '/data/naisys/scripts/warmup-models.sh', schedule: '30 2 * * 1', enabled: false, lastRun: '2026-07-21T02:30:00Z', lastStatus: 'failed', nextRun: null },
+    { id: 'cron-001', name: '日志清理', command: '/data/vibeos/scripts/clean-logs.sh', schedule: '0 3 * * *', enabled: true, lastRun: '2026-07-27T03:00:00Z', lastStatus: 'success', nextRun: '2026-07-28T03:00:00Z' },
+    { id: 'cron-002', name: 'SMART 巡检', command: '/data/vibeos/scripts/smart-check.sh', schedule: '0 6 * * *', enabled: true, lastRun: '2026-07-27T06:00:00Z', lastStatus: 'success', nextRun: '2026-07-28T06:00:00Z' },
+    { id: 'cron-003', name: '模型缓存预热', command: '/data/vibeos/scripts/warmup-models.sh', schedule: '30 2 * * 1', enabled: false, lastRun: '2026-07-21T02:30:00Z', lastStatus: 'failed', nextRun: null },
   ];
 }
 
@@ -722,7 +723,7 @@ export function demoScheduledJobs(): ScheduledJob[] {
 export function demoJobHistory(jobId: string): JobExecution[] {
   if (jobId === 'cron-003') {
     return [
-      { id: 'jex-003', jobId, startedAt: '2026-07-21T02:30:00Z', finishedAt: '2026-07-21T02:31:12Z', exitCode: 1, stdout: 'loading model index...\ncache dir not found: /data/naisys/ollama/cache', stderr: 'ERROR: warmup aborted — cache directory missing', status: 'failed' },
+      { id: 'jex-003', jobId, startedAt: '2026-07-21T02:30:00Z', finishedAt: '2026-07-21T02:31:12Z', exitCode: 1, stdout: 'loading model index...\ncache dir not found: /data/vibeos/ollama/cache', stderr: 'ERROR: warmup aborted — cache directory missing', status: 'failed' },
     ];
   }
   return [
@@ -741,7 +742,7 @@ export function demoRegistryApps(): import('./types').RegistryApp[] {
       description: '开源免费的媒体流服务器', icon: '🎬',
       image: 'jellyfin/jellyfin:latest',
       ports: [{ host: 8096, container: 8096 }],
-      volumes: [{ host: '/data/naisys/apps/jellyfin/config', container: '/config' }],
+      volumes: [{ host: '/data/vibeos/apps/jellyfin/config', container: '/config' }],
       env: { TZ: 'Asia/Shanghai' },
       homepage: 'https://jellyfin.org',
     },
@@ -750,7 +751,7 @@ export function demoRegistryApps(): import('./types').RegistryApp[] {
       description: '功能完整的私有云平台', icon: '☁️',
       image: 'nextcloud:latest',
       ports: [{ host: 8888, container: 80 }],
-      volumes: [{ host: '/data/naisys/apps/nextcloud/data', container: '/var/www/html' }],
+      volumes: [{ host: '/data/vibeos/apps/nextcloud/data', container: '/var/www/html' }],
       env: { TZ: 'Asia/Shanghai' },
       homepage: 'https://nextcloud.com',
     },
@@ -759,7 +760,7 @@ export function demoRegistryApps(): import('./types').RegistryApp[] {
       description: 'Bitwarden 兼容的轻量密码管理器', icon: '🔐',
       image: 'vaultwarden/server:latest',
       ports: [{ host: 8222, container: 80 }],
-      volumes: [{ host: '/data/naisys/apps/vaultwarden/data', container: '/data' }],
+      volumes: [{ host: '/data/vibeos/apps/vaultwarden/data', container: '/data' }],
       env: { TZ: 'Asia/Shanghai' },
     },
     {
@@ -767,7 +768,7 @@ export function demoRegistryApps(): import('./types').RegistryApp[] {
       description: '本地大模型推理引擎', icon: '🤖',
       image: 'ollama/ollama:latest',
       ports: [{ host: 11434, container: 11434 }],
-      volumes: [{ host: '/data/naisys/apps/ollama/models', container: '/root/.ollama' }],
+      volumes: [{ host: '/data/vibeos/apps/ollama/models', container: '/root/.ollama' }],
       env: { TZ: 'Asia/Shanghai' },
     },
   ];
@@ -777,10 +778,10 @@ export function demoRegistryApps(): import('./types').RegistryApp[] {
 export function demoInstalledApps(): import('./types').InstalledAppWithStatus[] {
   return [
     {
-      appId: 'homepage', containerName: 'naisys-homepage',
+      appId: 'homepage', containerName: 'vibeos-homepage',
       image: 'ghcr.io/gethomepage/homepage:latest',
       ports: [{ host: 3333, container: 3000 }],
-      volumes: [{ host: '/data/naisys/apps/homepage/config', container: '/app/config' }],
+      volumes: [{ host: '/data/vibeos/apps/homepage/config', container: '/app/config' }],
       env: { TZ: 'Asia/Shanghai' },
       installedAt: '2026-07-20T10:00:00Z', source: 'registry',
       status: 'running', containerId: 'abc123',
@@ -797,13 +798,14 @@ import type {
   ManagedService,
   SettingsLogLine,
   SettingsLogSource,
+  SshKeysResult,
   SystemSettings,
 } from './types';
 
 export function demoSettings(): SystemSettings {
   return {
     general: {
-      hostname: 'naisys-node-01',
+      hostname: 'vibeos-node-01',
       timezone: 'Asia/Shanghai',
       locale: 'zh-CN',
       ntpEnabled: true,
@@ -813,8 +815,8 @@ export function demoSettings(): SystemSettings {
     security: {
       httpsEnabled: false,
       httpsPort: 443,
-      httpsCertPath: '/data/naisys/certs/server.crt',
-      httpsKeyPath: '/data/naisys/certs/server.key',
+      httpsCertPath: '/data/vibeos/certs/server.crt',
+      httpsKeyPath: '/data/vibeos/certs/server.key',
       sshEnabled: true,
       sshPort: 22,
       sshPasswordAuth: false,
@@ -891,7 +893,7 @@ export function demoAbout(): AboutInfo {
     cpuModel: 'AMD Ryzen 7 5800X 8-Core Processor',
     cpuCores: 16,
     totalMemoryBytes: 32 * 1024 ** 3,
-    hostname: 'naisys-node-01',
+    hostname: 'vibeos-node-01',
     uptimeSeconds: 1287645,
     dataRoot: '/data',
     license: 'MIT',
@@ -902,7 +904,7 @@ export function demoLogSources(): SettingsLogSource[] {
   return [
     { id: 'system', name: '系统日志', description: 'journalctl 系统日志', sizeBytes: 52 * 1024 * 1024 },
     { id: 'auth', name: '认证日志', description: 'SSH / PAM 认证记录', sizeBytes: 8 * 1024 * 1024 },
-    { id: 'naisys', name: 'NAISys 日志', description: 'NAISys 后端服务日志', sizeBytes: 12 * 1024 * 1024 },
+    { id: 'vibeos', name: 'Vibe OS 日志', description: 'Vibe OS 后端服务日志', sizeBytes: 12 * 1024 * 1024 },
     { id: 'docker', name: 'Docker 日志', description: 'Docker 引擎日志', sizeBytes: 128 * 1024 * 1024 },
     { id: 'smartd', name: 'SMART 日志', description: '磁盘健康监控日志', sizeBytes: 2 * 1024 * 1024 },
   ];
@@ -922,4 +924,50 @@ export function demoSettingsLogs(source: string): SettingsLogLine[] {
     { timestamp: '2026-07-27T22:10:35Z', level: 'info', source, message: '定时任务 log-cleanup 执行完成' },
   ];
   return base;
+}
+
+export function demoCertStatus(): CertStatus {
+  return {
+    installed: true,
+    certPath: '/data/vibeos/certs/server.crt',
+    keyPath: '/data/vibeos/certs/server.key',
+    info: {
+      subject: 'CN=nas.tail1234.ts.net',
+      issuer: 'CN=nas.tail1234.ts.net',
+      serialNumber: 'A1B2C3D4E5F60718',
+      fingerprint:
+        '3F:2A:9C:11:8B:44:7D:0E:55:6A:C9:20:D1:E3:F4:08:77:66:55:44:33:22:11:00:AA:BB:CC:DD:EE:FF:00:99',
+      validFrom: '2026-07-01T00:00:00.000Z',
+      validTo: '2028-09-28T00:00:00.000Z',
+      daysRemaining: 791,
+      isExpired: false,
+      isSelfSigned: true,
+      sans: ['nas.tail1234.ts.net', '100.64.252.114'],
+    },
+  };
+}
+
+export function demoSshKeys(): SshKeysResult {
+  return {
+    targetUser: 'vibeuser',
+    keysFile: '/home/vibeuser/.ssh/authorized_keys',
+    keys: [
+      {
+        fingerprint: 'SHA256:Kq2wXz8mNpQrStUvWxYz0123456789abcdefGHIJ',
+        type: 'ED25519',
+        bits: 256,
+        comment: 'kane@workstation',
+        raw: 'ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIExampleKeyDataHere kane@workstation',
+        valid: true,
+      },
+      {
+        fingerprint: 'SHA256:AbCdEfGhIjKlMnOpQrStUvWxYz9876543210ZYXW',
+        type: 'RSA',
+        bits: 4096,
+        comment: 'backup@nas',
+        raw: 'ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAACAQExampleRsaKey backup@nas',
+        valid: true,
+      },
+    ],
+  };
 }

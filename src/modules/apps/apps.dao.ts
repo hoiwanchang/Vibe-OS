@@ -5,7 +5,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { NAISYS_APP_DIR } from '../../config.js';
+import { VIBEOS_APP_DIR } from '../../config.js';
 import { ensureDir, pathExists } from '../../system/filesystem.js';
 import { executeCommand, executeCommandStrict } from '../../system/command-executor.js';
 import type {
@@ -16,13 +16,13 @@ import type {
 } from './apps.types.js';
 
 /** 注册表文件路径 */
-const REGISTRY_FILE = path.join(NAISYS_APP_DIR, 'apps', 'registry.json');
+const REGISTRY_FILE = path.join(VIBEOS_APP_DIR, 'apps', 'registry.json');
 
 /** 已安装应用持久化路径 */
-const INSTALLED_FILE = path.join(NAISYS_APP_DIR, 'apps', 'installed.json');
+const INSTALLED_FILE = path.join(VIBEOS_APP_DIR, 'apps', 'installed.json');
 
 /** Docker Compose 项目目录 */
-const COMPOSE_DIR = path.join(NAISYS_APP_DIR, 'apps', 'compose');
+const COMPOSE_DIR = path.join(VIBEOS_APP_DIR, 'apps', 'compose');
 
 /* ---------- 注册表 ---------- */
 
@@ -257,7 +257,7 @@ export async function checkHealth(url: string): Promise<boolean> {
 /* ---------- LLM 配置持久化 ---------- */
 
 /** LLM 配置文件路径 */
-const LLM_CONFIG_FILE = path.join(NAISYS_APP_DIR, 'apps', 'llm-config.json');
+const LLM_CONFIG_FILE = path.join(VIBEOS_APP_DIR, 'apps', 'llm-config.json');
 
 /**
  * 读取 LLM 配置
@@ -309,7 +309,7 @@ export async function cloneAndInspect(gitUrl: string, branch?: string): Promise<
   readme: string | null;
   files: string[];
 }> {
-  const tmpDir = path.join(NAISYS_APP_DIR, 'cache', `analyze-${Date.now()}`);
+  const tmpDir = path.join(VIBEOS_APP_DIR, 'cache', `analyze-${Date.now()}`);
   await ensureDir(tmpDir);
 
   const args = ['clone', '--depth', '1'];

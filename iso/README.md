@@ -1,6 +1,6 @@
-# NAISys ISO 构建目录
+# Vibe OS ISO 构建目录
 
-本目录包含 NAISys 安装镜像（Debian 13 Trixie amd64）的全部构建资产，
+本目录包含 Vibe OS 安装镜像（Debian 13 Trixie amd64）的全部构建资产，
 由 `.github/workflows/build-iso.yml` 在 CI 中调用，也可本地手动执行。
 
 ## 目录结构
@@ -25,12 +25,12 @@ iso/
 │   ├── data-guard.sh             # /data 目录完整性检测
 │   └── ota-upgrade.sh            # OTA 升级（拉取 Release 校验并原地升级）
 └── systemd/
-    ├── naisys-web-console.service
-    ├── naisys-firstboot.service
-    ├── naisys-data-guard.service
-    ├── naisys-data-guard.timer
-    ├── naisys-ota.service
-    ├── naisys-ota.timer
+    ├── vibeos-web-console.service
+    ├── vibeos-firstboot.service
+    ├── vibeos-data-guard.service
+    ├── vibeos-data-guard.timer
+    ├── vibeos-ota.service
+    ├── vibeos-ota.timer
     ├── docker.service.d/override.conf
     └── tailscaled.service.d/override.conf
 ```
@@ -51,7 +51,7 @@ iso/
 ```bash
 cd iso
 sudo ./build-iso.sh            # 需要 root（chroot/mount 操作）
-./verify-iso.sh out/naisys-*.iso
+./verify-iso.sh out/vibeos-*.iso
 ```
 
 > 注意：构建需联网下载 Debian netinst 与固件包。CI 环境已配置好全部依赖。

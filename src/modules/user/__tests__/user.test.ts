@@ -7,9 +7,9 @@ import * as fs from 'node:fs/promises';
 
 vi.mock('../../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   DEFAULT_QUOTA_BYTES: 107374182400n,
   USER_SUBDIRS: ['files', 'config', 'cache'],
   APP_SUBDIRS: ['models', 'data', 'logs'],
@@ -45,7 +45,7 @@ import * as controller from '../user.controller.js';
 
 const PASSWD_CONTENT = [
   'root:x:0:0::/root:/bin/bash',
-  'naisys:x:999:999::/data/naisys:/usr/sbin/nologin',
+  'vibeos:x:999:999::/data/vibeos:/usr/sbin/nologin',
   'alice:x:1000:1000::/home/alice:/bin/bash',
   'bob:x:1001:1001::/home/bob:/bin/bash',
   '',
@@ -61,7 +61,7 @@ function setupFsReads(mapping = MAPPING_CONTENT): void {
     const path =
       typeof p === 'string' ? p : (p as Buffer).toString('utf-8');
     if (path === '/etc/passwd') return PASSWD_CONTENT;
-    if (path === '/data/naisys/users.json') return mapping;
+    if (path === '/data/vibeos/users.json') return mapping;
     throw new Error(`ENOENT: ${path}`);
   });
 }
@@ -73,7 +73,7 @@ describe('user.service.listManagedUsers', () => {
   });
 
   it('应合并 /data 目录、passwd 与映射文件中的用户', async () => {
-    vi.mocked(fs.readdir).mockResolvedValue(['1000', '1002', 'naisys', 'not-a-uid'] as never);
+    vi.mocked(fs.readdir).mockResolvedValue(['1000', '1002', 'vibeos', 'not-a-uid'] as never);
 
     const result = await service.listManagedUsers();
     // /data: {1000,1002} ∪ passwd: {1000,1001} ∪ mapping: {1002} = [1000,1001,1002]

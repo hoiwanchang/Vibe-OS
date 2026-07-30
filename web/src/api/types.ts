@@ -713,6 +713,54 @@ export interface SecuritySettings {
   autoSecurityUpdates: boolean;
 }
 
+/** TLS 证书解析信息 */
+export interface CertInfo {
+  subject: string;
+  issuer: string;
+  serialNumber: string;
+  fingerprint: string;
+  validFrom: string;
+  validTo: string;
+  daysRemaining: number;
+  isExpired: boolean;
+  isSelfSigned: boolean;
+  sans: string[];
+}
+
+/** TLS 证书安装状态 */
+export interface CertStatus {
+  installed: boolean;
+  certPath: string;
+  keyPath: string;
+  info: CertInfo | null;
+  error?: string;
+}
+
+/** 单条 SSH 公钥信息 */
+export interface SshPublicKey {
+  fingerprint: string;
+  type: string;
+  bits: number;
+  comment: string;
+  raw: string;
+  valid: boolean;
+}
+
+/** SSH 公钥列表结果 */
+export interface SshKeysResult {
+  keys: SshPublicKey[];
+  targetUser: string;
+  keysFile: string;
+}
+
+/** 生成的 SSH 密钥对 */
+export interface GeneratedSshKey {
+  publicKey: string;
+  privateKey: string;
+  fingerprint: string;
+  type: string;
+}
+
 export interface StoragePolicySettings {
   diskSpindownMinutes: number;
   hddStandbyEnabled: boolean;

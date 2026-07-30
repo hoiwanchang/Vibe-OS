@@ -4,13 +4,13 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { NAISYS_APP_DIR } from '../../config.js';
+import { VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
 import { executeCommand } from '../../system/command-executor.js';
 import type { ScheduledJob, JobExecution } from './scheduler.types.js';
 
-const JOBS_FILE = `${NAISYS_APP_DIR}/scheduler/jobs.json`;
-const LOGS_DIR = `${NAISYS_APP_DIR}/scheduler/logs`;
+const JOBS_FILE = `${VIBEOS_APP_DIR}/scheduler/jobs.json`;
+const LOGS_DIR = `${VIBEOS_APP_DIR}/scheduler/logs`;
 
 /** 破坏性命令黑名单 */
 const DANGEROUS_PATTERNS = [

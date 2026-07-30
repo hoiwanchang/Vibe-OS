@@ -23,7 +23,7 @@ export function errorHandler(
   }
 
   // 未知异常：不泄露内部细节
-  console.error('[NAISys] 未捕获异常:', err);
+  console.error('[Vibe OS] 未捕获异常:', err);
   res.status(500).json({
     success: false,
     error: {

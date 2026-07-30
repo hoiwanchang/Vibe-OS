@@ -1,4 +1,4 @@
-# NAISys — 开源私有 AI NAS 操作系统
+# Vibe OS — 开源私有 AI NAS 操作系统
 
 > 基于 Debian 13 的本地化私有 AI NAS 系统，面向内网/离线环境，提供本地 AI 推理、文件管理、应用托管、存储管理等能力。所有数据与服务完全本地化，零外网依赖。
 
@@ -150,7 +150,7 @@ git clone <repo-url> && cd Vibe-OS
 pnpm install
 
 # 启动后端（开发模式，数据目录指向临时路径）
-NAISYS_DATA_ROOT=/tmp/naisys-data pnpm dev
+VIBEOS_DATA_ROOT=/tmp/vibeos-data pnpm dev
 
 # 启动前端（另一个终端）
 pnpm web:dev
@@ -198,7 +198,7 @@ See [ISO Build Guide](docs/iso-build-install-guide.md) for details.
 │   ├── files/                      # 用户文件
 │   ├── config/                     # 用户配置
 │   └── cache/                      # 用户缓存
-└── naisys/                         # AI 系统应用目录
+└── vibeos/                         # AI 系统应用目录
     ├── {appname}/                  # 各 AI 应用独立目录
     │   ├── models/                 # 模型文件
     │   ├── data/                   # 应用数据
@@ -208,22 +208,22 @@ See [ISO Build Guide](docs/iso-build-install-guide.md) for details.
     └── cache/                      # 系统级缓存
 ```
 
-开发环境可通过 `NAISYS_DATA_ROOT` 环境变量覆盖数据根目录。
+开发环境可通过 `VIBEOS_DATA_ROOT` 环境变量覆盖数据根目录。
 
-In development, override the data root via the `NAISYS_DATA_ROOT` environment variable.
+In development, override the data root via the `VIBEOS_DATA_ROOT` environment variable.
 
 ---
 
 ## 安全设计 / Security
 
-- 所有服务以非 root 用户 `naisys` 运行
+- 所有服务以非 root 用户 `vibeos` 运行
 - 文件操作限定在 `/data/` 目录树内，路径 normalize + 前缀校验防穿越
-- 禁止硬编码密钥，使用环境变量或 `/data/naisys/secrets/`（0700）
+- 禁止硬编码密钥，使用环境变量或 `/data/vibeos/secrets/`（0700）
 - API 默认拒绝未认证请求
 - 系统操作通过原子化 API 层封装，禁止裸 shell 命令
 - 纯内网运行，零外网请求，零遥测
 
-All services run as non-root user `naisys`. File operations are confined to `/data/` with path normalization and prefix validation. No hardcoded secrets — use env vars or `/data/naisys/secrets/` (0700). APIs reject unauthenticated requests by default. System operations go through an atomic API layer. Fully offline — zero external requests, zero telemetry.
+All services run as non-root user `vibeos`. File operations are confined to `/data/` with path normalization and prefix validation. No hardcoded secrets — use env vars or `/data/vibeos/secrets/` (0700). APIs reject unauthenticated requests by default. System operations go through an atomic API layer. Fully offline — zero external requests, zero telemetry.
 
 ---
 

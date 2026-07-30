@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * 部署对话框：选择应用模板 → 自动填充镜像/端口/卷挂载说明
- * 提交后由 store 自动创建 /data/naisys/{appname}/ 并绑定容器卷
+ * 提交后由 store 自动创建 /data/vibeos/{appname}/ 并绑定容器卷
  */
 import { reactive, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';

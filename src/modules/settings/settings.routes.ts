@@ -39,7 +39,7 @@ router.post(
 router.get('/settings/about', asyncHandler(controller.handleAbout));
 
 /** GET /api/settings/logs/sources */
-router.get('/settings/logs/sources', asyncHandler(controller.handleLogSources));
+router.get('/settings/logs/sources', controller.handleLogSources);
 
 /** GET /api/settings/logs */
 router.get('/settings/logs', asyncHandler(controller.handleReadLogs));
@@ -59,6 +59,68 @@ router.post(
   '/settings/notification/test',
   validateBody(testNotifSchema),
   asyncHandler(controller.handleTestNotification),
+);
+
+/* ---------- TLS 证书管理（必须在 :section 之前） ---------- */
+
+/** GET /api/settings/cert — 证书状态 */
+router.get('/settings/cert', asyncHandler(controller.handleGetCertStatus));
+
+/** POST /api/settings/cert/generate — 生成自签证书 */
+const generateCertSchema = z.object({
+  commonName: z.string().max(253).default(''),
+  sans: z.array(z.string().max(253)).max(20).default([]),
+  days: z.number().int().min(1).max(3650).default(825),
+  keySize: z.union([z.literal(2048), z.literal(4096)]).default(2048),
+});
+router.post(
+  '/settings/cert/generate',
+  validateBody(generateCertSchema),
+  asyncHandler(controller.handleGenerateCert),
+);
+
+/** POST /api/settings/cert/import — 导入证书 */
+const importCertSchema = z.object({
+  certPem: z.string().min(1).max(64 * 1024),
+  keyPem: z.string().min(1).max(64 * 1024),
+});
+router.post(
+  '/settings/cert/import',
+  validateBody(importCertSchema),
+  asyncHandler(controller.handleImportCert),
+);
+
+/** DELETE /api/settings/cert — 删除证书 */
+router.delete('/settings/cert', asyncHandler(controller.handleDeleteCert));
+
+/* ---------- SSH 密钥管理（必须在 :section 之前） ---------- */
+
+/** GET /api/settings/ssh/keys — 列举公钥 */
+router.get('/settings/ssh/keys', asyncHandler(controller.handleListSshKeys));
+
+/** POST /api/settings/ssh/keys — 导入公钥 */
+const importSshKeySchema = z.object({
+  publicKey: z.string().min(1).max(16 * 1024),
+});
+router.post(
+  '/settings/ssh/keys',
+  validateBody(importSshKeySchema),
+  asyncHandler(controller.handleImportSshKey),
+);
+
+/** DELETE /api/settings/ssh/keys — 删除公钥（按指纹） */
+router.delete('/settings/ssh/keys', asyncHandler(controller.handleDeleteSshKey));
+
+/** POST /api/settings/ssh/keys/generate — 生成密钥对 */
+const generateSshKeySchema = z.object({
+  type: z.union([z.literal('ed25519'), z.literal('rsa')]).default('ed25519'),
+  bits: z.union([z.literal(2048), z.literal(4096)]).optional(),
+  comment: z.string().max(256).optional(),
+});
+router.post(
+  '/settings/ssh/keys/generate',
+  validateBody(generateSshKeySchema),
+  asyncHandler(controller.handleGenerateSshKey),
 );
 
 /* ---------- 参数化路径（兜底，必须在所有具体路径之后） ---------- */

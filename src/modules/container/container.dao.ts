@@ -3,7 +3,7 @@
  * 封装 Docker CLI 和 Tailscale CLI 的底层调用
  */
 import * as path from 'node:path';
-import { APP_SUBDIRS, NAISYS_APP_DIR } from '../../config.js';
+import { APP_SUBDIRS, VIBEOS_APP_DIR } from '../../config.js';
 import {
   assertSafePath,
   ensureDir,
@@ -179,8 +179,8 @@ export async function getTailscalePrefs(): Promise<TailscalePrefs> {
 
 /* ---------- 账户注册表持久化（多账户管理） ---------- */
 
-/** 账户注册表文件路径 /data/naisys/tailscale/accounts.json */
-const ACCOUNTS_FILE = `${NAISYS_APP_DIR}/tailscale/accounts.json`;
+/** 账户注册表文件路径 /data/vibeos/tailscale/accounts.json */
+const ACCOUNTS_FILE = `${VIBEOS_APP_DIR}/tailscale/accounts.json`;
 
 /**
  * 读取已配置的 Tailscale 账户列表
@@ -213,7 +213,7 @@ export async function saveAccounts(accounts: TailscaleAccount[]): Promise<void> 
 }
 
 /**
- * 创建 AI 应用标准目录结构 /data/naisys/{appname}/{models,data,logs}
+ * 创建 AI 应用标准目录结构 /data/vibeos/{appname}/{models,data,logs}
  * @param appname - 应用名（调用方已完成合法性校验）
  * @returns 应用根目录与新创建的目录列表
  */
@@ -221,7 +221,7 @@ export async function createAppDirs(appname: string): Promise<{
   appDir: string;
   createdDirs: string[];
 }> {
-  const appDir = assertSafePath(path.join(NAISYS_APP_DIR, appname));
+  const appDir = assertSafePath(path.join(VIBEOS_APP_DIR, appname));
   const createdDirs: string[] = [];
 
   if (!(await pathExists(appDir))) {

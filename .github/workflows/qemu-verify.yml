@@ -1,5 +1,5 @@
 # ============================================================================
-# NAISys ISO QEMU 安装验证流水线
+# Vibe OS ISO QEMU 安装验证流水线
 # 触发：ISO 构建完成后手动 dispatch，或每周构建后自动触发
 # 流程：下载 ISO → QEMU 启动 → 等待零交互安装 → 验证 /data、Docker、Tailscale、Web 控制台
 # 产出：安装录屏（VNC 截帧）+ 结构化验证报告 + 驱动兼容性矩阵
@@ -42,7 +42,7 @@ jobs:
         if: github.event_name == 'workflow_run'
         uses: actions/download-artifact@v4
         with:
-          name: naisys-iso
+          name: vibeos-iso
           path: iso-download
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -51,7 +51,7 @@ jobs:
         if: github.event_name == 'workflow_dispatch' && inputs.iso_artifact_run_id != ''
         uses: actions/download-artifact@v4
         with:
-          name: naisys-iso
+          name: vibeos-iso
           path: iso-download
           run-id: ${{ inputs.iso_artifact_run_id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -63,13 +63,13 @@ jobs:
         run: |
           mkdir -p iso-download
           gh release download --repo "${{ github.repository }}" \
-            --pattern 'naisys-*.iso' --pattern 'naisys-*.iso.sha256' \
+            --pattern 'vibeos-*.iso' --pattern 'vibeos-*.iso.sha256' \
             --dir iso-download
 
       - name: 定位 ISO 文件
         id: find
         run: |
-          ISO_FILE=$(ls iso-download/naisys-*.iso 2>/dev/null | head -n1)
+          ISO_FILE=$(ls iso-download/vibeos-*.iso 2>/dev/null | head -n1)
           if [[ -z "$ISO_FILE" ]]; then
             echo "❌ 未找到 ISO 文件" >&2
             exit 1
@@ -80,8 +80,8 @@ jobs:
       - name: SHA256 校验
         run: |
           cd iso-download
-          if [[ -f naisys-*.iso.sha256 ]]; then
-            sha256sum -c naisys-*.iso.sha256
+          if [[ -f vibeos-*.iso.sha256 ]]; then
+            sha256sum -c vibeos-*.iso.sha256
           else
             echo "⚠️ 无 SHA256 文件，跳过校验"
           fi
@@ -108,6 +108,19 @@ jobs:
           name: iso-for-qemu
           path: iso-download
 
+      - name: 读取初始密码
+        run: |
+          if [[ -f iso-download/.init-password ]]; then
+            PW=$(cat iso-download/.init-password)
+            echo "INIT_PW=$PW" >> "$GITHUB_ENV"
+            echo "SSHPASS=$PW" >> "$GITHUB_ENV"
+            echo "✅ 已读取初始密码"
+          else
+            echo "⚠️ 未找到 .init-password，SSH 验证将使用空密码（可能失败）"
+            echo "INIT_PW=" >> "$GITHUB_ENV"
+            echo "SSHPASS=" >> "$GITHUB_ENV"
+          fi
+
       - name: 安装 QEMU 与依赖
         run: |
           sudo apt-get update
@@ -116,11 +129,11 @@ jobs:
 
       - name: 创建虚拟磁盘
         run: |
-          qemu-img create -f qcow2 naisys-disk.qcow2 ${{ env.QEMU_DISK_SIZE }}
+          qemu-img create -f qcow2 vibeos-disk.qcow2 ${{ env.QEMU_DISK_SIZE }}
 
       - name: 启动 QEMU 安装（Legacy BIOS + VNC 录屏）
         run: |
-          ISO_FILE=$(ls iso-download/naisys-*.iso | head -n1)
+          ISO_FILE=$(ls iso-download/vibeos-*.iso | head -n1)
           echo "使用 ISO: $ISO_FILE"
 
           # 启动 QEMU，VNC 在 :1 端口供截帧
@@ -128,7 +141,7 @@ jobs:
             -m ${{ env.QEMU_MEMORY }} \
             -smp ${{ env.QEMU_CPUS }} \
             -cdrom "$ISO_FILE" \
-            -drive file=naisys-disk.qcow2,format=qcow2,if=virtio \
+            -drive file=vibeos-disk.qcow2,format=qcow2,if=virtio \
             -boot d \
             -netdev user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::3000-:3000 \
             -device virtio-net-pci,netdev=net0 \
@@ -166,9 +179,9 @@ jobs:
             fi
 
             # 尝试 SSH 连接（安装完成后 SSH 服务自动启动）
-            if sshpass -p '' ssh -o StrictHostKeyChecking=no \
+            if sshpass -e ssh -o StrictHostKeyChecking=no \
                  -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null \
-                 -p 2222 admin@localhost 'echo SSH_OK' 2>/dev/null | grep -q SSH_OK; then
+                 -p 2222 vibeuser@localhost 'echo SSH_OK' 2>/dev/null | grep -q SSH_OK; then
               SSH_OK=true
               echo "✅ SSH 可达，安装完成（耗时 ${ELAPSED}s）"
               break
@@ -184,18 +197,18 @@ jobs:
       - name: 验证 /data 目录与权限
         if: env.SSH_OK == 'true'
         run: |
-          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+          SSH_CMD="sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 vibeuser@localhost"
 
           echo "=== /data 目录验证 ==="
           $SSH_CMD 'ls -la /data/' 2>/dev/null
-          $SSH_CMD 'stat -c "%a %U:%G %n" /data /data/naisys /data/naisys/secrets' 2>/dev/null
+          $SSH_CMD 'stat -c "%a %U:%G %n" /data /data/vibeos /data/vibeos/secrets' 2>/dev/null
 
           # 校验 secrets 目录权限为 700
-          SECRETS_PERM=$($SSH_CMD 'stat -c "%a" /data/naisys/secrets' 2>/dev/null)
+          SECRETS_PERM=$($SSH_CMD 'stat -c "%a" /data/vibeos/secrets' 2>/dev/null)
           if [[ "$SECRETS_PERM" == "700" ]]; then
-            echo "✅ /data/naisys/secrets 权限正确: 700"
+            echo "✅ /data/vibeos/secrets 权限正确: 700"
           else
-            echo "❌ /data/naisys/secrets 权限异常: $SECRETS_PERM (期望 700)"
+            echo "❌ /data/vibeos/secrets 权限异常: $SECRETS_PERM (期望 700)"
           fi
 
           # 校验 /data 为独立挂载点
@@ -207,7 +220,7 @@ jobs:
       - name: 验证 Docker 与 Tailscale 服务
         if: env.SSH_OK == 'true'
         run: |
-          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+          SSH_CMD="sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 vibeuser@localhost"
 
           echo "=== Docker 服务验证 ==="
           $SSH_CMD 'systemctl is-active docker' 2>/dev/null || echo "⚠️ Docker 未运行"
@@ -235,7 +248,7 @@ jobs:
       - name: 驱动兼容性检测
         if: env.SSH_OK == 'true'
         run: |
-          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+          SSH_CMD="sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 vibeuser@localhost"
 
           echo "=== 网卡驱动兼容性矩阵 ==="
           echo "| 驱动 | 厂商 | 产品 | 已加载 | 版本 | PCI 设备 |"
@@ -260,17 +273,17 @@ jobs:
         if: always()
         run: |
           mkdir -p install-logs
-          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 admin@localhost"
+          SSH_CMD="sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2222 vibeuser@localhost"
 
           # 收集关键日志
-          $SSH_CMD 'journalctl -u naisys-web-console --no-pager -n 50' 2>/dev/null > install-logs/web-console.log || true
-          $SSH_CMD 'journalctl -u naisys-firstboot --no-pager -n 50' 2>/dev/null > install-logs/firstboot.log || true
+          $SSH_CMD 'journalctl -u vibeos-web-console --no-pager -n 50' 2>/dev/null > install-logs/web-console.log || true
+          $SSH_CMD 'journalctl -u vibeos-firstboot --no-pager -n 50' 2>/dev/null > install-logs/firstboot.log || true
           $SSH_CMD 'journalctl -u docker --no-pager -n 30' 2>/dev/null > install-logs/docker.log || true
           $SSH_CMD 'journalctl -u tailscaled --no-pager -n 30' 2>/dev/null > install-logs/tailscaled.log || true
-          $SSH_CMD 'cat /data/naisys/firstboot-info.json' 2>/dev/null > install-logs/firstboot-info.json || true
+          $SSH_CMD 'cat /data/vibeos/firstboot-info.json' 2>/dev/null > install-logs/firstboot-info.json || true
           $SSH_CMD 'dmesg | grep -iE "r8125|r8169|igc|e1000|mlx|firmware"' 2>/dev/null > install-logs/dmesg-drivers.log || true
-          $SSH_CMD 'cat /var/lib/naisys/.disk-warning' 2>/dev/null > install-logs/disk-warning.txt || true
-          $SSH_CMD 'cat /var/lib/naisys/.install-error' 2>/dev/null > install-logs/install-error.txt || true
+          $SSH_CMD 'cat /var/lib/vibeos/.disk-warning' 2>/dev/null > install-logs/disk-warning.txt || true
+          $SSH_CMD 'cat /var/lib/vibeos/.install-error' 2>/dev/null > install-logs/install-error.txt || true
 
           echo "日志收集完成"
 
@@ -287,7 +300,7 @@ jobs:
         if: always()
         run: |
           cat > qemu-verification-report.md <<REPORT
-          # NAISys QEMU 安装验证报告
+          # Vibe OS QEMU 安装验证报告
 
           - **验证时间**: $(date -Iseconds)
           - **ISO 文件**: ${{ needs.fetch-iso.outputs.iso_name }}
@@ -307,7 +320,7 @@ jobs:
 
           - [${{ env.SSH_OK == 'true' && 'x' || ' ' }}] 零交互安装完成
           - [ ] /data 目录正确创建且权限正确
-          - [ ] /data/naisys/secrets 权限 700
+          - [ ] /data/vibeos/secrets 权限 700
           - [ ] Docker 服务正常运行
           - [ ] Tailscale 服务正常运行
           - [ ] Web 控制台 /api/health 返回 200
@@ -350,6 +363,17 @@ jobs:
           name: iso-for-qemu
           path: iso-download
 
+      - name: 读取初始密码
+        run: |
+          if [[ -f iso-download/.init-password ]]; then
+            PW=$(cat iso-download/.init-password)
+            echo "SSHPASS=$PW" >> "$GITHUB_ENV"
+            echo "✅ 已读取初始密码"
+          else
+            echo "⚠️ 未找到 .init-password，SSH 验证将使用空密码（可能失败）"
+            echo "SSHPASS=" >> "$GITHUB_ENV"
+          fi
+
       - name: 安装 QEMU 与 OVMF（UEFI 固件）
         run: |
           sudo apt-get update
@@ -358,18 +382,37 @@ jobs:
 
       - name: 创建虚拟磁盘
         run: |
-          qemu-img create -f qcow2 naisys-disk-uefi.qcow2 ${{ env.QEMU_DISK_SIZE }}
+          qemu-img create -f qcow2 vibeos-disk-uefi.qcow2 ${{ env.QEMU_DISK_SIZE }}
 
       - name: 启动 QEMU 安装（UEFI）
         run: |
-          ISO_FILE=$(ls iso-download/naisys-*.iso | head -n1)
+          ISO_FILE=$(ls iso-download/vibeos-*.iso | head -n1)
+
+          # 定位 OVMF 固件：新版 ovmf 包(2024.02+)重命名为 OVMF_CODE_4M.fd，
+          # 旧版为 OVMF_CODE.fd。动态探测，避免硬编码路径失效。
+          OVMF_CODE=""
+          for c in /usr/share/OVMF/OVMF_CODE_4M.fd \
+                   /usr/share/OVMF/OVMF_CODE.fd \
+                   /usr/share/ovmf/OVMF.fd; do
+            [[ -f "$c" ]] && { OVMF_CODE="$c"; break; }
+          done
+          [[ -n "$OVMF_CODE" ]] || { echo "❌ 未找到 OVMF_CODE 固件"; exit 1; }
+          echo "使用 OVMF_CODE: $OVMF_CODE"
+
+          # UEFI 需要可写 NVRAM 存储启动项：复制 VARS 模板为可写副本，
+          # 用 -pflash 加载 CODE+VARS（而非 -bios，后者无法持久化 UEFI 变量）
+          OVMF_VARS="${OVMF_CODE/CODE/VARS}"
+          [[ -f "$OVMF_VARS" ]] || OVMF_VARS="/usr/share/OVMF/OVMF_VARS_4M.fd"
+          cp "$OVMF_VARS" ./OVMF_VARS.fd
+          echo "使用 OVMF_VARS: $OVMF_VARS → ./OVMF_VARS.fd"
 
           qemu-system-x86_64 \
             -m ${{ env.QEMU_MEMORY }} \
             -smp ${{ env.QEMU_CPUS }} \
-            -bios /usr/share/OVMF/OVMF_CODE.fd \
+            -drive if=pflash,format=raw,unit=0,readonly=on,file="$OVMF_CODE" \
+            -drive if=pflash,format=raw,unit=1,file=./OVMF_VARS.fd \
             -cdrom "$ISO_FILE" \
-            -drive file=naisys-disk-uefi.qcow2,format=qcow2,if=virtio \
+            -drive file=vibeos-disk-uefi.qcow2,format=qcow2,if=virtio \
             -boot d \
             -netdev user,id=net0,hostfwd=tcp::2223-:22,hostfwd=tcp::3001-:3000 \
             -device virtio-net-pci,netdev=net0 \
@@ -392,9 +435,9 @@ jobs:
               break
             fi
 
-            if sshpass -p '' ssh -o StrictHostKeyChecking=no \
+            if sshpass -e ssh -o StrictHostKeyChecking=no \
                  -o ConnectTimeout=5 -o UserKnownHostsFile=/dev/null \
-                 -p 2223 admin@localhost 'echo SSH_OK' 2>/dev/null | grep -q SSH_OK; then
+                 -p 2223 vibeuser@localhost 'echo SSH_OK' 2>/dev/null | grep -q SSH_OK; then
               SSH_OK=true
               echo "✅ UEFI SSH 可达（耗时 ${ELAPSED}s）"
               break
@@ -409,7 +452,7 @@ jobs:
       - name: UEFI 基础验证
         if: env.UEFI_SSH_OK == 'true'
         run: |
-          SSH_CMD="sshpass -p '' ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2223 admin@localhost"
+          SSH_CMD="sshpass -e ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -p 2223 vibeuser@localhost"
 
           echo "=== UEFI 启动确认 ==="
           $SSH_CMD 'test -d /sys/firmware/efi && echo "✅ UEFI 启动确认" || echo "❌ 非 UEFI 启动"' 2>/dev/null
@@ -433,7 +476,7 @@ jobs:
         if: always()
         run: |
           cat > qemu-uefi-report.md <<REPORT
-          # NAISys QEMU UEFI 安装验证报告
+          # Vibe OS QEMU UEFI 安装验证报告
 
           - **验证时间**: $(date -Iseconds)
           - **启动模式**: UEFI (OVMF)

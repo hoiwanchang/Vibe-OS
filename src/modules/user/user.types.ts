@@ -6,7 +6,7 @@
 export interface ManagedUser {
   /** 用户 UID */
   uid: number;
-  /** 用户名（来自 /etc/passwd 或 NAISys 映射文件） */
+  /** 用户名（来自 /etc/passwd 或 Vibe OS 映射文件） */
   username: string;
   /** 数据目录路径 */
   dataDir: string;

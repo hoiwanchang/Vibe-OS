@@ -4,13 +4,13 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { NAISYS_APP_DIR } from '../../config.js';
+import { VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
 import { executeCommand, executeCommandStrict } from '../../system/command-executor.js';
 import type { BackupJob, BackupExecution, SnapshotInfo } from './backup.types.js';
 
-const JOBS_FILE = `${NAISYS_APP_DIR}/backup/jobs.json`;
-const EXEC_DIR = `${NAISYS_APP_DIR}/backup/executions`;
+const JOBS_FILE = `${VIBEOS_APP_DIR}/backup/jobs.json`;
+const EXEC_DIR = `${VIBEOS_APP_DIR}/backup/executions`;
 
 async function loadJobs(): Promise<BackupJob[]> {
   try {

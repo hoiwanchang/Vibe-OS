@@ -33,7 +33,7 @@ vi.mock('../../../system/tailscale.js', () => ({
   getTailscaleStatus: vi.fn().mockResolvedValue({
     backendState: 'Running',
     self: {
-      hostname: 'naisys-node',
+      hostname: 'vibeos-node',
       ips: ['100.64.0.1'],
       os: 'linux',
       online: true,
@@ -81,9 +81,9 @@ vi.mock('../../../system/filesystem.js', () => ({
 
 vi.mock('../../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   DEFAULT_QUOTA_BYTES: 107374182400n,
   PORT: 3000,
   HOST: '127.0.0.1',
@@ -108,7 +108,7 @@ describe('模块3：Docker 与 Tailscale 服务编排', () => {
         name: 'ollama',
         image: 'ollama/ollama:latest',
         ports: [{ host: 11434, container: 11434 }],
-        volumes: [{ host: '/data/naisys/ollama/models', container: '/root/.ollama' }],
+        volumes: [{ host: '/data/vibeos/ollama/models', container: '/root/.ollama' }],
       });
 
       expect(result.containerId).toBe('abc123def456');
@@ -167,7 +167,7 @@ describe('模块3：Docker 与 Tailscale 服务编排', () => {
 
       expect(report.available).toBe(true);
       expect(report.status.backendState).toBe('Running');
-      expect(report.status.self?.hostname).toBe('naisys-node');
+      expect(report.status.self?.hostname).toBe('vibeos-node');
       expect(report.status.peers).toHaveLength(1);
       expect(report.subnetRoutes).toHaveLength(1);
     });

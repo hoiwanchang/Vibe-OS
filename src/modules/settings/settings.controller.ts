@@ -92,10 +92,10 @@ export async function handleAbout(
 }
 
 /** GET /api/settings/logs/sources — 日志源列表 */
-export async function handleLogSources(
+export function handleLogSources(
   _req: Request,
   res: Response,
-): Promise<void> {
+): void {
   const sources = service.getLogSources();
   res.json({ success: true, data: { sources } });
 }
@@ -169,4 +169,117 @@ export async function handleShutdown(
 ): Promise<void> {
   const result = await service.systemShutdown();
   res.json({ success: true, data: result });
+}
+
+/* ---------- TLS 证书管理 ---------- */
+
+/** GET /api/settings/cert — 证书状态 */
+export async function handleGetCertStatus(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const status = await service.getCertificateStatus();
+  res.json({ success: true, data: status });
+}
+
+/** POST /api/settings/cert/generate — 生成自签证书 */
+export async function handleGenerateCert(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  // req.body 已由 zod schema 校验并填充默认值（commonName/sans/days/keySize）
+  const body = req.body as {
+    commonName: string;
+    sans: string[];
+    days: number;
+    keySize: 2048 | 4096;
+  };
+  const info = await service.generateCertificate({
+    commonName: body.commonName,
+    sans: body.sans,
+    days: body.days,
+    keySize: body.keySize,
+  });
+  res.json({ success: true, data: info });
+}
+
+/** POST /api/settings/cert/import — 导入证书 */
+export async function handleImportCert(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const body = req.body as { certPem?: string; keyPem?: string };
+  if (!body.certPem || !body.keyPem) {
+    throw AppError.badRequest('INVALID_PARAM', 'certPem 与 keyPem 均为必填');
+  }
+  const info = await service.importCertificate({
+    certPem: body.certPem,
+    keyPem: body.keyPem,
+  });
+  res.json({ success: true, data: info });
+}
+
+/** DELETE /api/settings/cert — 删除证书 */
+export async function handleDeleteCert(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const result = await service.deleteCertificate();
+  res.json({ success: true, data: result });
+}
+
+/* ---------- SSH 密钥管理 ---------- */
+
+/** GET /api/settings/ssh/keys — 列举公钥 */
+export async function handleListSshKeys(
+  _req: Request,
+  res: Response,
+): Promise<void> {
+  const result = await service.getSshKeys();
+  res.json({ success: true, data: result });
+}
+
+/** POST /api/settings/ssh/keys — 导入公钥 */
+export async function handleImportSshKey(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const body = req.body as { publicKey?: string };
+  if (!body.publicKey || typeof body.publicKey !== 'string') {
+    throw AppError.badRequest('INVALID_PARAM', 'publicKey 不能为空');
+  }
+  const key = await service.importSshKey(body.publicKey);
+  res.json({ success: true, data: key });
+}
+
+/** DELETE /api/settings/ssh/keys — 删除公钥（按指纹） */
+export async function handleDeleteSshKey(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  const fingerprint = (req.query['fingerprint'] as string) ?? '';
+  if (!fingerprint) {
+    throw AppError.badRequest('INVALID_PARAM', 'fingerprint 不能为空');
+  }
+  const result = await service.deleteSshKey(fingerprint);
+  res.json({ success: true, data: result });
+}
+
+/** POST /api/settings/ssh/keys/generate — 生成密钥对 */
+export async function handleGenerateSshKey(
+  req: Request,
+  res: Response,
+): Promise<void> {
+  // req.body 已由 zod schema 校验并填充默认值（type/bits/comment）
+  const body = req.body as {
+    type: 'ed25519' | 'rsa';
+    bits?: 2048 | 4096;
+    comment?: string;
+  };
+  const key = await service.generateSshKey({
+    type: body.type,
+    bits: body.bits,
+    comment: body.comment,
+  });
+  res.json({ success: true, data: key });
 }

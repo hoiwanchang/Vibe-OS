@@ -3,12 +3,12 @@
  */
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { DATA_ROOT, NAISYS_APP_DIR } from '../../config.js';
+import { DATA_ROOT, VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
 import { executeCommand, executeCommandStrict } from '../../system/command-executor.js';
 import type { ShareInfo, ShareConnection } from './sharing.types.js';
 
-const SHARES_CONFIG = `${NAISYS_APP_DIR}/sharing/shares.json`;
+const SHARES_CONFIG = `${VIBEOS_APP_DIR}/sharing/shares.json`;
 
 /** 读取共享配置 */
 async function loadShares(): Promise<ShareInfo[]> {
@@ -136,7 +136,7 @@ export async function restartShare(name: string): Promise<{ restarted: string; p
   const share = shares.find((s) => s.name === name);
   if (!share) throw AppError.notFound(`共享 [${name}]`);
 
-  const serviceMap: Record<string, string> = { smb: 'smbd', nfs: 'nfs-server', webdav: 'naisys-webdav' };
+  const serviceMap: Record<string, string> = { smb: 'smbd', nfs: 'nfs-server', webdav: 'vibeos-webdav' };
   const svc = serviceMap[share.protocol] ?? 'smbd';
   await executeCommandStrict('systemctl', ['restart', svc]);
   return { restarted: name, pid: 0 };

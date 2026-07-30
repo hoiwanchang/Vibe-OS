@@ -35,7 +35,7 @@ export const useAppsStore = defineStore('apps', () => {
 
   /**
    * 一键部署 AI 应用：
-   * 1. 自动创建 /data/naisys/{appname}/{models,data,logs}
+   * 1. 自动创建 /data/vibeos/{appname}/{models,data,logs}
    * 2. 自动绑定标准卷挂载
    * 3. 创建并启动容器
    */

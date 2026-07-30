@@ -28,7 +28,7 @@ vi.mock('../../../system/metrics.js', () => ({
     },
   ]),
   getSystemInfo: vi.fn().mockReturnValue({
-    hostname: 'naisys-test',
+    hostname: 'vibeos-test',
     platform: 'Linux 6.1.0',
     arch: 'x64',
     cpuModel: 'Test CPU',
@@ -69,7 +69,7 @@ describe('metrics.service', () => {
 
   it('getSystemOverview 应聚合全部指标', async () => {
     const result = await service.getSystemOverview();
-    expect(result.system.hostname).toBe('naisys-test');
+    expect(result.system.hostname).toBe('vibeos-test');
     expect(result.cpu.usagePercent).toBe(20);
     expect(result.memory.usedPercent).toBe(62.5);
     expect(result.storage).toHaveLength(1);

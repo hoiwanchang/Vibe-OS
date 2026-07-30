@@ -23,9 +23,9 @@ vi.mock('../../../system/command-executor.js', () => ({
 
 vi.mock('../../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   USER_SUBDIRS: ['files', 'config', 'cache'],
   APP_SUBDIRS: ['models', 'data', 'logs'],
   DEFAULT_QUOTA_BYTES: 107374182400n,

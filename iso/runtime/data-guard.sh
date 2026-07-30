@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # ============================================================================
 # data-guard.sh — /data 目录完整性检测
-# 由 naisys-data-guard.timer 定时触发
+# 由 vibeos-data-guard.timer 定时触发
 # 检测项：挂载状态、关键子目录存在性、文件系统只读、SMART 健康
 # 异常时写入告警文件并通过 logger 记录（可对接 Web 控制台告警 API）
 # ============================================================================
 set -euo pipefail
 
-DATA_ROOT="${NAISYS_DATA_ROOT:-/data}"
-ALERT_FILE="/data/naisys/alerts/data-guard.log"
-REQUIRED_DIRS=(naisys)
+DATA_ROOT="${VIBEOS_DATA_ROOT:-/data}"
+ALERT_FILE="/data/vibeos/alerts/data-guard.log"
+REQUIRED_DIRS=(vibeos)
 EXIT_CODE=0
 
 log()  { printf '[data-guard] %s\n' "$*"; }
@@ -17,7 +17,7 @@ alert() {
   log "告警: $*"
   mkdir -p "$(dirname "$ALERT_FILE")" 2>/dev/null || true
   echo "$(date -Iseconds) [ALERT] $*" >> "$ALERT_FILE" 2>/dev/null || true
-  logger -t naisys-data-guard "ALERT: $*" 2>/dev/null || true
+  logger -t vibeos-data-guard "ALERT: $*" 2>/dev/null || true
   EXIT_CODE=1
 }
 

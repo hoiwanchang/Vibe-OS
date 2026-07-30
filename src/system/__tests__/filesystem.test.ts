@@ -18,9 +18,9 @@ vi.mock('node:fs/promises', () => ({
 
 vi.mock('../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   COMMAND_TIMEOUT_MS: 5000,
 }));
 
@@ -61,8 +61,8 @@ describe('filesystem', () => {
 
   describe('ensureDir', () => {
     it('应创建目录', async () => {
-      await ensureDir('/data/naisys/test', 0o755);
-      expect(mockMkdir).toHaveBeenCalledWith('/data/naisys/test', { recursive: true, mode: 0o755 });
+      await ensureDir('/data/vibeos/test', 0o755);
+      expect(mockMkdir).toHaveBeenCalledWith('/data/vibeos/test', { recursive: true, mode: 0o755 });
     });
 
     it('应拒绝 /data 外的目录', async () => {

@@ -129,7 +129,7 @@ main() {
 
   # 生成报告
   cat > "$REPORT" <<EOF
-# NAISys 网卡驱动兼容性矩阵报告
+# Vibe OS 网卡驱动兼容性矩阵报告
 
 - **内核版本**: $(detect_kernel_version)
 - **检测时间**: $(date -Iseconds)

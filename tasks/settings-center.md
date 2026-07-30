@@ -1,6 +1,6 @@
-# NAISys 系统设置中心 — 完整开发任务书
+# Vibe OS 系统设置中心 — 完整开发任务书
 
-> 你是 NAISys 项目的开发 Agent。本任务将现有简陋的"系统设置"窗口重构为功能健全的 NAS 系统设置中心。
+> 你是 Vibe OS 项目的开发 Agent。本任务将现有简陋的"系统设置"窗口重构为功能健全的 NAS 系统设置中心。
 > 本任务涵盖**后端 API + 前端视图**，由你一人完成。
 >
 > 开发前必读：
@@ -82,7 +82,7 @@ src/modules/settings/
 
 ### 配置持久化
 
-所有设置持久化到 JSON 文件：`/data/naisys/settings/system.json`
+所有设置持久化到 JSON 文件：`/data/vibeos/settings/system.json`
 
 ```typescript
 interface SystemSettings {
@@ -188,7 +188,7 @@ GET    /api/settings/update
            lastCheck, currentVersion, latestVersion?, updateAvailable }
 
 POST   /api/settings/update/check
-       → 检查更新（离线环境：检查本地 /data/naisys/update/ 目录下的升级包）
+       → 检查更新（离线环境：检查本地 /data/vibeos/update/ 目录下的升级包）
        → 返回 { updateAvailable, latestVersion?, changelog? }
 
 POST   /api/settings/update/install
@@ -197,8 +197,8 @@ POST   /api/settings/update/install
 
 # ===== 日志与诊断 =====
 GET    /api/settings/logs?source=system&lines=200&level=
-       → source ∈ system | auth | service | naisys
-       → 读取 journalctl / /data/naisys/logs/
+       → source ∈ system | auth | service | vibeos
+       → 读取 journalctl / /data/vibeos/logs/
        → 返回 { lines: LogLine[], total: number, source }
 
 GET    /api/settings/logs/sources
@@ -207,7 +207,7 @@ GET    /api/settings/logs/sources
 
 POST   /api/settings/logs/export
        → 打包诊断信息（系统信息 + 日志 + 配置）为 tar.gz
-       → 返回 { path: string, sizeBytes: number }（文件在 /data/naisys/tmp/）
+       → 返回 { path: string, sizeBytes: number }（文件在 /data/vibeos/tmp/）
 
 DELETE /api/settings/logs/clear?source=
        → 清空指定日志
@@ -341,7 +341,7 @@ interface AboutInfo {
 - IP 黑白名单操作通过 nftables 原子化执行，禁止 `iptables -F`（清空所有规则）
 - 日志读取禁止暴露 `/etc/shadow`、`/boot/` 内容
 - 系统更新安装需要 confirmToken 二次确认
-- 所有设置变更写入审计日志 `/data/naisys/logs/settings-audit.log`
+- 所有设置变更写入审计日志 `/data/vibeos/logs/settings-audit.log`
 
 ---
 
@@ -380,7 +380,7 @@ web/src/
 ┌─────────────────────────────────────────────────┐
 │  设备名称                                        │
 │  ┌──────────────────────────────────┐            │
-│  │ naisys-node-01                   │            │
+│  │ vibeos-node-01                   │            │
 │  └──────────────────────────────────┘            │
 │  设备描述                                        │
 │  ┌──────────────────────────────────┐            │
@@ -481,7 +481,7 @@ web/src/
 │           │ 443  │                               │
 │           └──────┘                               │
 │  证书路径  ┌────────────────────────────┐        │
-│            │ /data/naisys/certs/server.crt│       │
+│            │ /data/vibeos/certs/server.crt│       │
 │            └────────────────────────────┘        │
 │  [上传证书] [上传私钥] [自签名生成]               │
 │                                                  │
@@ -607,7 +607,7 @@ web/src/
 ┌─────────────────────────────────────────────────┐
 │  当前版本                                        │
 │  ┌──────────────────────────────────────────┐   │
-│  │  NAISys v0.1.0                           │   │
+│  │  Vibe OS v0.1.0                           │   │
 │  │  构建日期: 2026-07-27                     │   │
 │  │  更新通道: [stable ▾]                     │   │
 │  └──────────────────────────────────────────┘   │
@@ -624,7 +624,7 @@ web/src/
 │                                                  │
 │  [检查更新]                                      │
 │                                                  │
-│  ⚠ 离线环境：将升级包放入 /data/naisys/update/   │
+│  ⚠ 离线环境：将升级包放入 /data/vibeos/update/   │
 │    目录后点击"检查更新"即可识别                   │
 └─────────────────────────────────────────────────┘
 ```
@@ -636,7 +636,7 @@ web/src/
 │  日志源  [system ▾]  级别 [全部 ▾]  行数 [200]  │
 │  [刷新] [导出诊断包] [清空日志]                  │
 │  ┌──────────────────────────────────────────┐   │
-│  │ 2026-07-27 22:10:01 [INFO]  naisys       │   │
+│  │ 2026-07-27 22:10:01 [INFO]  vibeos       │   │
 │  │   服务启动完成，监听 127.0.0.1:3000      │   │
 │  │ 2026-07-27 22:10:03 [WARN]  smartd       │   │
 │  │   /dev/sdc SMART 健康检查未通过           │   │
@@ -649,7 +649,7 @@ web/src/
 └─────────────────────────────────────────────────┘
 ```
 
-- 日志源下拉：system / auth / docker / tailscale / naisys / smartd
+- 日志源下拉：system / auth / docker / tailscale / vibeos / smartd
 - 级别过滤：全部 / info / warn / error
 - 日志行按级别着色：info=默认、warn=琥珀、error=红色
 - 等宽字体，自动滚动到底部
@@ -661,7 +661,7 @@ web/src/
 ```
 ┌─────────────────────────────────────────────────┐
 │                                                  │
-│              ██  NAISys                          │
+│              ██  Vibe OS                          │
 │              PRIVATE AI NAS                      │
 │                                                  │
 │  版本        v0.1.0                              │
@@ -671,7 +671,7 @@ web/src/
 │  内核        Linux 6.12.0-trixie                 │
 │  CPU         AMD Ryzen 7 5800X · 16 核          │
 │  内存        32 GB                               │
-│  主机名      naisys-node-01                      │
+│  主机名      vibeos-node-01                      │
 │  运行时长    14 天 21 小时                       │
 │  数据目录    /data                               │
 │  许可证      MIT                                 │

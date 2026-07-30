@@ -1,0 +1,12 @@
+[Unit]
+Description=Vibe OS OTA Upgrade
+Documentation=https://github.com/Vibe OS/Vibe OS
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/vibeos.env
+ExecStart=/opt/vibeos/ota-upgrade.sh
+# 升级可能耗时，放宽超时
+TimeoutStartSec=600

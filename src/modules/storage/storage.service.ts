@@ -3,13 +3,13 @@
  */
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { DATA_ROOT, NAISYS_APP_DIR } from '../../config.js';
+import { DATA_ROOT, VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
 import { executeCommand, executeCommandStrict } from '../../system/command-executor.js';
 import type { PhysicalDisk, StoragePoolInfo, DiskSmartDetail, ScrubStatus } from './storage.types.js';
 
 const POOLS_DIR = `${DATA_ROOT}/pools`;
-const AUDIT_LOG = `${NAISYS_APP_DIR}/logs/storage-audit.log`;
+const AUDIT_LOG = `${VIBEOS_APP_DIR}/logs/storage-audit.log`;
 
 /** 写入审计日志 */
 async function auditLog(action: string, detail: string): Promise<void> {

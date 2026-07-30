@@ -1,6 +1,6 @@
-# NAISys ISO 构建与安装手册
+# Vibe OS ISO 构建与安装手册
 
-> 版本：v1.0 · 适用：NAISys（Debian 13 Trixie amd64）
+> 版本：v1.0 · 适用：Vibe OS（Debian 13 Trixie amd64）
 > 目标：类消费电子级极简安装体验——零交互、可视化进度、5 分钟内完成。
 
 ---
@@ -20,7 +20,7 @@
 
 ## 1. 概述
 
-NAISys ISO 基于官方 Debian 13 netinst 镜像重打包，核心改造：
+Vibe OS ISO 基于官方 Debian 13 netinst 镜像重打包，核心改造：
 
 | 能力 | 实现方式 |
 |------|----------|
@@ -36,13 +36,13 @@ NAISys ISO 基于官方 Debian 13 netinst 镜像重打包，核心改造：
 ```
 /                       # 系统分区（ext4，限定上限）
 /data/                  # 数据分区（XFS/Btrfs，占用全部剩余空间）
-├── naisys/             # AI 系统应用目录
+├── vibeos/             # AI 系统应用目录
 │   ├── secrets/        # 密钥（0700）
 │   ├── cache/
 │   └── alerts/         # data-guard 告警日志
 └── {uid}/              # 用户数据（运行时创建）
-/opt/naisys/            # 应用运行时（后端 + Web 控制台 + 脚本）
-/etc/naisys.env         # 运行时环境变量（含首启生成的 API token）
+/opt/vibeos/            # 应用运行时（后端 + Web 控制台 + 脚本）
+/etc/vibeos.env         # 运行时环境变量（含首启生成的 API token）
 ```
 
 ---
@@ -77,28 +77,28 @@ GitHub Actions 每周六凌晨 2:00（北京时间）自动构建，也支持手
 
 构建产物自动上传至 **GitHub Releases**，tag 形如 `iso-<version>`，含：
 
-- `naisys-<version>-amd64.iso`（混合 ISO）
-- `naisys-<version>-amd64.iso.sha256`（校验和）
-- `naisys-<version>-amd64-verification-report.md`（验证报告）
-- `naisys-runtime.tar.gz` + `.sha256`（应用运行时，供 OTA）
+- `vibeos-<version>-amd64.iso`（混合 ISO）
+- `vibeos-<version>-amd64.iso.sha256`（校验和）
+- `vibeos-<version>-amd64-verification-report.md`（验证报告）
+- `vibeos-runtime.tar.gz` + `.sha256`（应用运行时，供 OTA）
 
 ### 3.2 本地手动构建
 
 ```bash
 cd iso
 sudo ./build-iso.sh                 # 需 root
-./verify-iso.sh out/naisys-*.iso    # 校验 + 生成报告
+./verify-iso.sh out/vibeos-*.iso    # 校验 + 生成报告
 ```
 
 可调环境变量：
 
 | 变量 | 默认 | 说明 |
 |------|------|------|
-| `NAISYS_HOSTNAME` | `ai-nas` | 默认主机名 |
-| `NAISYS_USERNAME` | `vibeuser` | 默认用户 |
-| `NAISYS_DATA_FSTYPE` | `xfs` | /data 文件系统 |
-| `NAISYS_SYS_SIZE_MB` | `30000` | 系统分区上限（MB） |
-| `NAISYS_INIT_PASSWORD` | 随机 | 初始密码（不设置则随机生成） |
+| `VIBEOS_HOSTNAME` | `ai-nas` | 默认主机名 |
+| `VIBEOS_USERNAME` | `vibeuser` | 默认用户 |
+| `VIBEOS_DATA_FSTYPE` | `xfs` | /data 文件系统 |
+| `VIBEOS_SYS_SIZE_MB` | `30000` | 系统分区上限（MB） |
+| `VIBEOS_INIT_PASSWORD` | 随机 | 初始密码（不设置则随机生成） |
 | `DEBIAN_MIRROR` | 官方 | netinst 下载源（内网可覆盖） |
 
 > ⚠️ 初始密码绝不硬编码。未指定时构建期随机生成，烘焙进安装介质，
@@ -106,7 +106,7 @@ sudo ./build-iso.sh                 # 需 root
 
 ### 3.3 离线部署（关键能力）
 
-NAISys 面向内网/离线环境，**安装与部署全程无需外网**。构建期通过
+Vibe OS 面向内网/离线环境，**安装与部署全程无需外网**。构建期通过
 `iso/build-offline-repo.sh` 联网下载全部软件包及其递归依赖，
 打包成 apt 仓库嵌入 ISO：
 
@@ -126,15 +126,15 @@ NAISys 面向内网/离线环境，**安装与部署全程无需外网**。构�
 
 ### 4.1 准备工作
 
-1. 从 GitHub Releases 下载最新 `naisys-*.iso` 与 `.sha256`。
+1. 从 GitHub Releases 下载最新 `vibeos-*.iso` 与 `.sha256`。
 2. 校验完整性：
    ```bash
-   sha256sum -c naisys-*.iso.sha256
+   sha256sum -c vibeos-*.iso.sha256
    ```
 3. 制作启动盘：
    ```bash
    # Linux / macOS
-   sudo dd if=naisys-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
+   sudo dd if=vibeos-*.iso of=/dev/sdX bs=4M status=progress oflag=sync
    ```
    或使用 Rufus（Windows，选 DD 模式）。
 
@@ -143,14 +143,14 @@ NAISys 面向内网/离线环境，**安装与部署全程无需外网**。构�
 ```
 ┌─────────────────────────────────────────────────┐
 │  1. 从 U 盘启动（UEFI 或 Legacy 均可）            │
-│  2. 启动菜单默认选中 "Install NAISys (automated)" │
+│  2. 启动菜单默认选中 "Install Vibe OS (automated)" │
 │     —— 5 秒倒计时后自动进入，无需按键            │
 │  3. 显示安装进度条（全程无命令行、无选项）        │
 │     · 自动检测第一块硬盘                         │
 │     · 全盘格式化                                 │
 │     · 创建 /data 分区 + 系统分区                 │
 │     · 安装系统与预装软件                         │
-│     · 部署 NAISys 运行时与 systemd 单元          │
+│     · 部署 Vibe OS 运行时与 systemd 单元          │
 │  4. 安装完成自动重启                             │
 │  5. 重启后进入 Web 控制台引导页                  │
 └─────────────────────────────────────────────────┘
@@ -161,11 +161,11 @@ NAISys 面向内网/离线环境，**安装与部署全程无需外网**。构�
 
 ### 4.3 首次访问 Web 控制台
 
-重启后，首启服务 `naisys-firstboot.service` 会：
+重启后，首启服务 `vibeos-firstboot.service` 会：
 
-1. 生成 API token 写入 `/etc/naisys.env`
+1. 生成 API token 写入 `/etc/vibeos.env`
 2. 探测局域网 / Tailscale 地址
-3. 写入 `/data/naisys/firstboot-info.json`
+3. 写入 `/data/vibeos/firstboot-info.json`
 
 访问地址（局域网内任一设备浏览器）：
 
@@ -192,14 +192,14 @@ http://<设备IP>:3000
 
 | 单元 | 类型 | 作用 |
 |------|------|------|
-| `naisys-web-console.service` | service | Web 控制台（后端+前端），崩溃自动重启 |
-| `naisys-firstboot.service` | oneshot | 首次启动引导（仅运行一次） |
-| `naisys-data-guard.service` + `.timer` | timer | 每 30 分钟检测 /data 完整性 |
-| `naisys-ota.service` + `.timer` | timer | 每 6 小时检查 OTA 升级 |
+| `vibeos-web-console.service` | service | Web 控制台（后端+前端），崩溃自动重启 |
+| `vibeos-firstboot.service` | oneshot | 首次启动引导（仅运行一次） |
+| `vibeos-data-guard.service` + `.timer` | timer | 每 30 分钟检测 /data 完整性 |
+| `vibeos-ota.service` + `.timer` | timer | 每 6 小时检查 OTA 升级 |
 | `docker.service.d/override.conf` | drop-in | Docker 崩溃自愈 + 开机自启 |
 | `tailscaled.service.d/override.conf` | drop-in | Tailscale 崩溃自愈 + 开机自启 |
 
-`naisys-web-console.service` 以专用低权限用户 `naisys` 运行（遵守 AGENTS.md
+`vibeos-web-console.service` 以专用低权限用户 `vibeos` 运行（遵守 AGENTS.md
 4.2 红线：禁止 root 运行用户态服务），并启用 `NoNewPrivileges` /
 `ProtectSystem` / `PrivateTmp` 等安全加固。
 
@@ -209,18 +209,18 @@ http://<设备IP>:3000
 
 - `/data` 是否已挂载
 - 是否可写（检测只读文件系统）
-- 关键子目录（`naisys/`）是否存在
+- 关键子目录（`vibeos/`）是否存在
 - 磁盘 SMART 健康状态（若 `smartctl` 可用）
 
-异常时写入 `/data/naisys/alerts/data-guard.log` 并通过 `logger` 记录到系统日志。
+异常时写入 `/data/vibeos/alerts/data-guard.log` 并通过 `logger` 记录到系统日志。
 
 查看状态：
 
 ```bash
-systemctl status naisys-data-guard.timer
-systemctl list-timers | grep naisys
-journalctl -u naisys-data-guard.service -n 50
-cat /data/naisys/alerts/data-guard.log
+systemctl status vibeos-data-guard.timer
+systemctl list-timers | grep vibeos
+journalctl -u vibeos-data-guard.service -n 50
+cat /data/vibeos/alerts/data-guard.log
 ```
 
 ---
@@ -234,8 +234,8 @@ OTA 升级的是**应用运行时**（后端 + Web 控制台），而非整机 I
 
 ```
 查询 GitHub 最新 Release
-   ↓ 比对 /opt/naisys/VERSION
-版本不同 → 下载 naisys-runtime.tar.gz
+   ↓ 比对 /opt/vibeos/VERSION
+版本不同 → 下载 vibeos-runtime.tar.gz
    ↓ 校验 SHA256（无校验文件则拒绝升级）
 通过 → 备份旧版 → 解包新版 → 重启 web-console
 失败 → 自动回滚到备份
@@ -244,8 +244,8 @@ OTA 升级的是**应用运行时**（后端 + Web 控制台），而非整机 I
 手动触发：
 
 ```bash
-sudo systemctl start naisys-ota.service
-journalctl -u naisys-ota.service -f
+sudo systemctl start vibeos-ota.service
+journalctl -u vibeos-ota.service -f
 ```
 
 ---
@@ -269,22 +269,22 @@ journalctl -u naisys-ota.service -f
 
 ### Q4: 安装后无法访问 Web 控制台
 ```bash
-systemctl status naisys-web-console.service   # 服务状态
-journalctl -u naisys-web-console -n 50        # 日志
-cat /data/naisys/firstboot-info.json          # 引导地址
+systemctl status vibeos-web-console.service   # 服务状态
+journalctl -u vibeos-web-console -n 50        # 日志
+cat /data/vibeos/firstboot-info.json          # 引导地址
 ss -tlnp | grep 3000                          # 端口监听
 ```
-- 确认 `/etc/naisys.env` 中 `NAISYS_HOST=0.0.0.0`（默认仅本地需改）。
+- 确认 `/etc/vibeos.env` 中 `VIBEOS_HOST=0.0.0.0`（默认仅本地需改）。
 - 防火墙放行 3000 端口。
 
 ### Q5: 忘记初始密码
 - 构建产物目录的 `.init-password` 文件记录了构建期生成的密码。
-- 若丢失，可挂载系统分区重置 `/etc/naisys.env` 或 chroot 重置用户密码。
+- 若丢失，可挂载系统分区重置 `/etc/vibeos.env` 或 chroot 重置用户密码。
 
 ### Q6: OTA 升级失败
 ```bash
-journalctl -u naisys-ota.service -n 100
-ls /opt/naisys/app.bak.*        # 自动备份，可手动回滚
+journalctl -u vibeos-ota.service -n 100
+ls /opt/vibeos/app.bak.*        # 自动备份，可手动回滚
 ```
 - 离线环境 OTA 会跳过（无法访问 GitHub Releases），属正常。
 
@@ -294,11 +294,11 @@ ls /opt/naisys/app.bak.*        # 自动备份，可手动回滚
 
 每次构建自动生成：
 
-1. **SHA256 校验和**：`naisys-*.iso.sha256`
+1. **SHA256 校验和**：`vibeos-*.iso.sha256`
    ```bash
-   sha256sum -c naisys-*.iso.sha256
+   sha256sum -c vibeos-*.iso.sha256
    ```
-2. **安装验证报告**：`naisys-*-verification-report.md`，含：
+2. **安装验证报告**：`vibeos-*-verification-report.md`，含：
    - 完整性校验结果
    - ISO 结构检查（preseed / vmlinuz / initrd 是否齐全）
    - 网卡固件注入统计

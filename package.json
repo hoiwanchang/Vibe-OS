@@ -1,7 +1,7 @@
 {
-  "name": "naisys-backend",
+  "name": "vibeos-backend",
   "version": "0.1.0",
-  "description": "NAISys — 开源私有 AI NAS 系统后端服务",
+  "description": "Vibe OS — 开源私有 AI NAS 系统后端服务",
   "type": "module",
   "engines": {
     "node": ">=22.0.0"
@@ -15,10 +15,10 @@
     "format": "prettier --write src/",
     "test": "vitest run --coverage",
     "test:watch": "vitest",
-    "web:dev": "pnpm --filter naisys-web dev",
-    "web:build": "pnpm --filter naisys-web build",
-    "web:lint": "pnpm --filter naisys-web lint",
-    "web:test": "pnpm --filter naisys-web test"
+    "web:dev": "pnpm --filter vibeos-web dev",
+    "web:build": "pnpm --filter vibeos-web build",
+    "web:lint": "pnpm --filter vibeos-web lint",
+    "web:test": "pnpm --filter vibeos-web test"
   },
   "dependencies": {
     "express": "^5.1.0",

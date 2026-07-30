@@ -266,7 +266,7 @@ onMounted(() => {
             v-model="form.command"
             type="textarea"
             :rows="3"
-            placeholder="/data/naisys/scripts/clean-logs.sh"
+            placeholder="/data/vibeos/scripts/clean-logs.sh"
             class="nx-mono"
           />
         </el-form-item>

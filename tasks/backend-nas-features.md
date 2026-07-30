@@ -1,6 +1,6 @@
-# NAISys 后端开发任务书 — NAS 核心功能模块
+# Vibe OS 后端开发任务书 — NAS 核心功能模块
 
-> 你是 NAISys 项目的后端开发 Agent。本文件是你的完整任务指令，读取后按顺序开发以下 8 个模块。
+> 你是 Vibe OS 项目的后端开发 Agent。本文件是你的完整任务指令，读取后按顺序开发以下 8 个模块。
 > 开发前必须先阅读根目录 `AGENTS.md`（安全红线、代码规范、迭代循环）和 `src/config.ts`（全局配置）。
 
 ---
@@ -10,7 +10,7 @@
 - 运行时：Node.js ≥ 22, TypeScript strict, ESM (`"type": "module"`)
 - 框架：Express 5 + Zod 校验
 - 测试：Vitest + Supertest
-- 数据根：`NAISYS_DATA_ROOT`（默认 `/data`），见 `src/config.ts`
+- 数据根：`VIBEOS_DATA_ROOT`（默认 `/data`），见 `src/config.ts`
 - 已有模块参考：`src/modules/container/`（最完整的模块，含 deploy/list/restart/stop/remove/logs）
 - 公共工具：`src/common/` 下的 `async-handler.ts`、`validate.ts`、`app-error.ts`、`error-handler.ts`、`auth-middleware.ts`
 - 路由注册：在 `src/app.ts` 中 `app.use('/api', moduleRoutes)` 模式
@@ -94,7 +94,7 @@ DELETE /api/files/trash/empty?uid={uid}
 ### 安全约束
 
 - 所有 path 参数必须 normalize 后校验前缀为 `/data/{uid}/`，拒绝 `..` 穿越
-- 禁止访问 `/data/naisys/`（系统目录）和其他用户目录
+- 禁止访问 `/data/vibeos/`（系统目录）和其他用户目录
 - 上传文件大小限制：单文件 10GB（流式写入，不全量加载内存）
 - 回收站路径：`/data/{uid}/.trash/`，保留原始相对路径结构
 
@@ -188,7 +188,7 @@ interface StoragePoolInfo {
 
 ### 安全约束
 
-- 创建/销毁池的操作必须记录审计日志到 `/data/naisys/logs/storage-audit.log`
+- 创建/销毁池的操作必须记录审计日志到 `/data/vibeos/logs/storage-audit.log`
 - 销毁操作需要请求体携带 `confirmToken`（由 GET 接口预生成）
 - 禁止对系统盘（挂载 `/` 的设备）执行任何写操作
 
@@ -346,11 +346,11 @@ interface SnapshotInfo {
 
 ### 实现说明
 
-- 备份任务配置持久化到 `/data/naisys/backup/jobs.json`
-- 执行日志写入 `/data/naisys/backup/logs/{jobId}/`
+- 备份任务配置持久化到 `/data/vibeos/backup/jobs.json`
+- 执行日志写入 `/data/vibeos/backup/logs/{jobId}/`
 - rsync 调用：`execFile('rsync', ['-avz', '--delete', '--progress', src, dest])`
 - 快照：检测文件系统类型，btrfs 用 `btrfs subvolume snapshot`，zfs 用 `zfs snapshot`
-- 定时调度：使用 node-cron 或系统 crontab（写入 `/data/naisys/backup/crontab`）
+- 定时调度：使用 node-cron 或系统 crontab（写入 `/data/vibeos/backup/crontab`）
 
 ---
 
@@ -423,7 +423,7 @@ interface DownloadTask {
 
 - 通过 aria2 JSON-RPC（HTTP `http://127.0.0.1:6800/jsonrpc`）通信，不直接管理进程
 - 默认下载目录：`/data/{uid}/files/downloads/`
-- aria2 配置文件：`/data/naisys/aria2/aria2.conf`
+- aria2 配置文件：`/data/vibeos/aria2/aria2.conf`
 - 若 aria2 未运行，API 返回 `{ success: false, error: { code: 'ARIA2_NOT_RUNNING', ... } }`
 - 磁力链接/BT 种子：aria2 原生支持，无需额外处理
 
@@ -474,7 +474,7 @@ GET    /api/network/ports
        → 返回 { ports: ListeningPort[] }
 
 GET    /api/network/wol
-       → WoL 可用设备列表（从 /data/naisys/network/wol-devices.json）
+       → WoL 可用设备列表（从 /data/vibeos/network/wol-devices.json）
 
 POST   /api/network/wol
        → body: { mac: string, broadcast?: string }
@@ -579,7 +579,7 @@ interface NotificationChannel {
 
 ### 实现说明
 
-- 通知持久化：SQLite 数据库 `/data/naisys/notification/notifications.db`（使用 better-sqlite3）
+- 通知持久化：SQLite 数据库 `/data/vibeos/notification/notifications.db`（使用 better-sqlite3）
 - 各模块通过 `NotificationService.emit(severity, category, title, detail)` 发布告警
 - 前端通过 `GET /api/notifications/unread-count` 轮询（复用现有 5s 轮询）
 - Webhook 推送：POST JSON 到配置的 URL，失败重试 3 次
@@ -649,8 +649,8 @@ interface JobExecution {
 
 ### 实现说明
 
-- 任务配置持久化：`/data/naisys/scheduler/jobs.json`
-- 执行日志：`/data/naisys/scheduler/logs/{jobId}/`
+- 任务配置持久化：`/data/vibeos/scheduler/jobs.json`
+- 执行日志：`/data/vibeos/scheduler/logs/{jobId}/`
 - 调度引擎：node-cron（进程内），不依赖系统 crontab
 - 命令执行：`execFile('/bin/bash', ['-c', command])`，超时 300s
 - 禁止执行 `rm -rf /`、`mkfs`、`dd` 等破坏性命令（正则黑名单校验）

@@ -2,12 +2,12 @@
  * 模块：网络配置 — 业务逻辑层
  */
 import * as fs from 'node:fs/promises';
-import { NAISYS_APP_DIR } from '../../config.js';
+import { VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
 import { executeCommand, executeCommandStrict } from '../../system/command-executor.js';
 import type { NetInterface, FirewallRule, ListeningPort, DnsConfig } from './network.types.js';
 
-const WOL_DEVICES_FILE = `${NAISYS_APP_DIR}/network/wol-devices.json`;
+const WOL_DEVICES_FILE = `${VIBEOS_APP_DIR}/network/wol-devices.json`;
 
 /** 列出网络接口 */
 export async function listInterfaces(): Promise<NetInterface[]> {

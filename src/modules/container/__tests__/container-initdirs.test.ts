@@ -6,9 +6,9 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 
 vi.mock('../../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   DEFAULT_QUOTA_BYTES: 107374182400n,
   USER_SUBDIRS: ['files', 'config', 'cache'],
   APP_SUBDIRS: ['models', 'data', 'logs'],
@@ -54,12 +54,12 @@ describe('container.service.initAppDirs', () => {
 
   it('应创建应用根目录与 models/data/logs 子目录', async () => {
     const result = await service.initAppDirs('ollama');
-    expect(result.appDir).toBe('/data/naisys/ollama');
+    expect(result.appDir).toBe('/data/vibeos/ollama');
     expect(result.createdDirs).toEqual([
-      '/data/naisys/ollama',
-      '/data/naisys/ollama/models',
-      '/data/naisys/ollama/data',
-      '/data/naisys/ollama/logs',
+      '/data/vibeos/ollama',
+      '/data/vibeos/ollama/models',
+      '/data/vibeos/ollama/data',
+      '/data/vibeos/ollama/logs',
     ]);
   });
 
@@ -92,6 +92,6 @@ describe('container.controller.handleInitAppDirs', () => {
 
     await controller.handleInitAppDirs(req, res);
     expect(status).toHaveBeenCalledWith(201);
-    expect(json.mock.calls[0]?.[0].data.appDir).toBe('/data/naisys/dify');
+    expect(json.mock.calls[0]?.[0].data.appDir).toBe('/data/vibeos/dify');
   });
 });

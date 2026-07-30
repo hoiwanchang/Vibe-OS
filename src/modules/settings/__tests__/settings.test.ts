@@ -135,6 +135,18 @@ describe('Settings API', () => {
       const res = await request(app).get('/api/settings/logs?source=bogus');
       expect(res.status).toBe(404);
     });
+
+    it('不带参数使用默认 source/lines', async () => {
+      const res = await request(app).get('/api/settings/logs');
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveProperty('source', 'system');
+    });
+
+    it('vibeos 源读取本地日志文件', async () => {
+      const res = await request(app).get('/api/settings/logs?source=vibeos&lines=50');
+      expect(res.status).toBe(200);
+      expect(res.body.data).toHaveProperty('lines');
+    });
   });
 
   describe('POST /api/settings/update/check', () => {

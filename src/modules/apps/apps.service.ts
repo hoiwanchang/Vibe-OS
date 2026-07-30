@@ -20,6 +20,17 @@ import type {
 /* ---------- 注册表 ---------- */
 
 /**
+ * 将 unknown 值安全转为字符串（null/undefined 返回 fallback）
+ * 规避 @typescript-eslint/no-base-to-string，避免对象被序列化为 [object Object]
+ */
+function toStr(value: unknown, fallback = ''): string {
+  if (value === null || value === undefined) return fallback;
+  if (typeof value === 'string') return value;
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  return fallback;
+}
+
+/**
  * 获取注册表全部应用
  */
 export async function getRegistry(): Promise<RegistryApp[]> {
@@ -89,7 +100,7 @@ export async function deployFromRegistry(
     throw AppError.conflict(`应用 [${req.appId}] 已安装，请先卸载再重新部署`);
   }
 
-  const containerName = `naisys-${req.appId}`;
+  const containerName = `vibeos-${req.appId}`;
   const ports = req.ports ?? registryApp.ports;
   const env = { ...registryApp.env, ...req.env };
   const volumes = resolveVolumes(req.volumes ?? registryApp.volumes, req.appId);
@@ -141,7 +152,7 @@ export async function deployCustom(req: DeployCustomRequest): Promise<DeployResp
     throw AppError.badRequest('INVALID_NAME', '应用名仅允许字母、数字、下划线、点和连字符');
   }
 
-  const containerName = `naisys-${req.name}`;
+  const containerName = `vibeos-${req.name}`;
 
   // 检查是否已存在
   const installed = await dao.loadInstalled();
@@ -319,7 +330,7 @@ function buildAnalyzePrompt(
     '  "name": "应用名（kebab-case）",',
     '  "image": "Docker 镜像（含 tag，优先使用官方镜像）",',
     '  "ports": [{"host": 8080, "container": 80}],',
-    '  "volumes": [{"host": "/data/naisys/apps/{name}/data", "container": "/data"}],',
+    '  "volumes": [{"host": "/data/vibeos/apps/{name}/data", "container": "/data"}],',
     '  "env": {"KEY": "value"},',
     '  "healthcheck": "http://localhost:PORT/health 或 null",',
     '  "analysis": "简要分析说明（中文）",',
@@ -327,7 +338,7 @@ function buildAnalyzePrompt(
     '}',
     '',
     '规则：',
-    '- 数据卷必须映射到 /data/naisys/apps/{name}/ 下',
+    '- 数据卷必须映射到 /data/vibeos/apps/{name}/ 下',
     '- 端口选择常用默认端口，避开 3000/5173/8080',
     '- 环境变量给出合理默认值',
     '- 如果仓库没有 Dockerfile，推断最合适的官方镜像',
@@ -393,8 +404,8 @@ function parseLlmResponse(
   try {
     const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
     return {
-      name: String(parsed['name'] ?? 'custom-app'),
-      image: String(parsed['image'] ?? ''),
+      name: toStr(parsed['name'], 'custom-app'),
+      image: toStr(parsed['image']),
       ports: Array.isArray(parsed['ports'])
         ? (parsed['ports'] as Array<{ host: number; container: number }>)
         : [],
@@ -402,8 +413,8 @@ function parseLlmResponse(
         ? (parsed['volumes'] as Array<{ host: string; container: string; readonly?: boolean }>)
         : [],
       env: (parsed['env'] as Record<string, string>) ?? {},
-      healthcheck: parsed['healthcheck'] ? String(parsed['healthcheck']) : undefined,
-      analysis: String(parsed['analysis'] ?? ''),
+      healthcheck: parsed['healthcheck'] ? toStr(parsed['healthcheck']) : undefined,
+      analysis: toStr(parsed['analysis']),
       confidence: Number(parsed['confidence'] ?? 0.5),
       dockerfile: inspect.dockerfile ?? undefined,
       composeFile: inspect.composeFile ?? undefined,

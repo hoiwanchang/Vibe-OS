@@ -55,9 +55,9 @@ vi.mock('mime-types', () => ({
 }));
 vi.mock('../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   USER_SUBDIRS: ['files', 'config', 'cache'],
   DEFAULT_QUOTA_BYTES: 10737418240,
   COMMAND_TIMEOUT_MS: 5000,
@@ -460,7 +460,7 @@ vi.mock('../modules/container/container.dao.js', () => ({
   getTailscalePrefs: vi.fn().mockResolvedValue({ acceptRoutes: false, exitNode: '', exitNodeAllowLanAccess: false, advertiseExitNode: false }),
   loadAccounts: vi.fn().mockResolvedValue([]),
   saveAccounts: vi.fn().mockResolvedValue(undefined),
-  createAppDirs: vi.fn().mockResolvedValue({ appDir: '/data/naisys/test', createdDirs: [] }),
+  createAppDirs: vi.fn().mockResolvedValue({ appDir: '/data/vibeos/test', createdDirs: [] }),
 }));
 
 describe('container.service 分支覆盖', () => {

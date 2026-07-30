@@ -4,7 +4,7 @@
  */
 import {
   DATA_ROOT,
-  NAISYS_APP_DIR,
+  VIBEOS_APP_DIR,
   SECRETS_DIR,
   SYSTEM_CACHE_DIR,
   DEFAULT_QUOTA_BYTES,
@@ -33,7 +33,7 @@ export async function initializeDataDirs(
   // 1. 创建核心目录
   const coreDirs: Array<{ path: string; mode: number }> = [
     { path: DATA_ROOT, mode: 0o755 },
-    { path: NAISYS_APP_DIR, mode: 0o755 },
+    { path: VIBEOS_APP_DIR, mode: 0o755 },
     { path: SECRETS_DIR, mode: 0o700 },
     { path: SYSTEM_CACHE_DIR, mode: 0o755 },
   ];
@@ -53,7 +53,7 @@ export async function initializeDataDirs(
   // 3. 安全警告：不应以 root 运行
   if (permissionCheck.isRoot) {
     throw AppError.forbidden(
-      'NAISys 服务禁止以 root 身份运行，请使用 naisys 用户',
+      'Vibe OS 服务禁止以 root 身份运行，请使用 vibeos 用户',
     );
   }
 

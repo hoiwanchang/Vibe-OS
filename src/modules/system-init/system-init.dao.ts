@@ -6,7 +6,7 @@ import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import {
   DATA_ROOT,
-  NAISYS_APP_DIR,
+  VIBEOS_APP_DIR,
   SECRETS_DIR,
   SYSTEM_CACHE_DIR,
   USER_SUBDIRS,
@@ -22,7 +22,7 @@ import type { PermissionCheckResult, UserMapping } from './system-init.types.js'
 export function getRequiredDirs(): string[] {
   const dirs: string[] = [
     DATA_ROOT,
-    NAISYS_APP_DIR,
+    VIBEOS_APP_DIR,
     SECRETS_DIR,
     SYSTEM_CACHE_DIR,
   ];

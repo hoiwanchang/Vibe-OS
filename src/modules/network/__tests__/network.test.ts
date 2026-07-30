@@ -17,7 +17,7 @@ vi.mock('node:fs/promises', () => ({
 }));
 vi.mock('../../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
+  VIBEOS_APP_DIR: '/data/vibeos',
   COMMAND_TIMEOUT_MS: 5000,
 }));
 

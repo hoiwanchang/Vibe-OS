@@ -130,7 +130,7 @@ export async function handleAclPolicy(
 
 /**
  * POST /api/container/init-dirs
- * 初始化 AI 应用数据目录（/data/naisys/{appname}/）
+ * 初始化 AI 应用数据目录（/data/vibeos/{appname}/）
  */
 export async function handleInitAppDirs(
   req: Request,

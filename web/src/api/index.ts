@@ -30,6 +30,11 @@ import type {
   DiskHealthResponse,
   DiskSmartDetail,
   DownloadTask,
+  CertInfo,
+  CertStatus,
+  SshKeysResult,
+  SshPublicKey,
+  GeneratedSshKey,
   DnsConfig,
   FileCopyResult,
   FileDeleteResult,
@@ -117,7 +122,7 @@ export const containerApi = {
       data: payload,
     }),
 
-  /** 初始化应用数据目录 /data/naisys/{appname}/ */
+  /** 初始化应用数据目录 /data/vibeos/{appname}/ */
   initDirs: (appname: string) =>
     request<AppDirsInitResponse>({
       url: '/container/init-dirs',
@@ -909,6 +914,80 @@ export const settingsApi = {
       url: '/settings/notification/test',
       method: 'post',
       data: { channelType },
+    }),
+
+  /* ---------- TLS 证书管理 ---------- */
+
+  /** 证书状态 */
+  certStatus: () =>
+    request<CertStatus>(
+      { url: '/settings/cert' },
+      () => demo.demoCertStatus(),
+    ),
+
+  /** 生成自签证书 */
+  generateCert: (payload: {
+    commonName: string;
+    sans: string[];
+    days: number;
+    keySize: 2048 | 4096;
+  }) =>
+    request<CertInfo>({
+      url: '/settings/cert/generate',
+      method: 'post',
+      data: payload,
+    }),
+
+  /** 导入证书 */
+  importCert: (payload: { certPem: string; keyPem: string }) =>
+    request<CertInfo>({
+      url: '/settings/cert/import',
+      method: 'post',
+      data: payload,
+    }),
+
+  /** 删除证书 */
+  deleteCert: () =>
+    request<{ removed: boolean }>({
+      url: '/settings/cert',
+      method: 'delete',
+    }),
+
+  /* ---------- SSH 密钥管理 ---------- */
+
+  /** 列举 SSH 公钥 */
+  listSshKeys: () =>
+    request<SshKeysResult>(
+      { url: '/settings/ssh/keys' },
+      () => demo.demoSshKeys(),
+    ),
+
+  /** 导入 SSH 公钥 */
+  importSshKey: (payload: { publicKey: string }) =>
+    request<SshPublicKey>({
+      url: '/settings/ssh/keys',
+      method: 'post',
+      data: payload,
+    }),
+
+  /** 删除 SSH 公钥（按指纹） */
+  deleteSshKey: (fingerprint: string) =>
+    request<{ removed: boolean }>({
+      url: '/settings/ssh/keys',
+      method: 'delete',
+      params: { fingerprint },
+    }),
+
+  /** 生成 SSH 密钥对 */
+  generateSshKey: (payload: {
+    type: 'ed25519' | 'rsa';
+    bits?: 2048 | 4096;
+    comment?: string;
+  }) =>
+    request<GeneratedSshKey>({
+      url: '/settings/ssh/keys/generate',
+      method: 'post',
+      data: payload,
     }),
 
   /** 重启系统 */

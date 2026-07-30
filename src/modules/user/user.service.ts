@@ -1,7 +1,7 @@
 /**
  * 模块5：用户与权限管理 — 业务逻辑层
  * 用户创建仅建立 /data/{uid}/ 数据空间（不修改系统账户），
- * 用户名映射持久化于 /data/naisys/users.json
+ * 用户名映射持久化于 /data/vibeos/users.json
  */
 import * as path from 'node:path';
 import { DATA_ROOT, DEFAULT_QUOTA_BYTES } from '../../config.js';
@@ -30,14 +30,14 @@ const USERNAME_PATTERN = /^[a-z_][a-z0-9_-]{0,31}$/;
 export async function listManagedUsers(): Promise<UserListResponse> {
   const uids = await dao.listManagedUids();
   const passwdUsers = await dao.getPasswdUsers();
-  const naisysUsers = await dao.getNaisysUserMappings();
+  const vibeosUsers = await dao.getNaisysUserMappings();
 
   const users: ManagedUser[] = [];
   for (const uid of uids) {
     const dataDir = path.join(DATA_ROOT, String(uid));
     const dirExists = await pathExists(dataDir);
     const username =
-      passwdUsers.get(uid) ?? naisysUsers.get(uid) ?? String(uid);
+      passwdUsers.get(uid) ?? vibeosUsers.get(uid) ?? String(uid);
     const usedBytes = await dao.getUserUsage(uid);
 
     // 配额：优先读取文件系统配额，失败时回退默认值

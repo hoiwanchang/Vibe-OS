@@ -1,11 +1,11 @@
 [Unit]
-Description=NAISys /data Integrity Guard Timer
+Description=Vibe OS /data Integrity Guard Timer
 
 [Timer]
 OnBootSec=2min
 OnUnitActiveSec=30min
 Persistent=true
-Unit=naisys-data-guard.service
+Unit=vibeos-data-guard.service
 
 [Install]
 WantedBy=timers.target

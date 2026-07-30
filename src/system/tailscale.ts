@@ -140,10 +140,10 @@ export async function applyAclPolicy(aclPolicy: string): Promise<void> {
 
   // 记录 ACL 策略到本地（供审计）
   const { ensureDir } = await import('./filesystem.js');
-  const { NAISYS_APP_DIR } = await import('../config.js');
+  const { VIBEOS_APP_DIR } = await import('../config.js');
   const fs = await import('node:fs/promises');
 
-  const aclDir = `${NAISYS_APP_DIR}/tailscale`;
+  const aclDir = `${VIBEOS_APP_DIR}/tailscale`;
   await ensureDir(aclDir);
   await fs.writeFile(`${aclDir}/acl-policy.json`, aclPolicy, 'utf-8');
 }

@@ -10,7 +10,7 @@
       "image": "jellyfin/jellyfin:latest",
       "ports": [{ "host": 8096, "container": 8096 }],
       "volumes": [
-        { "host": "/data/naisys/apps/jellyfin/config", "container": "/config" },
+        { "host": "/data/vibeos/apps/jellyfin/config", "container": "/config" },
         { "host": "/data/{uid}/files/media", "container": "/media", "readonly": true }
       ],
       "env": { "TZ": "Asia/Shanghai" },
@@ -27,16 +27,16 @@
       "image": "nextcloud:latest",
       "ports": [{ "host": 8888, "container": 80 }],
       "volumes": [
-        { "host": "/data/naisys/apps/nextcloud/data", "container": "/var/www/html" }
+        { "host": "/data/vibeos/apps/nextcloud/data", "container": "/var/www/html" }
       ],
       "env": {
         "TZ": "Asia/Shanghai",
         "NEXTCLOUD_ADMIN_USER": "admin",
-        "NEXTCLOUD_ADMIN_PASSWORD": "naisys-change-me"
+        "NEXTCLOUD_ADMIN_PASSWORD": "vibeos-change-me"
       },
       "healthcheck": "http://localhost:8888/status.php",
       "homepage": "https://nextcloud.com",
-      "postInstallNote": "访问 http://NAS-IP:8888，默认管理员 admin / naisys-change-me，请立即修改密码"
+      "postInstallNote": "访问 http://NAS-IP:8888，默认管理员 admin / vibeos-change-me，请立即修改密码"
     },
     {
       "id": "vaultwarden",
@@ -47,7 +47,7 @@
       "image": "vaultwarden/server:latest",
       "ports": [{ "host": 8222, "container": 80 }],
       "volumes": [
-        { "host": "/data/naisys/apps/vaultwarden/data", "container": "/data" }
+        { "host": "/data/vibeos/apps/vaultwarden/data", "container": "/data" }
       ],
       "env": {
         "TZ": "Asia/Shanghai",
@@ -66,7 +66,7 @@
       "image": "ghcr.io/gethomepage/homepage:latest",
       "ports": [{ "host": 3333, "container": 3000 }],
       "volumes": [
-        { "host": "/data/naisys/apps/homepage/config", "container": "/app/config" },
+        { "host": "/data/vibeos/apps/homepage/config", "container": "/app/config" },
         { "host": "/var/run/docker.sock", "container": "/var/run/docker.sock", "readonly": true }
       ],
       "env": { "TZ": "Asia/Shanghai" },
@@ -85,7 +85,7 @@
         { "host": 9000, "container": 9000 }
       ],
       "volumes": [
-        { "host": "/data/naisys/apps/portainer/data", "container": "/data" },
+        { "host": "/data/vibeos/apps/portainer/data", "container": "/data" },
         { "host": "/var/run/docker.sock", "container": "/var/run/docker.sock", "readonly": true }
       ],
       "env": { "TZ": "Asia/Shanghai" },
@@ -101,7 +101,7 @@
       "image": "louislam/uptime-kuma:latest",
       "ports": [{ "host": 3001, "container": 3001 }],
       "volumes": [
-        { "host": "/data/naisys/apps/uptime-kuma/data", "container": "/app/data" }
+        { "host": "/data/vibeos/apps/uptime-kuma/data", "container": "/app/data" }
       ],
       "env": { "TZ": "Asia/Shanghai" },
       "healthcheck": "http://localhost:3001",
@@ -116,14 +116,14 @@
       "image": "ghcr.io/immich-app/immich-server:release",
       "ports": [{ "host": 2283, "container": 2283 }],
       "volumes": [
-        { "host": "/data/naisys/apps/immich/upload", "container": "/usr/src/app/upload" },
+        { "host": "/data/vibeos/apps/immich/upload", "container": "/usr/src/app/upload" },
         { "host": "/data/{uid}/files/photos", "container": "/import", "readonly": true }
       ],
       "env": {
         "TZ": "Asia/Shanghai",
         "DB_HOSTNAME": "immich-postgres",
         "DB_USERNAME": "postgres",
-        "DB_PASSWORD": "naisys-immich",
+        "DB_PASSWORD": "vibeos-immich",
         "DB_DATABASE_NAME": "immich"
       },
       "dependsOn": ["immich-postgres"],
@@ -143,7 +143,7 @@
         { "host": 6881, "container": 6881, "protocol": "udp" }
       ],
       "volumes": [
-        { "host": "/data/naisys/apps/qbittorrent/config", "container": "/config" },
+        { "host": "/data/vibeos/apps/qbittorrent/config", "container": "/config" },
         { "host": "/data/{uid}/files/downloads", "container": "/downloads" }
       ],
       "env": {
@@ -164,7 +164,7 @@
       "image": "xhofe/alist:latest",
       "ports": [{ "host": 5244, "container": 5244 }],
       "volumes": [
-        { "host": "/data/naisys/apps/alist/data", "container": "/opt/alist/data" }
+        { "host": "/data/vibeos/apps/alist/data", "container": "/opt/alist/data" }
       ],
       "env": { "TZ": "Asia/Shanghai", "PUID": "1000", "PGID": "1000" },
       "healthcheck": "http://localhost:5244",
@@ -182,7 +182,7 @@
         { "host": 2222, "container": 22 }
       ],
       "volumes": [
-        { "host": "/data/naisys/apps/gitea/data", "container": "/data" }
+        { "host": "/data/vibeos/apps/gitea/data", "container": "/data" }
       ],
       "env": {
         "TZ": "Asia/Shanghai",
@@ -205,11 +205,11 @@
         { "host": 9101, "container": 9001 }
       ],
       "volumes": [
-        { "host": "/data/naisys/apps/minio/data", "container": "/data" }
+        { "host": "/data/vibeos/apps/minio/data", "container": "/data" }
       ],
       "env": {
-        "MINIO_ROOT_USER": "naisys-admin",
-        "MINIO_ROOT_PASSWORD": "naisys-minio-2027"
+        "MINIO_ROOT_USER": "vibeos-admin",
+        "MINIO_ROOT_PASSWORD": "vibeos-minio-2027"
       },
       "healthcheck": "http://localhost:9100/minio/health/live",
       "homepage": "https://min.io",
@@ -246,8 +246,8 @@
         { "host": 4443, "container": 443 }
       ],
       "volumes": [
-        { "host": "/data/naisys/apps/npm/data", "container": "/data" },
-        { "host": "/data/naisys/apps/npm/letsencrypt", "container": "/etc/letsencrypt" }
+        { "host": "/data/vibeos/apps/npm/data", "container": "/data" },
+        { "host": "/data/vibeos/apps/npm/letsencrypt", "container": "/etc/letsencrypt" }
       ],
       "env": { "TZ": "Asia/Shanghai" },
       "healthcheck": "http://localhost:8181",
@@ -263,8 +263,8 @@
       "image": "freshrss/freshrss:latest",
       "ports": [{ "host": 8444, "container": 80 }],
       "volumes": [
-        { "host": "/data/naisys/apps/freshrss/data", "container": "/var/www/FreshRSS/data" },
-        { "host": "/data/naisys/apps/freshrss/extensions", "container": "/var/www/FreshRSS/extensions" }
+        { "host": "/data/vibeos/apps/freshrss/data", "container": "/var/www/FreshRSS/data" },
+        { "host": "/data/vibeos/apps/freshrss/extensions", "container": "/var/www/FreshRSS/extensions" }
       ],
       "env": { "TZ": "Asia/Shanghai", "CRON_MIN": "*/15" },
       "healthcheck": "http://localhost:8444",
@@ -279,8 +279,8 @@
       "image": "ghcr.io/paperless-ngx/paperless-ngx:latest",
       "ports": [{ "host": 8777, "container": 8000 }],
       "volumes": [
-        { "host": "/data/naisys/apps/paperless/data", "container": "/usr/src/paperless/data" },
-        { "host": "/data/naisys/apps/paperless/media", "container": "/usr/src/paperless/media" },
+        { "host": "/data/vibeos/apps/paperless/data", "container": "/usr/src/paperless/data" },
+        { "host": "/data/vibeos/apps/paperless/media", "container": "/usr/src/paperless/media" },
         { "host": "/data/{uid}/files/documents", "container": "/usr/src/paperless/consume" }
       ],
       "env": {
@@ -304,7 +304,7 @@
         { "host": 22000, "container": 22000, "protocol": "udp" }
       ],
       "volumes": [
-        { "host": "/data/naisys/apps/syncthing/config", "container": "/var/syncthing" }
+        { "host": "/data/vibeos/apps/syncthing/config", "container": "/var/syncthing" }
       ],
       "env": { "TZ": "Asia/Shanghai", "PUID": "1000", "PGID": "1000" },
       "healthcheck": "http://localhost:8384",
@@ -319,12 +319,12 @@
       "image": "grafana/grafana:latest",
       "ports": [{ "host": 3400, "container": 3000 }],
       "volumes": [
-        { "host": "/data/naisys/apps/grafana/data", "container": "/var/lib/grafana" }
+        { "host": "/data/vibeos/apps/grafana/data", "container": "/var/lib/grafana" }
       ],
       "env": {
         "TZ": "Asia/Shanghai",
         "GF_SECURITY_ADMIN_USER": "admin",
-        "GF_SECURITY_ADMIN_PASSWORD": "naisys-grafana"
+        "GF_SECURITY_ADMIN_PASSWORD": "vibeos-grafana"
       },
       "healthcheck": "http://localhost:3400/api/health",
       "homepage": "https://grafana.com"
@@ -338,12 +338,12 @@
       "image": "ollama/ollama:latest",
       "ports": [{ "host": 11434, "container": 11434 }],
       "volumes": [
-        { "host": "/data/naisys/apps/ollama/models", "container": "/root/.ollama" }
+        { "host": "/data/vibeos/apps/ollama/models", "container": "/root/.ollama" }
       ],
       "env": { "TZ": "Asia/Shanghai" },
       "healthcheck": "http://localhost:11434/api/tags",
       "homepage": "https://ollama.com",
-      "postInstallNote": "部署后执行 docker exec naisys-ollama ollama pull qwen2.5:7b 下载模型"
+      "postInstallNote": "部署后执行 docker exec vibeos-ollama ollama pull qwen2.5:7b 下载模型"
     }
   ]
 }

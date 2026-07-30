@@ -98,9 +98,9 @@ vi.mock('mime-types', () => ({
 }));
 vi.mock('../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   USER_SUBDIRS: ['files', 'config', 'cache'],
   DEFAULT_QUOTA_BYTES: 10737418240,
   COMMAND_TIMEOUT_MS: 5000,

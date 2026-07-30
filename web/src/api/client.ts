@@ -31,7 +31,7 @@ const instance = axios.create({
 
 /** 请求拦截器：附加 Bearer Token（如已配置） */
 instance.interceptors.request.use((config) => {
-  const token = localStorage.getItem('naisys.token');
+  const token = localStorage.getItem('vibeos.token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }

@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # ============================================================================
 # build-offline-repo.sh — 构建离线 apt 仓库
-# 在构建环境（联网）下载 NAISys 运行时所需的全部 .deb 及其递归依赖，
+# 在构建环境（联网）下载 Vibe OS 运行时所需的全部 .deb 及其递归依赖，
 # 用 dpkg-scanpackages 生成 Packages 索引，打包进 ISO。
 # 安装期（可能完全离线）即可从本地 file:// 仓库安装全部软件。
 #
@@ -126,11 +126,11 @@ gen_index() {
 # 4. 生成安装期使用的离线源配置
 # ----------------------------------------------------------------------------
 gen_source_config() {
-  log "生成离线源配置 naisys-offline.list"
+  log "生成离线源配置 vibeos-offline.list"
   # 安装期此文件被复制到 /etc/apt/sources.list.d/，
   # 路径指向安装介质挂载点下的离线仓库（见 install-runtime.sh）
-  cat > "${OUT_REPO}/naisys-offline.list" <<'EOF'
-# NAISys 离线软件仓库（安装期由 install-runtime.sh 自动配置）
+  cat > "${OUT_REPO}/vibeos-offline.list" <<'EOF'
+# Vibe OS 离线软件仓库（安装期由 install-runtime.sh 自动配置）
 # 占位符 __REPO_PATH__ 由安装脚本替换为实际挂载路径
 deb [trusted=yes] file:__REPO_PATH__ ./
 EOF

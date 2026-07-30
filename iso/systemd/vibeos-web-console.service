@@ -1,7 +1,7 @@
 [Unit]
-Description=NAISys Web Console (backend + frontend)
-Documentation=https://github.com/NAISys/NAISys
-After=network-online.target docker.service naisys-firstboot.service
+Description=Vibe OS Web Console (backend + frontend)
+Documentation=https://github.com/Vibe OS/Vibe OS
+After=network-online.target docker.service vibeos-firstboot.service
 Wants=network-online.target
 # [安全加固] 首启时 firstboot 生成 token 后 restart 本服务（见 firstboot.sh）；
 # After= 确保首启事务中 firstboot 先完成，后续启动 firstboot 条件跳过不影响本服务。
@@ -11,11 +11,11 @@ StartLimitBurst=5
 [Service]
 Type=simple
 # 以专用低权限用户运行（AGENTS.md 4.2 红线：禁止 root 运行 AI/用户态服务）
-User=naisys
-Group=naisys
-EnvironmentFile=/etc/naisys.env
-WorkingDirectory=/opt/naisys/app
-ExecStart=/usr/bin/node /opt/naisys/app/dist/server.js
+User=vibeos
+Group=vibeos
+EnvironmentFile=/etc/vibeos.env
+WorkingDirectory=/opt/vibeos/app
+ExecStart=/usr/bin/node /opt/vibeos/app/dist/server.js
 Restart=always
 RestartSec=5
 

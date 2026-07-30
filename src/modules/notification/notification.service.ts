@@ -5,12 +5,12 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { NAISYS_APP_DIR } from '../../config.js';
+import { VIBEOS_APP_DIR } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
 import type { Notification, NotificationChannel } from './notification.types.js';
 
-const DB_FILE = `${NAISYS_APP_DIR}/notification/notifications.json`;
-const SETTINGS_FILE = `${NAISYS_APP_DIR}/notification/settings.json`;
+const DB_FILE = `${VIBEOS_APP_DIR}/notification/notifications.json`;
+const SETTINGS_FILE = `${VIBEOS_APP_DIR}/notification/settings.json`;
 
 async function loadNotifications(): Promise<Notification[]> {
   try {

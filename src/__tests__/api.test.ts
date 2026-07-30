@@ -69,9 +69,9 @@ vi.mock('../system/tailscale.js', () => ({
 
 vi.mock('../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   DEFAULT_QUOTA_BYTES: 107374182400n,
   PORT: 3000,
   HOST: '127.0.0.1',
@@ -105,7 +105,7 @@ vi.mock('../system/metrics.js', () => ({
     },
   ]),
   getSystemInfo: vi.fn().mockReturnValue({
-    hostname: 'naisys-test',
+    hostname: 'vibeos-test',
     platform: 'Linux 6.1.0',
     arch: 'x64',
     cpuModel: 'Test CPU',
@@ -141,7 +141,7 @@ describe('API 集成测试', () => {
       const res = await request(app).get('/api/health');
       expect(res.status).toBe(200);
       expect(res.body.success).toBe(true);
-      expect(res.body.data.service).toBe('naisys-backend');
+      expect(res.body.data.service).toBe('vibeos-backend');
     });
   });
 
@@ -328,7 +328,7 @@ describe('API 集成测试', () => {
     it('/api/metrics/overview 应返回聚合指标', async () => {
       const res = await request(app).get('/api/metrics/overview');
       expect(res.status).toBe(200);
-      expect(res.body.data.system.hostname).toBe('naisys-test');
+      expect(res.body.data.system.hostname).toBe('vibeos-test');
       expect(res.body.data.cpu.usagePercent).toBe(25);
       expect(res.body.data.memory.usedPercent).toBe(62.5);
       expect(res.body.data.storage).toHaveLength(1);
@@ -364,7 +364,7 @@ describe('API 集成测试', () => {
         .post('/api/container/init-dirs')
         .send({ appname: 'ollama' });
       expect(res.status).toBe(201);
-      expect(res.body.data.appDir).toBe('/data/naisys/ollama');
+      expect(res.body.data.appDir).toBe('/data/vibeos/ollama');
     });
 
     it('缺少 appname 应返回 400', async () => {

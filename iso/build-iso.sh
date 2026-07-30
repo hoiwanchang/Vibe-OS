@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # ============================================================================
-# NAISys ISO 构建脚本
+# Vibe OS ISO 构建脚本
 # 功能：下载 Debian netinst → 注入网卡固件到 initrd → 嵌入 preseed 与运行时
 #       → 改造启动菜单 → xorriso 重打包混合 ISO（UEFI + Legacy BIOS）
 # 用法：sudo ./build-iso.sh
@@ -13,11 +13,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "${SCRIPT_DIR}/config.env"
 
 # --- 可调参数（环境变量覆盖）---
-HOSTNAME="${NAISYS_HOSTNAME:-$DEFAULT_HOSTNAME}"
-USERNAME="${NAISYS_USERNAME:-$DEFAULT_USER}"
-DATA_FSTYPE="${NAISYS_DATA_FSTYPE:-$DEFAULT_DATA_FSTYPE}"
-SYS_SIZE_MB="${NAISYS_SYS_SIZE_MB:-30000}"        # 系统分区上限 30GB，/data 自动占满剩余
-VERSION="${NAISYS_VERSION:-$(date +%Y.%m.%d)-weekly}"
+HOSTNAME="${VIBEOS_HOSTNAME:-$DEFAULT_HOSTNAME}"
+USERNAME="${VIBEOS_USERNAME:-$DEFAULT_USER}"
+DATA_FSTYPE="${VIBEOS_DATA_FSTYPE:-$DEFAULT_DATA_FSTYPE}"
+SYS_SIZE_MB="${VIBEOS_SYS_SIZE_MB:-30000}"        # 系统分区上限 30GB，/data 自动占满剩余
+VERSION="${VIBEOS_VERSION:-$(date +%Y.%m.%d)-weekly}"
 
 WORK_DIR="${SCRIPT_DIR}/work"
 OUT_DIR="${SCRIPT_DIR}/out"
@@ -175,7 +175,7 @@ patch_one_initrd() {
 generate_preseed() {
   log "生成 preseed 配置"
   # 初始密码：优先使用环境变量，否则随机生成（构建期烘焙，首启强制修改）
-  local init_pw="${NAISYS_INIT_PASSWORD:-$(openssl rand -base64 12 2>/dev/null || head -c16 /dev/urandom | base64)}"
+  local init_pw="${VIBEOS_INIT_PASSWORD:-$(openssl rand -base64 12 2>/dev/null || head -c16 /dev/urandom | base64)}"
   # 生成 crypt 哈希（mkpasswd 若不可用则回退到 openssl）
   local pw_crypt root_crypt
   if command -v mkpasswd >/dev/null 2>&1; then
@@ -195,8 +195,8 @@ generate_preseed() {
     > "${WORK_DIR}/preseed.cfg"
 
   # ISO 树保留一份副本（供 late_command / 调试参考）
-  mkdir -p "${ISO_TREE}/naisys"
-  cp "${WORK_DIR}/preseed.cfg" "${ISO_TREE}/naisys/preseed.cfg"
+  mkdir -p "${ISO_TREE}/vibeos"
+  cp "${WORK_DIR}/preseed.cfg" "${ISO_TREE}/vibeos/preseed.cfg"
 
   # 记录初始密码到构建产物（仅供首次引导显示，安装后应立即修改）
   mkdir -p "$OUT_DIR"
@@ -225,7 +225,7 @@ build_offline_repo() {
 # ----------------------------------------------------------------------------
 copy_runtime() {
   log "复制运行时资产到 ISO"
-  local dest="${ISO_TREE}/naisys"
+  local dest="${ISO_TREE}/vibeos"
   mkdir -p "$dest"
   cp -r "${SCRIPT_DIR}/runtime/." "$dest/"
   cp -r "${SCRIPT_DIR}/systemd/." "$dest/systemd/"
@@ -337,7 +337,7 @@ cleanup() {
 }
 
 main() {
-  log "NAISys ISO 构建开始 (version=$VERSION)"
+  log "Vibe OS ISO 构建开始 (version=$VERSION)"
   require_root
   check_deps
   download_netinst

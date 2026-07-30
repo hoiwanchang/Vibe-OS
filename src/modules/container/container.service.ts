@@ -189,7 +189,7 @@ export async function pushAcl(policy: string): Promise<void> {
 }
 
 /**
- * 初始化 AI 应用数据目录 /data/naisys/{appname}/{models,data,logs}
+ * 初始化 AI 应用数据目录 /data/vibeos/{appname}/{models,data,logs}
  * 供前端"一键部署"在创建容器前调用，保证卷挂载路径存在
  * @param appname - 应用名
  * @returns 应用根目录与新建目录列表
@@ -209,7 +209,7 @@ export async function initAppDirs(appname: string): Promise<AppDirsInitResponse>
 /**
  * 登录 Tailscale 控制平面（支持第三方 headscale 服务器）
  *
- * 成功后将该账户登记到本地注册表（/data/naisys/tailscale/accounts.json），
+ * 成功后将该账户登记到本地注册表（/data/vibeos/tailscale/accounts.json），
  * 并标记为当前激活账户，实现多账户管理。
  *
  * @param req - 登录请求（controlUrl / authKey / label / exitNode / acceptRoutes）

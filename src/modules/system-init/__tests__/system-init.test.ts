@@ -22,7 +22,7 @@ vi.mock('../../../system/filesystem.js', () => ({
 
 vi.mock('../../../system/command-executor.js', () => ({
   executeCommand: vi.fn().mockResolvedValue({
-    stdout: 'naisys\n',
+    stdout: 'vibeos\n',
     stderr: '',
     exitCode: 0,
   }),
@@ -35,9 +35,9 @@ vi.mock('../../../system/command-executor.js', () => ({
 
 vi.mock('../../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   USER_SUBDIRS: ['files', 'config', 'cache'],
   APP_SUBDIRS: ['models', 'data', 'logs'],
   DEFAULT_QUOTA_BYTES: 107374182400n,
@@ -145,9 +145,9 @@ describe('模块1：系统初始化', () => {
     it('应返回所有必须目录', () => {
       const dirs = dao.getRequiredDirs();
       expect(dirs).toContain('/data');
-      expect(dirs).toContain('/data/naisys');
-      expect(dirs).toContain('/data/naisys/secrets');
-      expect(dirs).toContain('/data/naisys/cache');
+      expect(dirs).toContain('/data/vibeos');
+      expect(dirs).toContain('/data/vibeos/secrets');
+      expect(dirs).toContain('/data/vibeos/cache');
     });
   });
 });

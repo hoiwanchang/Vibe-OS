@@ -1,5 +1,5 @@
 /**
- * NAISys 后端服务 — Express 应用入口
+ * Vibe OS 后端服务 — Express 应用入口
  * 组装所有模块路由、中间件、错误处理
  */
 import express from 'express';
@@ -36,7 +36,7 @@ export function createApp(): express.Express {
     res.json({
       success: true,
       data: {
-        service: 'naisys-backend',
+        service: 'vibeos-backend',
         version: '0.1.0',
         timestamp: new Date().toISOString(),
       },

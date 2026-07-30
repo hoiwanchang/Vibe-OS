@@ -1,6 +1,6 @@
 openapi: 3.1.0
 info:
-  title: NAISys Backend API
+  title: Vibe OS Backend API
   description: 开源私有 AI NAS 系统后端服务接口文档
   version: 0.1.0
   contact:
@@ -399,7 +399,7 @@ paths:
   /api/users:
     get:
       summary: 受管用户列表
-      description: 合并 /data 数字目录、/etc/passwd 普通用户与 NAISys 映射文件
+      description: 合并 /data 数字目录、/etc/passwd 普通用户与 Vibe OS 映射文件
       tags: [用户管理]
       responses:
         '200':
@@ -410,7 +410,7 @@ paths:
                 $ref: '#/components/schemas/UserListResponse'
     post:
       summary: 创建用户数据空间
-      description: 创建 /data/{uid}/files、config、cache 目录并设置配额，用户名映射写入 /data/naisys/users.json
+      description: 创建 /data/{uid}/files、config、cache 目录并设置配额，用户名映射写入 /data/vibeos/users.json
       tags: [用户管理]
       requestBody:
         required: true
@@ -441,7 +441,7 @@ paths:
   /api/container/init-dirs:
     post:
       summary: 初始化 AI 应用数据目录
-      description: 创建 /data/naisys/{appname}/models、data、logs，供一键部署在创建容器前调用
+      description: 创建 /data/vibeos/{appname}/models、data、logs，供一键部署在创建容器前调用
       tags: [容器编排]
       requestBody:
         required: true
@@ -993,7 +993,7 @@ components:
           properties:
             appDir:
               type: string
-              description: 应用根目录 /data/naisys/{appname}
+              description: 应用根目录 /data/vibeos/{appname}
             createdDirs:
               type: array
               items:

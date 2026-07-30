@@ -5,8 +5,8 @@
 import { AppError } from '../../common/app-error.js';
 import type { DownloadTask } from './download.types.js';
 
-const ARIA2_RPC_URL = process.env['NAISYS_ARIA2_RPC'] ?? 'http://127.0.0.1:6800/jsonrpc';
-const ARIA2_SECRET = process.env['NAISYS_ARIA2_SECRET'] ?? '';
+const ARIA2_RPC_URL = process.env['VIBEOS_ARIA2_RPC'] ?? 'http://127.0.0.1:6800/jsonrpc';
+const ARIA2_SECRET = process.env['VIBEOS_ARIA2_SECRET'] ?? '';
 
 let rpcId = 0;
 

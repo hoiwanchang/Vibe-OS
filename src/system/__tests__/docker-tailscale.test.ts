@@ -13,7 +13,7 @@ vi.mock('../command-executor.js', () => ({
 
 vi.mock('../../config.js', () => ({
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
+  VIBEOS_APP_DIR: '/data/vibeos',
   COMMAND_TIMEOUT_MS: 5000,
 }));
 
@@ -51,7 +51,7 @@ describe('docker', () => {
         image: 'ollama/ollama:latest',
         ports: [{ host: 11434, container: 11434 }],
         env: { OLLAMA_HOST: '0.0.0.0' },
-        volumes: [{ host: '/data/naisys/ollama', container: '/root/.ollama', readonly: false }],
+        volumes: [{ host: '/data/vibeos/ollama', container: '/root/.ollama', readonly: false }],
         memoryLimit: '4g',
         cpuLimit: 2,
         restartPolicy: 'unless-stopped',

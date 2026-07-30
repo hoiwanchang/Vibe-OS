@@ -1,22 +1,22 @@
 /**
  * 模块5：用户与权限管理 — 数据访问层
- * 用户来源：/etc/passwd（系统用户）+ NAISys 映射文件（控制台创建的用户）
- * 映射文件位于 /data/naisys/users.json，避免直接修改系统文件
+ * 用户来源：/etc/passwd（系统用户）+ Vibe OS 映射文件（控制台创建的用户）
+ * 映射文件位于 /data/vibeos/users.json，避免直接修改系统文件
  */
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import { DATA_ROOT, NAISYS_APP_DIR } from '../../config.js';
+import { DATA_ROOT, VIBEOS_APP_DIR } from '../../config.js';
 import { getDirUsageBytes, pathExists } from '../../system/filesystem.js';
 
-/** NAISys 用户映射文件路径 */
-const USER_MAPPING_FILE = path.join(NAISYS_APP_DIR, 'users.json');
+/** Vibe OS 用户映射文件路径 */
+const USER_MAPPING_FILE = path.join(VIBEOS_APP_DIR, 'users.json');
 
 /** 普通用户 UID 范围（Debian 约定：1000+，排除 nobody/nfsnobody 65534） */
 const MIN_MANAGED_UID = 1000;
 const MAX_MANAGED_UID = 59999;
 
 /** 系统保留用户名（即使 UID 在范围内也排除） */
-const RESERVED_USERNAMES = new Set(['nobody', 'nfsnobody', 'naisys']);
+const RESERVED_USERNAMES = new Set(['nobody', 'nfsnobody', 'vibeos']);
 
 /**
  * 解析 /etc/passwd 获取用户名映射
@@ -41,7 +41,7 @@ export async function getPasswdUsers(): Promise<Map<number, string>> {
 }
 
 /**
- * 读取 NAISys 用户映射文件
+ * 读取 Vibe OS 用户映射文件
  * @returns uid → username 映射
  */
 export async function getNaisysUserMappings(): Promise<Map<number, string>> {
@@ -62,7 +62,7 @@ export async function getNaisysUserMappings(): Promise<Map<number, string>> {
 }
 
 /**
- * 将用户名映射追加写入 NAISys 映射文件
+ * 将用户名映射追加写入 Vibe OS 映射文件
  * @param uid - 用户 UID
  * @param username - 用户名
  */
@@ -74,7 +74,7 @@ export async function saveNaisysUserMapping(
   existing.set(uid, username);
   const obj: Record<string, string> = {};
   for (const [k, v] of existing) obj[String(k)] = v;
-  await fs.mkdir(NAISYS_APP_DIR, { recursive: true });
+  await fs.mkdir(VIBEOS_APP_DIR, { recursive: true });
   await fs.writeFile(
     USER_MAPPING_FILE,
     JSON.stringify(obj, null, 2),
@@ -110,7 +110,7 @@ export async function listManagedUids(): Promise<number[]> {
     }
   }
 
-  // NAISys 映射文件
+  // Vibe OS 映射文件
   for (const uid of (await getNaisysUserMappings()).keys()) {
     uids.add(uid);
   }

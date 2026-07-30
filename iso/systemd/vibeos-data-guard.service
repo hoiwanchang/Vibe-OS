@@ -1,0 +1,9 @@
+[Unit]
+Description=Vibe OS /data Integrity Guard
+Documentation=https://github.com/Vibe OS/Vibe OS
+After=local-fs.target
+
+[Service]
+Type=oneshot
+EnvironmentFile=-/etc/vibeos.env
+ExecStart=/opt/vibeos/data-guard.sh

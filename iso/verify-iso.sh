@@ -29,7 +29,7 @@ inspect_structure() {
   STRUCT_OK=true
   if command -v xorriso >/dev/null 2>&1; then
     ISO_LISTING="$(xorriso -indev "$ISO" -find / 2>/dev/null || echo '')"
-    for need in /naisys/preseed.cfg /install.amd/vmlinuz /install.amd/initrd.gz; do
+    for need in /vibeos/preseed.cfg /install.amd/vmlinuz /install.amd/initrd.gz; do
       if echo "$ISO_LISTING" | grep -q "$need"; then
         log "  ✓ 存在: $need"
       else
@@ -67,7 +67,7 @@ gen_report() {
   log "生成验证报告: $REPORT"
   local size; size="$(du -h "$ISO" | cut -f1)"
   cat > "$REPORT" <<EOF
-# NAISys ISO 安装验证报告
+# Vibe OS ISO 安装验证报告
 
 - **镜像文件**: \`$ISO_BASE\`
 - **生成时间**: $(date -Iseconds)
@@ -85,7 +85,7 @@ gen_report() {
 
 | 必需组件 | 状态 |
 |----------|------|
-| /naisys/preseed.cfg | $([ "$STRUCT_OK" = true ] && echo "✅" || echo "见下") |
+| /vibeos/preseed.cfg | $([ "$STRUCT_OK" = true ] && echo "✅" || echo "见下") |
 | /install.amd/vmlinuz | — |
 | /install.amd/initrd.gz | — |
 

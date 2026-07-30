@@ -8,9 +8,9 @@ import type { Request, Response, NextFunction } from 'express';
 vi.mock('../config.js', () => ({
   API_TOKEN: 'test-secret-token',
   DATA_ROOT: '/data',
-  NAISYS_APP_DIR: '/data/naisys',
-  SECRETS_DIR: '/data/naisys/secrets',
-  SYSTEM_CACHE_DIR: '/data/naisys/cache',
+  VIBEOS_APP_DIR: '/data/vibeos',
+  SECRETS_DIR: '/data/vibeos/secrets',
+  SYSTEM_CACHE_DIR: '/data/vibeos/cache',
   DEFAULT_QUOTA_BYTES: 107374182400n,
   PORT: 3000,
   HOST: '127.0.0.1',

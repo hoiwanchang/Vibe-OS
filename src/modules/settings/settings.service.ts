@@ -1,14 +1,30 @@
 /**
  * 模块：系统设置中心 — 业务逻辑
- * 配置持久化到 /data/naisys/settings/system.json
+ * 配置持久化到 /data/vibeos/settings/system.json
  * 系统命令通过 execFile 封装调用
  */
 import { execFile } from 'node:child_process';
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, resolve, normalize } from 'node:path';
 import { promisify } from 'node:util';
-import { NAISYS_APP_DIR, COMMAND_TIMEOUT_MS } from '../../config.js';
+import { VIBEOS_APP_DIR, COMMAND_TIMEOUT_MS, SSH_TARGET_USER } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
+import {
+  getCertStatus,
+  generateSelfSignedCert,
+  importCert,
+  removeCert,
+  type CertStatus,
+  type CertInfo,
+} from '../../system/tls.js';
+import {
+  listAuthorizedKeys,
+  importPublicKey,
+  removePublicKey,
+  generateKeyPair,
+  type SshPublicKey,
+  type GeneratedSshKey,
+} from '../../system/ssh-keys.js';
 import type {
   AboutInfo,
   LogLine,
@@ -20,27 +36,27 @@ import type {
 
 const execFileAsync = promisify(execFile);
 
-const SETTINGS_DIR = join(NAISYS_APP_DIR, 'settings');
+const SETTINGS_DIR = join(VIBEOS_APP_DIR, 'settings');
 const SETTINGS_FILE = join(SETTINGS_DIR, 'system.json');
-const AUDIT_LOG = join(NAISYS_APP_DIR, 'logs', 'settings-audit.log');
+const AUDIT_LOG = join(VIBEOS_APP_DIR, 'logs', 'settings-audit.log');
 
 /* ---------- 默认配置 ---------- */
 
 function defaultSettings(): SystemSettings {
   return {
     general: {
-      hostname: 'naisys-node',
+      hostname: 'vibeos-node',
       timezone: 'Asia/Shanghai',
       locale: 'zh-CN',
       ntpEnabled: true,
       ntpServer: 'ntp.aliyun.com',
-      description: 'NAISys 私有 AI NAS',
+      description: 'Vibe OS 私有 AI NAS',
     },
     security: {
       httpsEnabled: false,
       httpsPort: 443,
-      httpsCertPath: `${NAISYS_APP_DIR}/certs/server.crt`,
-      httpsKeyPath: `${NAISYS_APP_DIR}/certs/server.key`,
+      httpsCertPath: `${VIBEOS_APP_DIR}/certs/server.crt`,
+      httpsKeyPath: `${VIBEOS_APP_DIR}/certs/server.key`,
       sshEnabled: true,
       sshPort: 22,
       sshPasswordAuth: false,
@@ -89,7 +105,7 @@ function defaultSettings(): SystemSettings {
 
 async function ensureDir(): Promise<void> {
   await mkdir(SETTINGS_DIR, { recursive: true });
-  await mkdir(join(NAISYS_APP_DIR, 'logs'), { recursive: true });
+  await mkdir(join(VIBEOS_APP_DIR, 'logs'), { recursive: true });
 }
 
 /** 读取完整配置（不存在则从默认值生成） */
@@ -323,7 +339,7 @@ export async function restartService(
 const LOG_SOURCES: LogSource[] = [
   { id: 'system', name: '系统日志', description: 'journalctl 系统日志', sizeBytes: 0 },
   { id: 'auth', name: '认证日志', description: 'SSH / PAM 认证记录', sizeBytes: 0 },
-  { id: 'naisys', name: 'NAISys 日志', description: 'NAISys 后端服务日志', sizeBytes: 0 },
+  { id: 'vibeos', name: 'Vibe OS 日志', description: 'Vibe OS 后端服务日志', sizeBytes: 0 },
   { id: 'docker', name: 'Docker 日志', description: 'Docker 引擎日志', sizeBytes: 0 },
   { id: 'smartd', name: 'SMART 日志', description: '磁盘健康监控日志', sizeBytes: 0 },
 ];
@@ -358,7 +374,7 @@ export async function readLogs(
         args = ['-n', String(clampedLines), '--no-pager', '-o', 'json', '-u', 'smartd'];
         break;
       default:
-        // naisys: 读取本地日志文件
+        // vibeos: 读取本地日志文件
         return await readNaisysLogs(clampedLines, level);
     }
 
@@ -407,7 +423,7 @@ async function readNaisysLogs(
   level?: string,
 ): Promise<{ lines: LogLine[]; total: number; source: string }> {
   try {
-    const logDir = join(NAISYS_APP_DIR, 'logs');
+    const logDir = join(VIBEOS_APP_DIR, 'logs');
     const { readdir } = await import('node:fs/promises');
     const files = await readdir(logDir);
     const logFiles = files.filter((f) => f.endsWith('.log'));
@@ -423,14 +439,14 @@ async function readNaisysLogs(
           allLines.push({
             timestamp: match[1] ?? new Date().toISOString(),
             level: (match[2]?.toLowerCase() ?? 'info') as LogLine['level'],
-            source: 'naisys',
+            source: 'vibeos',
             message: match[3] ?? raw,
           });
         } else if (raw.trim()) {
           allLines.push({
             timestamp: new Date().toISOString(),
             level: 'info',
-            source: 'naisys',
+            source: 'vibeos',
             message: raw,
           });
         }
@@ -441,9 +457,9 @@ async function readNaisysLogs(
       ? allLines.filter((l) => l.level === level)
       : allLines;
     const sliced = filtered.slice(-lines);
-    return { lines: sliced, total: filtered.length, source: 'naisys' };
+    return { lines: sliced, total: filtered.length, source: 'vibeos' };
   } catch {
-    return { lines: [], total: 0, source: 'naisys' };
+    return { lines: [], total: 0, source: 'vibeos' };
   }
 }
 
@@ -459,7 +475,7 @@ export async function exportDiagnostics(): Promise<{
   path: string;
   sizeBytes: number;
 }> {
-  const tmpDir = join(NAISYS_APP_DIR, 'tmp');
+  const tmpDir = join(VIBEOS_APP_DIR, 'tmp');
   await mkdir(tmpDir, { recursive: true });
   const outPath = join(tmpDir, `diagnostics-${Date.now()}.tar.gz`);
 
@@ -470,7 +486,7 @@ export async function exportDiagnostics(): Promise<{
         '-czf',
         outPath,
         '-C',
-        NAISYS_APP_DIR,
+        VIBEOS_APP_DIR,
         'settings',
         'logs',
       ],
@@ -493,7 +509,7 @@ export async function getAbout(): Promise<AboutInfo> {
   const settings = await loadSettings();
   let hostname = settings.general.hostname;
   let kernel = 'unknown';
-  let osVersion = 'Debian 13 (Trixie)';
+  const osVersion = 'Debian 13 (Trixie)';
   let cpuModel = 'unknown';
   let cpuCores = 0;
   let totalMemoryBytes = 0;
@@ -532,7 +548,7 @@ export async function getAbout(): Promise<AboutInfo> {
     totalMemoryBytes,
     hostname,
     uptimeSeconds,
-    dataRoot: NAISYS_APP_DIR.replace('/naisys', ''),
+    dataRoot: VIBEOS_APP_DIR.replace('/vibeos', ''),
     license: 'MIT',
   };
 }
@@ -551,7 +567,7 @@ export async function checkUpdate(): Promise<{
 
   // 离线环境：检查本地升级包目录
   try {
-    const updateDir = join(NAISYS_APP_DIR, 'update');
+    const updateDir = join(VIBEOS_APP_DIR, 'update');
     const { readdir } = await import('node:fs/promises');
     const files = await readdir(updateDir);
     const packages = files.filter(
@@ -590,7 +606,7 @@ export async function testNotification(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          text: `[NAISys 测试通知] ${new Date().toISOString()}`,
+          text: `[Vibe OS 测试通知] ${new Date().toISOString()}`,
         }),
         signal: AbortSignal.timeout(10000),
       });
@@ -604,6 +620,154 @@ export async function testNotification(
   }
 
   return { sent: false, error: '暂不支持的渠道类型' };
+}
+
+/* ---------- TLS 证书管理 ---------- */
+
+/** 证书文件合法根目录（防路径穿越） */
+const CERTS_DIR = join(VIBEOS_APP_DIR, 'certs');
+
+/**
+ * 校验证书/私钥路径必须落在 CERTS_DIR 内
+ * @throws AppError 当路径越界时
+ */
+function assertCertPath(p: string): void {
+  const resolved = resolve(normalize(p));
+  if (!resolved.startsWith(resolve(CERTS_DIR) + '/') && resolved !== resolve(CERTS_DIR)) {
+    throw AppError.badRequest(
+      'PATH_TRAVERSAL',
+      `证书路径必须位于 ${CERTS_DIR} 之内`,
+    );
+  }
+}
+
+/** GET 证书状态（读取 settings 中配置的 cert/key 路径） */
+export async function getCertificateStatus(): Promise<CertStatus> {
+  const settings = await loadSettings();
+  const { httpsCertPath, httpsKeyPath } = settings.security;
+  return getCertStatus(httpsCertPath, httpsKeyPath);
+}
+
+/** 生成自签证书（写入 settings 配置的路径） */
+export async function generateCertificate(opts: {
+  commonName: string;
+  sans: string[];
+  days: number;
+  keySize: 2048 | 4096;
+}): Promise<CertInfo> {
+  const settings = await loadSettings();
+  const certPath = settings.security.httpsCertPath;
+  const keyPath = settings.security.httpsKeyPath;
+  assertCertPath(certPath);
+  assertCertPath(keyPath);
+
+  const info = await generateSelfSignedCert({
+    certPath,
+    keyPath,
+    commonName: opts.commonName,
+    sans: opts.sans,
+    days: opts.days,
+    keySize: opts.keySize,
+  });
+  await auditLog(
+    'CERT_GENERATE',
+    `CN=${opts.commonName} SANs=${opts.sans.join(',')} days=${opts.days}`,
+  );
+  return info;
+}
+
+/** 导入外部证书 + 私钥 */
+export async function importCertificate(opts: {
+  certPem: string;
+  keyPem: string;
+}): Promise<CertInfo> {
+  const settings = await loadSettings();
+  const certPath = settings.security.httpsCertPath;
+  const keyPath = settings.security.httpsKeyPath;
+  assertCertPath(certPath);
+  assertCertPath(keyPath);
+
+  const info = await importCert({
+    certPath,
+    keyPath,
+    certPem: opts.certPem,
+    keyPem: opts.keyPem,
+  });
+  await auditLog('CERT_IMPORT', `subject=${info.subject}`);
+  return info;
+}
+
+/** 删除证书与私钥 */
+export async function deleteCertificate(): Promise<{ removed: boolean }> {
+  const settings = await loadSettings();
+  const certPath = settings.security.httpsCertPath;
+  const keyPath = settings.security.httpsKeyPath;
+  assertCertPath(certPath);
+  assertCertPath(keyPath);
+
+  const result = await removeCert(certPath, keyPath);
+  await auditLog('CERT_DELETE', `cert=${certPath}`);
+  return result;
+}
+
+/* ---------- SSH 密钥管理 ---------- */
+
+/**
+ * 解析 authorized_keys 文件路径
+ * 优先使用环境变量覆盖（测试 / 自定义部署），否则按目标用户家目录解析。
+ * 注意：env 在调用时读取（而非模块加载时），否则测试在 beforeAll 中
+ * 设置的环境变量会因 config 常量提前求值而失效。
+ */
+function resolveAuthorizedKeysPath(): string {
+  const override = process.env['VIBEOS_SSH_AUTHORIZED_KEYS_FILE'];
+  if (override) {
+    return resolve(normalize(override));
+  }
+  const user = process.env['VIBEOS_SSH_TARGET_USER'] ?? SSH_TARGET_USER;
+  return resolve(`/home/${user}/.ssh/authorized_keys`);
+}
+
+/** 列举 authorized_keys 公钥 */
+export async function getSshKeys(): Promise<{
+  keys: SshPublicKey[];
+  targetUser: string;
+  keysFile: string;
+}> {
+  const keysFile = resolveAuthorizedKeysPath();
+  const keys = await listAuthorizedKeys(keysFile);
+  return { keys, targetUser: SSH_TARGET_USER, keysFile };
+}
+
+/** 导入公钥 */
+export async function importSshKey(publicKey: string): Promise<SshPublicKey> {
+  const keysFile = resolveAuthorizedKeysPath();
+  const key = await importPublicKey(keysFile, publicKey);
+  await auditLog('SSH_KEY_IMPORT', `fingerprint=${key.fingerprint} type=${key.type}`);
+  return key;
+}
+
+/** 删除公钥（按指纹） */
+export async function deleteSshKey(
+  fingerprint: string,
+): Promise<{ removed: boolean }> {
+  const keysFile = resolveAuthorizedKeysPath();
+  const result = await removePublicKey(keysFile, fingerprint);
+  await auditLog('SSH_KEY_DELETE', `fingerprint=${fingerprint} removed=${result.removed}`);
+  return result;
+}
+
+/** 生成密钥对（私钥仅返回一次），公钥自动加入 authorized_keys */
+export async function generateSshKey(opts: {
+  type: 'ed25519' | 'rsa';
+  bits?: 2048 | 4096;
+  comment?: string;
+}): Promise<GeneratedSshKey> {
+  const key = await generateKeyPair(opts);
+  // 自动将公钥加入授权列表，使生成的私钥可立即用于免密登录
+  const keysFile = resolveAuthorizedKeysPath();
+  await importPublicKey(keysFile, key.publicKey);
+  await auditLog('SSH_KEY_GENERATE', `type=${key.type} fingerprint=${key.fingerprint}`);
+  return key;
 }
 
 /* ---------- 系统电源 ---------- */

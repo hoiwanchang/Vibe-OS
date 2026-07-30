@@ -54,7 +54,7 @@ async function save(): Promise<void> {
   <div class="nx-panel settings-section">
     <div class="nx-panel-title">{{ t('settings.update.currentVersion') }}</div>
     <div class="version-card">
-      <div class="version-name">NAISys v{{ settings?.update.currentVersion ?? '—' }}</div>
+      <div class="version-name">Vibe OS v{{ settings?.update.currentVersion ?? '—' }}</div>
       <div class="version-meta nx-mono">
         {{ settings?.update.lastCheck ? t('settings.update.lastCheck', { time: new Date(settings.update.lastCheck).toLocaleString(locale) }) : t('settings.update.lastCheckNever') }}
       </div>

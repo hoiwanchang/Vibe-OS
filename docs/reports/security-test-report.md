@@ -1,4 +1,4 @@
-# NAISys 代码评审与测试报告
+# Vibe OS 代码评审与测试报告
 
 - **评审日期**: 2026-07-27
 - **评审范围**: 后端 API 安全、ISO 安装脚本、Kickstart/Preseed、驱动兼容性、CI/CD
@@ -14,7 +14,7 @@
 | 零交互安装（preseed） | ✅ 设计通过 | auto=true priority=critical 跳过所有交互弹窗 |
 | 5 分钟内完成 | ⏳ 待 QEMU 实测 | workflow 已编写，超时阈值 300s |
 | /data 目录创建 | ✅ 设计通过 | partman 配方独立分区 + install-runtime.sh 创建子目录 |
-| /data/naisys/secrets 权限 700 | ✅ 代码正确 | install-runtime.sh:70 chmod 700 |
+| /data/vibeos/secrets 权限 700 | ✅ 代码正确 | install-runtime.sh:70 chmod 700 |
 | Docker 服务 | ✅ 设计通过 | systemd drop-in Restart=always |
 | Tailscale 服务 | ⚠️ 已修复 | apt 源原写死 bookworm，已改为动态 codename |
 | Web 控制台可访问 | ⚠️ 已修复 | 首启竞态已修复（After=firstboot + restart） |
@@ -32,7 +32,7 @@
 | # | 问题 | 位置 | 修复方案 | 状态 |
 |---|------|------|----------|------|
 | C1 | Preseed 盲格式化第一块盘，多盘 NAS 数据误删风险 | preseed.template.cfg:42-45 | early_command 添加多盘检测，写入 .disk-warning 标记，firstboot 输出警告 | ✅ 已修复 |
-| C2 | 首启竞态：Web 服务在 token 生成前以 0.0.0.0 无认证暴露 | naisys-web-console.service + firstboot.sh | After=naisys-firstboot.service 排序 + firstboot 内 restart 双保险 | ✅ 已修复 |
+| C2 | 首启竞态：Web 服务在 token 生成前以 0.0.0.0 无认证暴露 | vibeos-web-console.service + firstboot.sh | After=vibeos-firstboot.service 排序 + firstboot 内 restart 双保险 | ✅ 已修复 |
 
 ### HIGH（已修复）
 
@@ -55,7 +55,7 @@
 | M2 | 单一 API token 无 per-user 隔离 | auth-middleware.ts | 引入 JWT 或 per-user session token，绑定 UID 权限范围 |
 | M3 | 无 API 速率限制 | app.ts | 添加 express-rate-limit 中间件（AGENTS.md 锁定技术栈内） |
 | M4 | 无 CORS 配置 | app.ts | 生产环境限制 origin 为 Web 控制台域名 |
-| M5 | 无 HTTPS 支持 | naisys-web-console.service | 建议前置 nginx/caddy 反代 + Let's Encrypt（内网可用自签） |
+| M5 | 无 HTTPS 支持 | vibeos-web-console.service | 建议前置 nginx/caddy 反代 + Let's Encrypt（内网可用自签） |
 
 ### LOW
 
@@ -147,7 +147,7 @@
 | 安全修复（symlink 穿越防护） | src/system/filesystem.ts | ✅ |
 | 安全修复（容器参数注入） | src/modules/container/container.service.ts | ✅ |
 | 安全修复（多盘检测） | iso/preseed/preseed.template.cfg | ✅ |
-| 安全修复（首启竞态） | iso/systemd/naisys-web-console.service + iso/runtime/firstboot.sh | ✅ |
+| 安全修复（首启竞态） | iso/systemd/vibeos-web-console.service + iso/runtime/firstboot.sh | ✅ |
 | 安全修复（Tailscale 源） | iso/runtime/install-runtime.sh | ✅ |
 | 安全修复（late_command 错误处理） | iso/preseed/preseed.template.cfg | ✅ |
 | QEMU 安装验证 workflow | .github/workflows/qemu-verify.yml | ✅ |

@@ -1,5 +1,5 @@
 # ============================================================================
-# NAISys ISO 构建流水线
+# Vibe OS ISO 构建流水线
 # 触发方式：
 #   1. 每周六凌晨 2:00（北京时间）定时构建
 #   2. 手动 workflow_dispatch
@@ -111,17 +111,17 @@ jobs:
           cp -r web/dist runtime-bundle/app/web-dist
           cp package.json runtime-bundle/app/
           echo "$VERSION" > runtime-bundle/app/VERSION
-          tar -czf naisys-runtime.tar.gz -C runtime-bundle/app .
-          sha256sum naisys-runtime.tar.gz > naisys-runtime.tar.gz.sha256
+          tar -czf vibeos-runtime.tar.gz -C runtime-bundle/app .
+          sha256sum vibeos-runtime.tar.gz > vibeos-runtime.tar.gz.sha256
           echo "运行时版本: $VERSION"
 
       - name: 上传运行时产物
         uses: actions/upload-artifact@v4
         with:
-          name: naisys-runtime
+          name: vibeos-runtime
           path: |
-            naisys-runtime.tar.gz
-            naisys-runtime.tar.gz.sha256
+            vibeos-runtime.tar.gz
+            vibeos-runtime.tar.gz.sha256
           retention-days: 7
 
   # --------------------------------------------------------------------------
@@ -154,14 +154,14 @@ jobs:
       - name: 下载运行时产物到 runtime-bundle
         uses: actions/download-artifact@v4
         with:
-          name: naisys-runtime
+          name: vibeos-runtime
           path: iso/runtime-bundle-tmp
 
       - name: 解包运行时到 runtime-bundle/app
         run: |
           mkdir -p iso/runtime-bundle/app
-          tar -xzf iso/runtime-bundle-tmp/naisys-runtime.tar.gz -C iso/runtime-bundle/app
-          cp iso/runtime-bundle-tmp/naisys-runtime.tar.gz iso/runtime-bundle/
+          tar -xzf iso/runtime-bundle-tmp/vibeos-runtime.tar.gz -C iso/runtime-bundle/app
+          cp iso/runtime-bundle-tmp/vibeos-runtime.tar.gz iso/runtime-bundle/
           ls -la iso/runtime-bundle/app
 
       - name: 赋予脚本执行权限
@@ -169,8 +169,8 @@ jobs:
 
       - name: 构建 ISO
         env:
-          NAISYS_VERSION: "${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
-          NAISYS_DATA_FSTYPE: "${{ github.event.inputs.data_fstype || 'xfs' }}"
+          VIBEOS_VERSION: "${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
+          VIBEOS_DATA_FSTYPE: "${{ github.event.inputs.data_fstype || 'xfs' }}"
         # 容器内默认 root，满足 build-iso.sh 的 require_root，无需 sudo
         run: |
           cd iso
@@ -179,16 +179,17 @@ jobs:
       - name: 校验 ISO 并生成验证报告
         run: |
           cd iso
-          ./verify-iso.sh out/naisys-*.iso out/
+          ./verify-iso.sh out/vibeos-*.iso out/
 
       - name: 上传 ISO 产物
         uses: actions/upload-artifact@v4
         with:
-          name: naisys-iso
+          name: vibeos-iso
           path: |
-            iso/out/naisys-*.iso
-            iso/out/naisys-*.iso.sha256
+            iso/out/vibeos-*.iso
+            iso/out/vibeos-*.iso.sha256
             iso/out/*-verification-report.md
+            iso/out/.init-password
           retention-days: 14
 
   # --------------------------------------------------------------------------
@@ -203,13 +204,13 @@ jobs:
       - name: 下载 ISO 产物
         uses: actions/download-artifact@v4
         with:
-          name: naisys-iso
+          name: vibeos-iso
           path: release-iso
 
       - name: 下载运行时产物
         uses: actions/download-artifact@v4
         with:
-          name: naisys-runtime
+          name: vibeos-runtime
           path: release-runtime
 
       - name: 创建 Release 并上传
@@ -218,7 +219,7 @@ jobs:
         run: |
           VERSION="${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
           TAG="iso-${VERSION}"
-          ISO_FILE=$(ls release-iso/naisys-*.iso | head -n1)
+          ISO_FILE=$(ls release-iso/vibeos-*.iso | head -n1)
 
           # 若 tag 已存在则复用，否则创建
           if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
@@ -226,7 +227,7 @@ jobs:
           else
             gh release create "$TAG" \
               --repo "${{ github.repository }}" \
-              --title "NAISys ISO ${VERSION}" \
+              --title "Vibe OS ISO ${VERSION}" \
               --notes "自动构建于 $(date -Iseconds)。含消费级网卡驱动、无人值守安装、运行时自愈。SHA256 与验证报告见附件。" \
               --target "${{ github.sha }}"
           fi
@@ -235,9 +236,9 @@ jobs:
             --repo "${{ github.repository }}" \
             --clobber \
             "$ISO_FILE" \
-            release-iso/naisys-*.iso.sha256 \
+            release-iso/vibeos-*.iso.sha256 \
             release-iso/*-verification-report.md \
-            release-runtime/naisys-runtime.tar.gz \
-            release-runtime/naisys-runtime.tar.gz.sha256
+            release-runtime/vibeos-runtime.tar.gz \
+            release-runtime/vibeos-runtime.tar.gz.sha256
 
           echo "已发布: $TAG"
