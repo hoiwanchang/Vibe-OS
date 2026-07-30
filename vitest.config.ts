@@ -5,6 +5,9 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/__tests__/**/*.test.ts'],
+    env: {
+      VIBEOS_AUTH_DISABLED: 'true',
+    },
     // drvfs(/mnt) 慢盘 + 全量并行下，动态 import app 与 openssl/ssh-keygen
     // 子进程启动可能超过默认 10s，放宽钩子与用例超时
     hookTimeout: 60000,

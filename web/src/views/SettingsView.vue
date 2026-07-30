@@ -19,6 +19,7 @@ import UserSettings from '@/components/settings/UserSettings.vue';
 import NetworkSettings from '@/components/settings/NetworkSettings.vue';
 import ServiceSettings from '@/components/settings/ServiceSettings.vue';
 import SecuritySettings from '@/components/settings/SecuritySettings.vue';
+import OAuthClients from '@/components/settings/OAuthClients.vue';
 import StorageSettings from '@/components/settings/StorageSettings.vue';
 import PowerSettings from '@/components/settings/PowerSettings.vue';
 import NotificationSettings from '@/components/settings/NotificationSettings.vue';
@@ -43,6 +44,7 @@ const componentMap: Record<string, typeof GeneralSettings> = {
   network: NetworkSettings,
   services: ServiceSettings,
   security: SecuritySettings,
+  oauth: OAuthClients,
   storage: StorageSettings,
   power: PowerSettings,
   notification: NotificationSettings,

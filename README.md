@@ -214,6 +214,32 @@ In development, override the data root via the `VIBEOS_DATA_ROOT` environment va
 
 ---
 
+## 认证与 SSO / Authentication & SSO
+
+Vibe OS 内置完整的 OpenID Connect Provider，NAS 本身即统一身份源：
+
+- **本地账号**：bcrypt 哈希（cost 12）、服务端 session（`vibeos.sid` cookie，24h 有效）、登录失败 5 次锁定 15 分钟
+- **初始管理员**：首次启动自动创建 `admin`，密码取 `VIBEOS_ADMIN_PASSWORD`（默认 `vibeos`），强制首次登录改密
+- **OIDC Provider**：标准授权码流程 + PKCE（S256），RS256 签名，密钥自动轮换（多 kid 并存，旧 kid 保留 7 天）
+- **认证链**：Session Cookie（Web UI）→ Bearer Token（API/OIDC）→ `VIBEOS_API_TOKEN` 紧急后门（已废弃，仅运维用）；开发模式 `VIBEOS_AUTH_DISABLED=true` 跳过认证
+- **客户端管理**：设置中心 → 应用授权，注册/禁用/重置 secret（secret 仅显示一次）
+
+OIDC 端点：
+
+| 端点 | 说明 |
+|------|------|
+| `/.well-known/openid-configuration` | 发现文档 |
+| `/oidc/jwks.json` | JWKS 公钥集 |
+| `/oidc/authorize` | 授权端点 |
+| `/oidc/token` | 令牌端点（限流 30 次/分钟/IP） |
+| `/oidc/userinfo` | 用户信息 |
+| `/oidc/revoke` / `/oidc/introspect` | 令牌撤销 / 内省 |
+| `/oidc/end-session` | RP-Initiated Logout |
+
+第三方应用接入参见 `docs/oidc-integration-guide.md`。密钥存储于 `/data/vibeos/secrets/oidc-keys.json`（0700），首次启动自动生成 RSA 2048。
+
+---
+
 ## 安全设计 / Security
 
 - 所有服务以非 root 用户 `vibeos` 运行

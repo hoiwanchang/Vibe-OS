@@ -41,6 +41,7 @@ export const useSettingsStore = defineStore('settings', () => {
     { id: 'network', label: t('settings.sections.network'), icon: 'Connection' },
     { id: 'services', label: t('settings.sections.services'), icon: 'Operation' },
     { id: 'security', label: t('settings.sections.security'), icon: 'Lock' },
+    { id: 'oauth', label: '应用授权', icon: 'Key' },
     { id: 'storage', label: t('settings.sections.storage'), icon: 'Coin' },
     { id: 'power', label: t('settings.sections.power'), icon: 'Lightning' },
     { id: 'notification', label: t('settings.sections.notification'), icon: 'Bell' },

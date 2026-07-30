@@ -3,7 +3,9 @@
  * 组装所有模块路由、中间件、错误处理
  */
 import express from 'express';
-import { authMiddleware } from './common/auth-middleware.js';
+import cookieParser from 'cookie-parser';
+import { authGuard } from './common/auth-middleware.js';
+import { sessionMiddleware } from './common/session-middleware.js';
 import { errorHandler } from './common/error-handler.js';
 import { systemInitRoutes } from './modules/system-init/index.js';
 import { hardwareRoutes } from './modules/hardware/index.js';
@@ -20,6 +22,9 @@ import { notificationRoutes } from './modules/notification/index.js';
 import { schedulerRoutes } from './modules/scheduler/index.js';
 import { appsRoutes } from './modules/apps/index.js';
 import { settingsRoutes } from './modules/settings/index.js';
+import { authRoutes } from './modules/auth/index.js';
+import { oidcPublicRoutes, oidcProtectedRoutes } from './modules/oidc/index.js';
+import { oauthClientRoutes } from './modules/oauth-clients/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -30,6 +35,11 @@ export function createApp(): express.Express {
 
   // 基础中间件
   app.use(express.json());
+  app.use(express.urlencoded({ extended: false }));
+  app.use(cookieParser());
+
+  // 会话解析（不拦截，仅挂载 req.session / req.user）
+  app.use(sessionMiddleware);
 
   // 健康检查（无需认证）
   app.get('/api/health', (_req, res) => {
@@ -43,10 +53,22 @@ export function createApp(): express.Express {
     });
   });
 
-  // API 认证（所有 /api/ 路由）
-  app.use('/api', authMiddleware);
+  // ===== 公开路由（不经过 authGuard） =====
+  // OIDC 发现 + 公开端点
+  app.use(oidcPublicRoutes);
+  // 认证路由（login 公开，logout/me/change-password 需要 session 但不需要 authGuard）
+  app.use('/api', authRoutes);
 
-  // 模块路由
+  // ===== 受保护路由 =====
+  app.use('/api', authGuard);
+
+  // OIDC 受保护端点（userinfo/revoke/introspect 需要 Bearer token）
+  app.use(oidcProtectedRoutes);
+
+  // OAuth 客户端管理（需要 admin）
+  app.use('/api', oauthClientRoutes);
+
+  // 业务模块路由
   app.use('/api', systemInitRoutes);
   app.use('/api', hardwareRoutes);
   app.use('/api', containerRoutes);

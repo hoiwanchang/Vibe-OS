@@ -38,6 +38,20 @@ instance.interceptors.request.use((config) => {
   return config;
 });
 
+/** 响应拦截器：401 时跳转登录页 */
+instance.interceptors.response.use(
+  (res) => res,
+  (err) => {
+    if (err.response?.status === 401) {
+      const path = window.location.pathname;
+      if (path !== '/login' && path !== '/consent') {
+        window.location.href = `/login?redirect=${encodeURIComponent(path)}`;
+      }
+    }
+    return Promise.reject(err);
+  },
+);
+
 /**
  * 将未知错误规范化为 ApiError
  */
