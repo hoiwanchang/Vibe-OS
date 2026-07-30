@@ -32,6 +32,9 @@ import { authRoutes } from './modules/auth/index.js';
 import { oidcPublicRoutes, oidcProtectedRoutes } from './modules/oidc/index.js';
 import { oauthClientRoutes } from './modules/oauth-clients/index.js';
 import { auditRoutes, auditMiddleware } from './modules/audit/index.js';
+import { luksRoutes } from './modules/luks/index.js';
+import { ssdCacheRoutes } from './modules/ssd-cache/index.js';
+import { iscsiRoutes } from './modules/iscsi/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -100,6 +103,9 @@ export function createApp(): express.Express {
   app.use('/api', ddnsRoutes);
   app.use('/api', ftpRoutes);
   app.use('/api', securityRoutes);
+  app.use('/api', luksRoutes);
+  app.use('/api', ssdCacheRoutes);
+  app.use('/api', iscsiRoutes);
   app.use('/api', auditRoutes);
 
   // 404 处理

@@ -15,6 +15,10 @@ import { useI18n } from 'vue-i18n';
 import { useStorageStore } from '@/stores/storage';
 import type { CreatePoolRequest, DiskSmartDetail } from '@/api/types';
 import { formatBytes, usageLevel } from '@/utils/format';
+import RaidManager from '@/components/storage/RaidManager.vue';
+import LuksManager from '@/components/storage/LuksManager.vue';
+import SsdCacheManager from '@/components/storage/SsdCacheManager.vue';
+import IscsiManager from '@/components/storage/IscsiManager.vue';
 
 const storage = useStorageStore();
 const { t } = useI18n();
@@ -363,6 +367,26 @@ onUnmounted(() => {
         <el-button type="primary" :disabled="expandDisks.length === 0" @click="submitExpand">{{ t('storage.confirmExpand') }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- Phase 4: RAID 阵列管理 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <RaidManager />
+    </div>
+
+    <!-- Phase 4: LUKS 卷加密 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <LuksManager />
+    </div>
+
+    <!-- Phase 4: SSD 缓存 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <SsdCacheManager />
+    </div>
+
+    <!-- Phase 4: iSCSI Target -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <IscsiManager />
+    </div>
   </div>
 </template>
 

@@ -1097,3 +1097,87 @@ export interface SecurityPolicy {
   banDurationHours: number;
   whitelist: string[];
 }
+
+/* ---------- Phase 4: RAID 管理 ---------- */
+
+export type RaidLevel = 'raid0' | 'raid1' | 'raid5' | 'raid6' | 'raid10';
+export type RaidState = 'online' | 'degraded' | 'rebuilding' | 'inactive';
+
+export interface RaidArray {
+  name: string;
+  level: RaidLevel;
+  devices: string[];
+  spares: string[];
+  state: RaidState;
+  totalBytes: number;
+  usedBytes: number;
+  syncProgress: number | null;
+}
+
+export interface RaidCreateRequest {
+  name: string;
+  level: RaidLevel;
+  devices: string[];
+  spares?: string[];
+}
+
+/* ---------- Phase 4: LUKS 卷加密 ---------- */
+
+export interface LuksVolume {
+  name: string;
+  device: string;
+  active: boolean;
+  cipher: string;
+  keySize: number;
+  autoUnlock: boolean;
+}
+
+export interface LuksCreateRequest {
+  device: string;
+  passphrase?: string;
+  keyfile?: boolean;
+}
+
+/* ---------- Phase 4: SSD 缓存 ---------- */
+
+export type SsdCacheMode = 'read' | 'write' | 'readwrite';
+
+export interface SsdCacheEntry {
+  name: string;
+  ssdDevice: string;
+  poolDevice: string;
+  mode: SsdCacheMode;
+  hitRate: number;
+  temperature: number | null;
+  lifePercent: number | null;
+}
+
+export interface SsdCacheCreateRequest {
+  ssdDevice: string;
+  poolDevice: string;
+  mode: SsdCacheMode;
+}
+
+/* ---------- Phase 4: iSCSI Target ---------- */
+
+export interface IscsiLun {
+  lunId: number;
+  backingStore: string;
+  sizeBytes: number;
+}
+
+export interface IscsiTarget {
+  iqn: string;
+  luns: IscsiLun[];
+  connections: number;
+  chapEnabled: boolean;
+  initiatorWhitelist: string[];
+}
+
+export interface IscsiTargetCreateRequest {
+  iqn: string;
+  luns: Array<{ backingStore: string; sizeBytes: number }>;
+  chapUser?: string;
+  chapPassword?: string;
+  initiatorWhitelist?: string[];
+}

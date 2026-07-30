@@ -41,6 +41,8 @@ const ALLOWED_COMMANDS = new Set([
   'umount',
   'blkid',
   'wipefs',
+  // LUKS 卷加密
+  'cryptsetup',
   // 共享文件夹
   'smbcontrol',
   'testparm',

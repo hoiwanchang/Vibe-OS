@@ -102,6 +102,15 @@ import type {
   AuditStats,
   BannedIpEntry,
   SecurityPolicy,
+  RaidArray,
+  RaidCreateRequest,
+  LuksVolume,
+  LuksCreateRequest,
+  SsdCacheEntry,
+  SsdCacheCreateRequest,
+  IscsiTarget,
+  IscsiTargetCreateRequest,
+  IscsiLun,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1254,4 +1263,109 @@ export const securityApi = {
   /** 更新封禁策略 */
   updatePolicy: (policy: Partial<SecurityPolicy>) =>
     request<SecurityPolicy>({ url: '/security/policy', method: 'put', data: policy }),
+};
+
+/* ---------- Phase 4: RAID 管理 ---------- */
+
+export const raidApi = {
+  /** 列出所有 RAID 阵列 */
+  list: () => request<RaidArray[]>({ url: '/storage/raid' }),
+
+  /** 创建阵列 */
+  create: (data: RaidCreateRequest) =>
+    request<RaidArray>({ url: '/storage/raid', method: 'post', data }),
+
+  /** 阵列详情 */
+  get: (name: string) => request<RaidArray>({ url: `/storage/raid/${name}` }),
+
+  /** 添加磁盘 */
+  addDisk: (name: string, device: string) =>
+    request<RaidArray>({ url: `/storage/raid/${name}/add`, method: 'post', data: { device } }),
+
+  /** 移除磁盘 */
+  removeDisk: (name: string, device: string) =>
+    request<RaidArray>({ url: `/storage/raid/${name}/remove`, method: 'post', data: { device } }),
+
+  /** 触发重建 */
+  rebuild: (name: string) =>
+    request<{ started: boolean }>({ url: `/storage/raid/${name}/rebuild`, method: 'post' }),
+
+  /** 删除阵列 */
+  remove: (name: string) =>
+    request<{ removed: boolean }>({ url: `/storage/raid/${name}`, method: 'delete' }),
+};
+
+/* ---------- Phase 4: LUKS 卷加密 ---------- */
+
+export const luksApi = {
+  /** 列出所有加密卷 */
+  list: () => request<LuksVolume[]>({ url: '/luks/status' }),
+
+  /** 创建加密卷 */
+  create: (data: LuksCreateRequest) =>
+    request<LuksVolume>({ url: '/luks/create', method: 'post', data }),
+
+  /** 解锁卷 */
+  open: (device: string, name: string, passphrase?: string) =>
+    request<{ opened: boolean }>({ url: '/luks/open', method: 'post', data: { device, name, passphrase } }),
+
+  /** 锁定卷 */
+  close: (name: string) =>
+    request<{ closed: boolean }>({ url: '/luks/close', method: 'post', data: { name } }),
+
+  /** 单个卷详情 */
+  get: (name: string) => request<LuksVolume>({ url: `/luks/${name}` }),
+
+  /** 生成 keyfile */
+  generateKeyfile: (name: string) =>
+    request<{ path: string }>({ url: '/luks/keyfile', method: 'post', data: { name } }),
+
+  /** 配置开机自动解锁 */
+  setAutoUnlock: (name: string, enabled: boolean) =>
+    request<{ updated: boolean }>({ url: '/luks/autounlock', method: 'put', data: { name, enabled } }),
+};
+
+/* ---------- Phase 4: SSD 缓存 ---------- */
+
+export const ssdCacheApi = {
+  /** 缓存状态列表 */
+  list: () => request<SsdCacheEntry[]>({ url: '/ssd-cache/status' }),
+
+  /** 配置 SSD 缓存 */
+  create: (data: SsdCacheCreateRequest) =>
+    request<SsdCacheEntry>({ url: '/ssd-cache/create', method: 'post', data }),
+
+  /** 移除缓存 */
+  remove: (name: string) =>
+    request<{ removed: boolean }>({ url: `/ssd-cache/${name}`, method: 'delete' }),
+
+  /** 单个缓存详情 */
+  get: (name: string) => request<SsdCacheEntry>({ url: `/ssd-cache/${name}` }),
+};
+
+/* ---------- Phase 4: iSCSI Target ---------- */
+
+export const iscsiApi = {
+  /** 列出所有 Target */
+  listTargets: () => request<IscsiTarget[]>({ url: '/iscsi/targets' }),
+
+  /** 创建 Target */
+  createTarget: (data: IscsiTargetCreateRequest) =>
+    request<IscsiTarget>({ url: '/iscsi/targets', method: 'post', data }),
+
+  /** 删除 Target */
+  deleteTarget: (iqn: string) =>
+    request<{ removed: boolean }>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}`, method: 'delete' }),
+
+  /** Target 详情 */
+  getTarget: (iqn: string) =>
+    request<IscsiTarget>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}` }),
+
+  /** 添加 LUN */
+  addLun: (iqn: string, backingStore: string, sizeBytes: number) =>
+    request<IscsiLun>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}/lun`, method: 'post', data: { backingStore, sizeBytes } }),
+
+  /** 移除 LUN */
+  removeLun: (iqn: string, lunId: number) =>
+    request<{ removed: boolean }>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}/lun/${lunId}`, method: 'delete' }),
 };
