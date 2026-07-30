@@ -84,6 +84,16 @@ import type {
   SearchResult,
   SearchStatus,
   FilePreviewResult,
+  FtpConfig,
+  FtpStatus,
+  FtpUserPermission,
+  FtpLogEntry,
+  ProxyRule,
+  ProxyRuleInput,
+  ProxyCert,
+  DdnsConfig,
+  DdnsStatus,
+  DdnsHistoryEntry,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1096,4 +1106,78 @@ export const settingsApi = {
   /** 关机 */
   shutdown: () =>
     request<{ shuttingDown: boolean }>({ url: '/system/shutdown', method: 'post' }),
+};
+
+/* ---------- Phase 2: FTP/SFTP ---------- */
+
+export const ftpApi = {
+  /** 获取 FTP/SFTP 服务状态 */
+  getStatus: () => request<FtpStatus>({ url: '/ftp/status' }),
+
+  /** 更新 FTP 配置 */
+  updateConfig: (config: Partial<FtpConfig>) =>
+    request<FtpConfig>({ url: '/ftp/config', method: 'put', data: config }),
+
+  /** 启动 FTP 服务 */
+  start: () => request<{ started: boolean }>({ url: '/ftp/start', method: 'post' }),
+
+  /** 停止 FTP 服务 */
+  stop: () => request<{ stopped: boolean }>({ url: '/ftp/stop', method: 'post' }),
+
+  /** 重启 FTP 服务 */
+  restart: () => request<{ restarted: boolean }>({ url: '/ftp/restart', method: 'post' }),
+
+  /** 获取连接日志 */
+  getLogs: (params?: { page?: number; size?: number }) =>
+    request<{ logs: FtpLogEntry[]; total: number }>({ url: '/ftp/logs', params }),
+
+  /** 更新用户 FTP 权限 */
+  updateUser: (uid: number, perm: Partial<FtpUserPermission>) =>
+    request<FtpUserPermission>({ url: `/ftp/users/${uid}`, method: 'put', data: perm }),
+};
+
+/* ---------- Phase 2: 反向代理 ---------- */
+
+export const proxyApi = {
+  /** 规则列表 */
+  getRules: () => request<ProxyRule[]>({ url: '/proxy/rules' }),
+
+  /** 创建规则 */
+  createRule: (input: ProxyRuleInput) =>
+    request<ProxyRule>({ url: '/proxy/rules', method: 'post', data: input }),
+
+  /** 更新规则 */
+  updateRule: (id: string, input: Partial<ProxyRuleInput>) =>
+    request<ProxyRule>({ url: `/proxy/rules/${id}`, method: 'put', data: input }),
+
+  /** 删除规则 */
+  deleteRule: (id: string) =>
+    request<{ deleted: boolean }>({ url: `/proxy/rules/${id}`, method: 'delete' }),
+
+  /** 重载 nginx */
+  reload: () => request<{ reloaded: boolean }>({ url: '/proxy/reload', method: 'post' }),
+
+  /** 证书列表 */
+  getCerts: () => request<ProxyCert[]>({ url: '/proxy/certs' }),
+
+  /** 生成/上传证书 */
+  createCert: (payload: { domain: string; selfSigned?: boolean }) =>
+    request<ProxyCert>({ url: '/proxy/certs', method: 'post', data: payload }),
+};
+
+/* ---------- Phase 2: DDNS ---------- */
+
+export const ddnsApi = {
+  /** 获取 DDNS 状态 */
+  getStatus: () => request<DdnsStatus>({ url: '/ddns/status' }),
+
+  /** 更新 DDNS 配置 */
+  updateConfig: (config: Partial<DdnsConfig>) =>
+    request<DdnsConfig>({ url: '/ddns/config', method: 'put', data: config }),
+
+  /** 手动触发更新 */
+  update: () => request<{ updated: boolean; ip: string }>({ url: '/ddns/update', method: 'post' }),
+
+  /** 更新历史 */
+  getHistory: () => request<DdnsHistoryEntry[]>({ url: '/ddns/history' }),
 };

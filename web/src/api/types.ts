@@ -924,3 +924,105 @@ export interface FileThumbnailResult {
   size: number;
   cached: boolean;
 }
+
+/* ---------- Phase 2: FTP/SFTP ---------- */
+
+export interface FtpConfig {
+  enabled: boolean;
+  port: number;
+  passivePortMin: number;
+  passivePortMax: number;
+  anonymousEnabled: boolean;
+  tlsEnabled: boolean;
+  maxClients: number;
+  banner: string;
+}
+
+export interface SftpConfig {
+  enabled: boolean;
+  port: number;
+  chrootEnabled: boolean;
+}
+
+export interface FtpStatus {
+  ftp: { running: boolean; pid: number | null };
+  sftp: { running: boolean; pid: number | null };
+  config: FtpConfig;
+  sftpConfig: SftpConfig;
+}
+
+export interface FtpUserPermission {
+  uid: number;
+  enabled: boolean;
+  rootDir: string;
+  bandwidthLimitKbps: number;
+}
+
+export interface FtpLogEntry {
+  timestamp: string;
+  user: string;
+  ip: string;
+  action: string;
+  path: string;
+  result: 'success' | 'failure';
+}
+
+/* ---------- Phase 2: 反向代理 ---------- */
+
+export interface ProxyRule {
+  id: string;
+  domain: string;
+  path: string;
+  target: string;
+  https: boolean;
+  websocket: boolean;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface ProxyRuleInput {
+  domain: string;
+  path: string;
+  target: string;
+  https?: boolean;
+  websocket?: boolean;
+  enabled?: boolean;
+}
+
+export interface ProxyCert {
+  id: string;
+  domain: string;
+  issuer: string;
+  notAfter: string;
+  selfSigned: boolean;
+}
+
+/* ---------- Phase 2: DDNS ---------- */
+
+export type DdnsProvider = 'cloudflare' | 'aliyun' | 'custom';
+
+export interface DdnsConfig {
+  enabled: boolean;
+  provider: DdnsProvider;
+  domain: string;
+  recordName: string;
+  apiKey: string;
+  apiSecret: string;
+  customUrl: string;
+  intervalMinutes: number;
+}
+
+export interface DdnsStatus {
+  enabled: boolean;
+  online: boolean;
+  currentIp: string | null;
+  lastUpdate: string | null;
+  lastError: string | null;
+}
+
+export interface DdnsHistoryEntry {
+  timestamp: string;
+  ip: string;
+  success: boolean;
+  message: string;
+}

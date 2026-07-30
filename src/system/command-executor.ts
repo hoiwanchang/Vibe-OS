@@ -63,6 +63,8 @@ const ALLOWED_COMMANDS = new Set([
   'aria2c',
   // 计划任务
   'bash',
+  // FTP/SFTP 日志
+  'journalctl',
 ]);
 
 /**

@@ -24,6 +24,9 @@ import { notificationRoutes } from './modules/notification/index.js';
 import { schedulerRoutes } from './modules/scheduler/index.js';
 import { appsRoutes } from './modules/apps/index.js';
 import { settingsRoutes } from './modules/settings/index.js';
+import { proxyRoutes } from './modules/proxy/index.js';
+import { ddnsRoutes } from './modules/ddns/index.js';
+import { ftpRoutes } from './modules/ftp/index.js';
 import { authRoutes } from './modules/auth/index.js';
 import { oidcPublicRoutes, oidcProtectedRoutes } from './modules/oidc/index.js';
 import { oauthClientRoutes } from './modules/oauth-clients/index.js';
@@ -88,6 +91,9 @@ export function createApp(): express.Express {
   app.use('/api', schedulerRoutes);
   app.use('/api', appsRoutes);
   app.use('/api', settingsRoutes);
+  app.use('/api', proxyRoutes);
+  app.use('/api', ddnsRoutes);
+  app.use('/api', ftpRoutes);
 
   // 404 处理
   app.use((_req, res) => {

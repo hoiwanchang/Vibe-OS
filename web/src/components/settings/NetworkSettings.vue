@@ -7,6 +7,8 @@ import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { systemApi } from '@/api';
 import type { NetworkDriversResponse } from '@/api/types';
+import ProxySettings from '@/components/settings/ProxySettings.vue';
+import DdnsSettings from '@/components/settings/DdnsSettings.vue';
 
 const { t } = useI18n();
 const netData = ref<NetworkDriversResponse | null>(null);
@@ -69,6 +71,16 @@ function save(): void {
         <el-button type="primary" @click="save">{{ t('common.saveChanges') }}</el-button>
       </el-form-item>
     </el-form>
+
+    <!-- Phase 2: 反向代理 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <ProxySettings />
+    </div>
+
+    <!-- Phase 2: DDNS -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <DdnsSettings />
+    </div>
   </div>
 </template>
 

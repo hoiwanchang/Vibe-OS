@@ -39,6 +39,12 @@ import type {
   SearchResult,
   SearchStatus,
   FilePreviewResult,
+  FtpStatus,
+  FtpLogEntry,
+  ProxyRule,
+  ProxyCert,
+  DdnsStatus,
+  DdnsHistoryEntry,
 } from './types';
 
 const now = () => new Date().toISOString();
@@ -1058,4 +1064,54 @@ export function demoFilePreview(path: string): FilePreviewResult {
     truncated: false,
     content: `# ${path.split('/').pop() ?? path}\n\n这是演示模式下的文件预览内容。\n连接后端后将返回真实文件内容。`,
   };
+}
+
+/* ---------- Phase 2: FTP/SFTP ---------- */
+
+export function demoFtpStatus(): FtpStatus {
+  return {
+    ftp: { running: false, pid: null },
+    sftp: { running: true, pid: 1234 },
+    config: {
+      enabled: false, port: 21, passivePortMin: 30000, passivePortMax: 30100,
+      anonymousEnabled: false, tlsEnabled: false, maxClients: 50, banner: 'Vibe OS FTP',
+    },
+    sftpConfig: { enabled: true, port: 22, chrootEnabled: true },
+  };
+}
+
+export function demoFtpLogs(): { logs: FtpLogEntry[]; total: number } {
+  return {
+    logs: [
+      { timestamp: '2026-07-31 10:00:01', user: 'admin', ip: '192.168.1.10', action: 'LOGIN', path: '/', result: 'success' },
+      { timestamp: '2026-07-31 10:00:05', user: 'admin', ip: '192.168.1.10', action: 'UPLOAD', path: '/files/test.txt', result: 'success' },
+      { timestamp: '2026-07-31 10:01:12', user: 'guest', ip: '192.168.1.99', action: 'LOGIN', path: '/', result: 'failure' },
+    ],
+    total: 3,
+  };
+}
+
+/* ---------- Phase 2: 反向代理 ---------- */
+
+export function demoProxyRules(): ProxyRule[] {
+  return [
+    { id: 'r1', domain: 'nas.local', path: '/', target: '127.0.0.1:3000', https: true, websocket: false, enabled: true, createdAt: '2026-07-01' },
+    { id: 'r2', domain: 'app.nas.local', path: '/api', target: '127.0.0.1:8080', https: false, websocket: true, enabled: true, createdAt: '2026-07-15' },
+  ];
+}
+
+export function demoProxyCerts(): ProxyCert[] {
+  return [
+    { id: 'c1', domain: 'nas.local', issuer: 'Vibe OS CA', notAfter: '2027-07-01', selfSigned: true },
+  ];
+}
+
+/* ---------- Phase 2: DDNS ---------- */
+
+export function demoDdnsStatus(): DdnsStatus {
+  return { enabled: false, online: false, currentIp: null, lastUpdate: null, lastError: null };
+}
+
+export function demoDdnsHistory(): DdnsHistoryEntry[] {
+  return [];
 }
