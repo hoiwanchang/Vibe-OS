@@ -102,3 +102,6 @@ export const SESSION_COOKIE_NAME = 'vibeos.sid';
 
 /** 生产环境标记（影响 cookie secure 属性） */
 export const IS_PRODUCTION = process.env['NODE_ENV'] === 'production';
+
+/** 强制全员 2FA（管理员配置项） */
+export const FORCE_2FA = process.env['VIBEOS_FORCE_2FA'] === 'true';

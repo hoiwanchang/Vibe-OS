@@ -1026,3 +1026,74 @@ export interface DdnsHistoryEntry {
   success: boolean;
   message: string;
 }
+
+/* ---------- Phase 3: 2FA / TOTP ---------- */
+
+export interface TwoFactorSetupResult {
+  secret: string;
+  otpauthUri: string;
+  qrCodeDataUri: string;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  force2fa: boolean;
+}
+
+export interface BackupCodesResult {
+  codes: string[];
+  generatedAt: string;
+}
+
+/* ---------- Phase 3: 审计日志 ---------- */
+
+export interface AuditLogEntry {
+  id: number;
+  uid: number | null;
+  username: string;
+  method: string;
+  path: string;
+  ip: string;
+  statusCode: number;
+  sensitive: boolean;
+  timestamp: string;
+}
+
+export interface AuditLogQuery {
+  user?: string;
+  action?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface AuditLogResult {
+  logs: AuditLogEntry[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface AuditStats {
+  todayTotal: number;
+  todayLogins: number;
+  todaySensitive: number;
+  totalEntries: number;
+}
+
+/* ---------- Phase 3: IP 封禁 ---------- */
+
+export interface BannedIpEntry {
+  ip: string;
+  reason: string;
+  bannedAt: string;
+  expiresAt: string | null;
+  auto: boolean;
+}
+
+export interface SecurityPolicy {
+  maxAttempts: number;
+  banDurationHours: number;
+  whitelist: string[];
+}

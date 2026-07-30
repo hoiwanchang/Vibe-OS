@@ -44,6 +44,7 @@ vi.mock('../../../config.js', () => ({
   LOGIN_MAX_ATTEMPTS: 5,
   SESSION_TTL_MS: 86400000,
   VIBEOS_APP_DIR: '/tmp/vibeos-data/vibeos',
+  FORCE_2FA: false,
 }));
 
 import * as service from '../auth.service.js';
@@ -83,9 +84,12 @@ describe('auth.service', () => {
     it('正确凭据应返回用户和会话', async () => {
       mockFindUserByUsername.mockResolvedValue(mockUser);
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
-      const { user, session } = await service.login('admin', 'vibeos', '127.0.0.1');
-      expect(user.username).toBe('admin');
-      expect(session.sid).toBeDefined();
+      const result = await service.login('admin', 'vibeos', '127.0.0.1');
+      expect(result.require2fa).toBe(false);
+      if (!result.require2fa) {
+        expect(result.user.username).toBe('admin');
+        expect(result.session.sid).toBeDefined();
+      }
       expect(mockSaveSession).toHaveBeenCalled();
     });
 
@@ -116,8 +120,11 @@ describe('auth.service', () => {
         await expect(service.login('admin', 'wrong', '1.1.1.1')).rejects.toThrow();
       }
       vi.mocked(bcrypt.compare).mockResolvedValue(true);
-      const { user } = await service.login('admin', 'vibeos', '2.2.2.2');
-      expect(user.username).toBe('admin');
+      const result = await service.login('admin', 'vibeos', '2.2.2.2');
+      expect(result.require2fa).toBe(false);
+      if (!result.require2fa) {
+        expect(result.user.username).toBe('admin');
+      }
     });
   });
 

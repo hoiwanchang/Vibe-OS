@@ -94,6 +94,14 @@ import type {
   DdnsConfig,
   DdnsStatus,
   DdnsHistoryEntry,
+  TwoFactorSetupResult,
+  TwoFactorStatus,
+  BackupCodesResult,
+  AuditLogQuery,
+  AuditLogResult,
+  AuditStats,
+  BannedIpEntry,
+  SecurityPolicy,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1180,4 +1188,70 @@ export const ddnsApi = {
 
   /** 更新历史 */
   getHistory: () => request<DdnsHistoryEntry[]>({ url: '/ddns/history' }),
+};
+
+/* ---------- Phase 3: 2FA / TOTP ---------- */
+
+export const twoFactorApi = {
+  /** 获取 2FA 状态 */
+  getStatus: () => request<TwoFactorStatus>({ url: '/auth/2fa/status' }),
+
+  /** 生成 secret + 二维码 */
+  setup: () => request<TwoFactorSetupResult>({ url: '/auth/2fa/setup', method: 'post' }),
+
+  /** 验证 TOTP 码并启用 */
+  verify: (code: string) =>
+    request<{ enabled: boolean }>({ url: '/auth/2fa/verify', method: 'post', data: { code } }),
+
+  /** 关闭 2FA（需密码） */
+  disable: (password: string) =>
+    request<{ disabled: boolean }>({ url: '/auth/2fa/disable', method: 'post', data: { password } }),
+
+  /** 查看备用码 */
+  getBackupCodes: () => request<BackupCodesResult>({ url: '/auth/2fa/backup-codes' }),
+
+  /** 重新生成备用码 */
+  regenerateBackupCodes: () =>
+    request<BackupCodesResult>({ url: '/auth/2fa/regenerate', method: 'post' }),
+
+  /** 2FA 登录验证 */
+  login: (pendingToken: string, code: string) =>
+    request<{ token: string }>({ url: '/auth/2fa/login', method: 'post', data: { pendingToken, code } }),
+};
+
+/* ---------- Phase 3: 审计日志 ---------- */
+
+export const auditApi = {
+  /** 查询审计日志 */
+  getLogs: (params?: AuditLogQuery) =>
+    request<AuditLogResult>({ url: '/audit/logs', params }),
+
+  /** 统计摘要 */
+  getStats: () => request<AuditStats>({ url: '/audit/stats' }),
+
+  /** 导出 */
+  export: (format: 'csv' | 'json') =>
+    request<Blob>({ url: '/audit/export', method: 'post', data: { format }, responseType: 'blob' }),
+};
+
+/* ---------- Phase 3: IP 封禁 ---------- */
+
+export const securityApi = {
+  /** 封禁列表 */
+  getBanned: () => request<BannedIpEntry[]>({ url: '/security/banned' }),
+
+  /** 手动封禁 */
+  ban: (ip: string, reason?: string) =>
+    request<BannedIpEntry>({ url: '/security/ban', method: 'post', data: { ip, reason } }),
+
+  /** 解封 */
+  unban: (ip: string) =>
+    request<{ unbanned: boolean }>({ url: `/security/ban/${ip}`, method: 'delete' }),
+
+  /** 获取封禁策略 */
+  getPolicy: () => request<SecurityPolicy>({ url: '/security/policy' }),
+
+  /** 更新封禁策略 */
+  updatePolicy: (policy: Partial<SecurityPolicy>) =>
+    request<SecurityPolicy>({ url: '/security/policy', method: 'put', data: policy }),
 };

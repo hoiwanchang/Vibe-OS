@@ -9,6 +9,8 @@ import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { settingsApi } from '@/api';
 import type { CertStatus, SshKeysResult, SshPublicKey, GeneratedSshKey } from '@/api/types';
+import TwoFactorSettings from '@/components/settings/TwoFactorSettings.vue';
+import IpBanSettings from '@/components/settings/IpBanSettings.vue';
 
 const { t } = useI18n();
 const store = useSettingsStore();
@@ -535,6 +537,16 @@ async function save(): Promise<void> {
         <el-button type="primary" @click="generatedKeyDialogVisible = false">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
+
+    <!-- Phase 3: 双因素认证 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <TwoFactorSettings />
+    </div>
+
+    <!-- Phase 3: IP 封禁 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <IpBanSettings />
+    </div>
   </div>
 </template>
 

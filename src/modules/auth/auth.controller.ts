@@ -10,17 +10,22 @@ import * as service from './auth.service.js';
 export const loginHandler = asyncHandler(async (req: Request, res: Response) => {
   const { username, password } = req.body as { username: string; password: string };
   const ip = req.ip ?? req.socket.remoteAddress ?? '0.0.0.0';
-  const { user, session } = await service.login(username, password, ip);
+  const result = await service.login(username, password, ip);
 
-  res.cookie(SESSION_COOKIE_NAME, session.sid, {
+  if (result.require2fa) {
+    res.json({ success: true, data: { require2fa: true, token: result.token } });
+    return;
+  }
+
+  res.cookie(SESSION_COOKIE_NAME, result.session.sid, {
     httpOnly: true,
     sameSite: 'strict',
     secure: IS_PRODUCTION,
-    maxAge: session.expiresAt - session.createdAt,
+    maxAge: result.session.expiresAt - result.session.createdAt,
     path: '/',
   });
 
-  res.json({ success: true, data: user });
+  res.json({ success: true, data: { require2fa: false, ...result.user } });
 });
 
 /** POST /api/auth/logout */

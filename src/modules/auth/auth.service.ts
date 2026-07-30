@@ -17,9 +17,10 @@ import type {
   ChangePasswordRequest,
   CurrentUser,
   LoginAttempt,
-  LoginResponse,
+  LoginResult,
   Session,
 } from './auth.types.js';
+import * as twoFactor from './two-factor.service.js';
 
 const BCRYPT_COST = 12;
 
@@ -58,7 +59,7 @@ export async function login(
   username: string,
   password: string,
   ip: string,
-): Promise<{ user: LoginResponse; session: Session }> {
+): Promise<LoginResult> {
   const lockKey = `${ip}:${username}`;
 
   // 检查锁定
@@ -82,10 +83,18 @@ export async function login(
   // 登录成功，清除失败记录
   loginAttempts.delete(lockKey);
 
+  // 检查是否需要 2FA
+  const need2FA = await twoFactor.is2FARequired(user.uid);
+  if (need2FA) {
+    const token = twoFactor.createPending2FAToken(user.uid, user.username, ip);
+    return { require2fa: true, token };
+  }
+
   // 创建会话
   const session = await createSession(user);
 
   return {
+    require2fa: false,
     user: {
       uid: user.uid,
       username: user.username,

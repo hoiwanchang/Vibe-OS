@@ -27,9 +27,11 @@ import { settingsRoutes } from './modules/settings/index.js';
 import { proxyRoutes } from './modules/proxy/index.js';
 import { ddnsRoutes } from './modules/ddns/index.js';
 import { ftpRoutes } from './modules/ftp/index.js';
+import { securityRoutes } from './modules/security/index.js';
 import { authRoutes } from './modules/auth/index.js';
 import { oidcPublicRoutes, oidcProtectedRoutes } from './modules/oidc/index.js';
 import { oauthClientRoutes } from './modules/oauth-clients/index.js';
+import { auditRoutes, auditMiddleware } from './modules/audit/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -45,6 +47,9 @@ export function createApp(): express.Express {
 
   // 会话解析（不拦截，仅挂载 req.session / req.user）
   app.use(sessionMiddleware);
+
+  // 审计日志中间件（记录所有 /api/ 请求）
+  app.use(auditMiddleware);
 
   // 健康检查（无需认证）
   app.get('/api/health', (_req, res) => {
@@ -94,6 +99,8 @@ export function createApp(): express.Express {
   app.use('/api', proxyRoutes);
   app.use('/api', ddnsRoutes);
   app.use('/api', ftpRoutes);
+  app.use('/api', securityRoutes);
+  app.use('/api', auditRoutes);
 
   // 404 处理
   app.use((_req, res) => {

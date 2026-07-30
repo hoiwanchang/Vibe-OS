@@ -8,8 +8,11 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { settingsApi } from '@/api';
+import AuditLogSettings from '@/components/settings/AuditLogSettings.vue';
 
 const { t } = useI18n();
+
+const activeTab = ref('system');
 
 const store = useSettingsStore();
 const { logs, logSources, logTotal } = storeToRefs(store);
@@ -62,8 +65,9 @@ function levelClass(lv: string): string {
 
 <template>
   <div class="nx-panel settings-section">
-    <div class="nx-panel-title">{{ t('settings.logs.title') }}</div>
-    <div class="log-toolbar">
+    <el-tabs v-model="activeTab">
+      <el-tab-pane :label="t('settings.logs.title')" name="system">
+        <div class="log-toolbar">
       <el-select v-model="source" size="small" style="width: 140px" @change="fetchLogs()">
         <el-option v-for="s in logSources" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
@@ -94,6 +98,12 @@ function levelClass(lv: string): string {
       </div>
     </div>
     <div class="log-footer nx-text-dim">{{ t('settings.logs.footer', { total: logTotal, shown: logs.length }) }}</div>
+      </el-tab-pane>
+
+      <el-tab-pane :label="t('settings.audit.title')" name="audit">
+        <AuditLogSettings />
+      </el-tab-pane>
+    </el-tabs>
   </div>
 </template>
 
