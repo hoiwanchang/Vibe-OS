@@ -1181,3 +1181,138 @@ export interface IscsiTargetCreateRequest {
   chapPassword?: string;
   initiatorWhitelist?: string[];
 }
+
+/* ---------- Phase 5: DLNA 媒体服务 ---------- */
+
+export type MediaSourceType = 'video' | 'music' | 'photo';
+
+export interface MediaSource {
+  path: string;
+  type: MediaSourceType;
+}
+
+export interface MediaConfig {
+  sources: MediaSource[];
+  inotify: boolean;
+  port: number;
+}
+
+export interface MediaStatus {
+  running: boolean;
+  videoCount: number;
+  musicCount: number;
+  photoCount: number;
+  lastScan: string | null;
+}
+
+export interface MediaClient {
+  name: string;
+  ip: string;
+  type: string;
+  connectedAt: string;
+}
+
+/* ---------- Phase 5: 照片管理 ---------- */
+
+export interface PhotoItem {
+  id: string;
+  path: string;
+  filename: string;
+  width: number;
+  height: number;
+  takenAt: string | null;
+  camera: string | null;
+  gps: { lat: number; lng: number } | null;
+}
+
+export interface PhotoTimelineGroup {
+  date: string;
+  photos: PhotoItem[];
+}
+
+export interface PhotoAlbum {
+  id: string;
+  name: string;
+  description: string;
+  coverId: string | null;
+  photoCount: number;
+  createdAt: string;
+}
+
+export interface PhotoShareLink {
+  token: string;
+  photoIds: string[];
+  expiresAt: string;
+  url: string;
+}
+
+/* ---------- Phase 5: 视频转码 ---------- */
+
+export type TranscodePreset = '1080p' | '720p' | '480p' | 'original';
+export type TranscodeHwAccel = 'auto' | 'vaapi' | 'nvenc' | 'none';
+export type TranscodeStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export interface TranscodeTask {
+  id: string;
+  inputPath: string;
+  outputPath: string;
+  preset: TranscodePreset;
+  hwAccel: TranscodeHwAccel;
+  status: TranscodeStatus;
+  progress: number;
+  createdAt: string;
+  error: string | null;
+}
+
+export interface TranscodeCreateRequest {
+  inputPath: string;
+  outputPath?: string;
+  preset: TranscodePreset;
+  hwAccel?: TranscodeHwAccel;
+}
+
+export interface HwAccelInfo {
+  vaapi: boolean;
+  nvenc: boolean;
+  recommended: TranscodeHwAccel;
+}
+
+/* ---------- Phase 5: 音乐串流 ---------- */
+
+export interface MusicArtist {
+  id: string;
+  name: string;
+  albumCount: number;
+  trackCount: number;
+}
+
+export interface MusicAlbum {
+  id: string;
+  name: string;
+  artistId: string;
+  artistName: string;
+  year: number | null;
+  coverPath: string | null;
+  trackCount: number;
+}
+
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artistId: string;
+  artistName: string;
+  albumId: string;
+  albumName: string;
+  trackNumber: number;
+  duration: number;
+  format: string;
+  path: string;
+}
+
+export interface MusicPlaylist {
+  id: string;
+  name: string;
+  trackIds: string[];
+  trackCount: number;
+  createdAt: string;
+}

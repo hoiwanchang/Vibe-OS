@@ -111,6 +111,20 @@ import type {
   IscsiTarget,
   IscsiTargetCreateRequest,
   IscsiLun,
+  MediaStatus,
+  MediaConfig,
+  MediaClient,
+  PhotoItem,
+  PhotoTimelineGroup,
+  PhotoAlbum,
+  PhotoShareLink,
+  TranscodeTask,
+  TranscodeCreateRequest,
+  HwAccelInfo,
+  MusicArtist,
+  MusicAlbum,
+  MusicTrack,
+  MusicPlaylist,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1368,4 +1382,108 @@ export const iscsiApi = {
   /** 移除 LUN */
   removeLun: (iqn: string, lunId: number) =>
     request<{ removed: boolean }>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}/lun/${lunId}`, method: 'delete' }),
+};
+
+/* ---------- Phase 5: DLNA 媒体服务 ---------- */
+
+export const mediaApi = {
+  /** DLNA 服务状态 */
+  getStatus: () => request<MediaStatus>({ url: '/media/status' }),
+
+  /** 媒体库配置 */
+  updateConfig: (config: MediaConfig) =>
+    request<MediaConfig>({ url: '/media/config', method: 'put', data: config }),
+
+  /** 重新扫描 */
+  rescan: () => request<{ started: boolean }>({ url: '/media/rescan', method: 'post' }),
+
+  /** 已连接客户端 */
+  getClients: () => request<MediaClient[]>({ url: '/media/clients' }),
+};
+
+/* ---------- Phase 5: 照片管理 ---------- */
+
+export const photosApi = {
+  /** 照片库（时间线） */
+  getLibrary: (params?: { page?: number; pageSize?: number; year?: number; month?: number }) =>
+    request<PhotoTimelineGroup[]>({ url: '/photos/library', params }),
+
+  /** 相册列表 */
+  getAlbums: () => request<PhotoAlbum[]>({ url: '/photos/albums' }),
+
+  /** 创建相册 */
+  createAlbum: (data: { name: string; description?: string }) =>
+    request<PhotoAlbum>({ url: '/photos/albums', method: 'post', data }),
+
+  /** 删除相册 */
+  deleteAlbum: (id: string) =>
+    request<{ removed: boolean }>({ url: `/photos/albums/${id}`, method: 'delete' }),
+
+  /** 添加照片到相册 */
+  addPhotosToAlbum: (albumId: string, photoIds: string[]) =>
+    request<{ added: number }>({ url: `/photos/albums/${albumId}/photos`, method: 'post', data: { photoIds } }),
+
+  /** 照片详情 */
+  getPhoto: (id: string) => request<PhotoItem>({ url: `/photos/${id}` }),
+
+  /** 生成共享链接 */
+  createShare: (data: { photoIds: string[]; expiresInHours: number }) =>
+    request<PhotoShareLink>({ url: '/photos/share', method: 'post', data }),
+};
+
+/* ---------- Phase 5: 视频转码 ---------- */
+
+export const transcodeApi = {
+  /** 转码任务列表 */
+  getTasks: () => request<TranscodeTask[]>({ url: '/transcode/tasks' }),
+
+  /** 创建转码任务 */
+  createTask: (data: TranscodeCreateRequest) =>
+    request<TranscodeTask>({ url: '/transcode/tasks', method: 'post', data }),
+
+  /** 任务详情 */
+  getTask: (id: string) => request<TranscodeTask>({ url: `/transcode/tasks/${id}` }),
+
+  /** 取消/删除任务 */
+  deleteTask: (id: string) =>
+    request<{ removed: boolean }>({ url: `/transcode/tasks/${id}`, method: 'delete' }),
+
+  /** 检测硬件加速 */
+  getHwAccel: () => request<HwAccelInfo>({ url: '/transcode/hwaccel' }),
+};
+
+/* ---------- Phase 5: 音乐串流 ---------- */
+
+export const musicApi = {
+  /** 艺术家列表 */
+  getArtists: () => request<MusicArtist[]>({ url: '/music/artists' }),
+
+  /** 专辑列表 */
+  getAlbums: (params?: { artistId?: string }) =>
+    request<MusicAlbum[]>({ url: '/music/albums', params }),
+
+  /** 曲目列表 */
+  getTracks: (params?: { artistId?: string; albumId?: string; page?: number; pageSize?: number }) =>
+    request<MusicTrack[]>({ url: '/music/tracks', params }),
+
+  /** 播放列表 */
+  getPlaylists: () => request<MusicPlaylist[]>({ url: '/music/playlists' }),
+
+  /** 创建播放列表 */
+  createPlaylist: (data: { name: string; trackIds: string[] }) =>
+    request<MusicPlaylist>({ url: '/music/playlists', method: 'post', data }),
+
+  /** 删除播放列表 */
+  deletePlaylist: (id: string) =>
+    request<{ removed: boolean }>({ url: `/music/playlists/${id}`, method: 'delete' }),
+
+  /** 更新播放列表 */
+  updatePlaylist: (id: string, data: { name?: string; trackIds?: string[] }) =>
+    request<MusicPlaylist>({ url: `/music/playlists/${id}`, method: 'put', data }),
+
+  /** 音频流 URL */
+  streamUrl: (trackId: string) => `/api/music/tracks/${trackId}/stream`,
+
+  /** 封面 URL */
+  coverUrl: (trackId: string) => `/api/music/tracks/${trackId}/cover`,
 };

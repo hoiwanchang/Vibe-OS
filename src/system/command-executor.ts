@@ -67,6 +67,14 @@ const ALLOWED_COMMANDS = new Set([
   'bash',
   // FTP/SFTP 日志
   'journalctl',
+  // DLNA/UPnP 媒体服务器
+  'minidlnad',
+  'pgrep',
+  'kill',
+  // 视频转码
+  'ffmpeg',
+  'vainfo',
+  'nvidia-smi',
 ]);
 
 /**

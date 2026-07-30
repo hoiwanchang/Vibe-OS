@@ -164,6 +164,8 @@ export default {
       network: '网络配置',
       scheduler: '计划任务',
       search: '全文搜索',
+      photos: '照片管理',
+      music: '音乐播放器',
     },
     groups: {
       system: '系统',
@@ -1285,5 +1287,36 @@ export default {
 
   storageBar: {
     used: '已用',
+  },
+
+  photos: {
+    timeline: '时间线',
+    albums: '相册',
+    createAlbum: '创建相册',
+    albumName: '相册名称',
+    albumDesc: '描述',
+    albumCreated: '相册已创建',
+    deleteAlbumConfirm: '确定删除相册「{name}」？',
+    empty: '暂无照片',
+    noAlbums: '暂无相册',
+    photoUnit: '张',
+    invalidName: '请输入相册名称',
+  },
+
+  music: {
+    artists: '艺术家',
+    albums: '专辑',
+    tracks: '曲目',
+    playlists: '播放列表',
+    createPlaylist: '创建播放列表',
+    playlistName: '播放列表名称',
+    playlistCreated: '播放列表已创建',
+    deletePlaylistConfirm: '确定删除播放列表「{name}」？',
+    noPlaylists: '暂无播放列表',
+    noTrack: '选择曲目开始播放',
+    empty: '暂无音乐',
+    albumUnit: '张专辑',
+    trackUnit: '首',
+    invalidName: '请输入播放列表名称',
   },
 };

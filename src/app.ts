@@ -35,6 +35,10 @@ import { auditRoutes, auditMiddleware } from './modules/audit/index.js';
 import { luksRoutes } from './modules/luks/index.js';
 import { ssdCacheRoutes } from './modules/ssd-cache/index.js';
 import { iscsiRoutes } from './modules/iscsi/index.js';
+import { mediaRoutes } from './modules/media/index.js';
+import { transcodeRoutes } from './modules/transcode/index.js';
+import { musicRoutes } from './modules/music/index.js';
+import { photosRoutes } from './modules/photos/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -106,6 +110,10 @@ export function createApp(): express.Express {
   app.use('/api', luksRoutes);
   app.use('/api', ssdCacheRoutes);
   app.use('/api', iscsiRoutes);
+  app.use('/api', mediaRoutes);
+  app.use('/api', transcodeRoutes);
+  app.use('/api', musicRoutes);
+  app.use('/api', photosRoutes);
   app.use('/api', auditRoutes);
 
   // 404 处理

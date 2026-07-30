@@ -29,6 +29,7 @@
     "jose": "^6.2.4",
     "mime-types": "^3.0.2",
     "multer": "^2.2.0",
+    "music-metadata": "^11.14.0",
     "nanoid": "^6.0.0",
     "otpauth": "^9.5.1",
     "qrcode": "^1.5.4",

@@ -164,6 +164,8 @@ export default {
       network: 'Network Config',
       scheduler: 'Scheduled Tasks',
       search: 'Full-text Search',
+      photos: 'Photos',
+      music: 'Music Player',
     },
     groups: {
       system: 'System',
@@ -1285,5 +1287,36 @@ export default {
 
   storageBar: {
     used: 'Used',
+  },
+
+  photos: {
+    timeline: 'Timeline',
+    albums: 'Albums',
+    createAlbum: 'Create Album',
+    albumName: 'Album Name',
+    albumDesc: 'Description',
+    albumCreated: 'Album created',
+    deleteAlbumConfirm: 'Delete album "{name}"?',
+    empty: 'No photos yet',
+    noAlbums: 'No albums yet',
+    photoUnit: 'photos',
+    invalidName: 'Please enter an album name',
+  },
+
+  music: {
+    artists: 'Artists',
+    albums: 'Albums',
+    tracks: 'Tracks',
+    playlists: 'Playlists',
+    createPlaylist: 'Create Playlist',
+    playlistName: 'Playlist Name',
+    playlistCreated: 'Playlist created',
+    deletePlaylistConfirm: 'Delete playlist "{name}"?',
+    noPlaylists: 'No playlists yet',
+    noTrack: 'Select a track to play',
+    empty: 'No music yet',
+    albumUnit: 'albums',
+    trackUnit: 'tracks',
+    invalidName: 'Please enter a playlist name',
   },
 };

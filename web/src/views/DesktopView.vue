@@ -27,7 +27,9 @@ import DashboardView from '@/views/DashboardView.vue';
 import DownloadView from '@/views/DownloadView.vue';
 import FilesView from '@/views/FilesView.vue';
 import MonitorView from '@/views/MonitorView.vue';
+import MusicView from '@/views/MusicView.vue';
 import NetworkView from '@/views/NetworkView.vue';
+import PhotosView from '@/views/PhotosView.vue';
 import SchedulerView from '@/views/SchedulerView.vue';
 import SearchView from '@/views/SearchView.vue';
 import SettingsView from '@/views/SettingsView.vue';
@@ -149,6 +151,8 @@ onBeforeUnmount(() => {
         <NetworkView v-else-if="win.id === 'network'" />
         <SchedulerView v-else-if="win.id === 'scheduler'" />
         <SearchView v-else-if="win.id === 'search'" />
+        <PhotosView v-else-if="win.id === 'photos'" />
+        <MusicView v-else-if="win.id === 'music'" />
         <MonitorView v-else />
       </AppWindow>
 
