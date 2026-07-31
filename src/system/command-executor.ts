@@ -84,6 +84,10 @@ const ALLOWED_COMMANDS = new Set([
   // SNMP 监控
   'snmpd',
   'snmpwalk',
+  // 回收站
+  'find',
+  'mv',
+  'rm',
 ]);
 
 /**

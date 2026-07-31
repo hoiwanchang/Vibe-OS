@@ -9,7 +9,7 @@ import { ElMessageBox } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import {
   Setting, User, Connection, Operation, Lock, Coin,
-  Lightning, Bell, Upload, Document, InfoFilled, MagicStick, Monitor,
+  Lightning, Bell, Upload, Document, InfoFilled, MagicStick, Monitor, Delete,
 } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
@@ -23,6 +23,8 @@ import OAuthClients from '@/components/settings/OAuthClients.vue';
 import StorageSettings from '@/components/settings/StorageSettings.vue';
 import PowerSettings from '@/components/settings/PowerSettings.vue';
 import SnmpSettings from '@/components/settings/SnmpSettings.vue';
+import UsbBackupSettings from '@/components/settings/UsbBackupSettings.vue';
+import RecycleBinSettings from '@/components/settings/RecycleBinSettings.vue';
 import NotificationSettings from '@/components/settings/NotificationSettings.vue';
 import UpdateSettings from '@/components/settings/UpdateSettings.vue';
 import LogViewer from '@/components/settings/LogViewer.vue';
@@ -36,7 +38,7 @@ const { t } = useI18n();
 
 const iconMap: Record<string, typeof Setting> = {
   Setting, User, Connection, Operation, Lock, Coin,
-  Lightning, Bell, Upload, Document, InfoFilled, MagicStick, Monitor,
+  Lightning, Bell, Upload, Document, InfoFilled, MagicStick, Monitor, Delete,
 };
 
 const componentMap: Record<string, typeof GeneralSettings> = {
@@ -49,6 +51,8 @@ const componentMap: Record<string, typeof GeneralSettings> = {
   storage: StorageSettings,
   power: PowerSettings,
   snmp: SnmpSettings,
+  usbbackup: UsbBackupSettings,
+  recyclebin: RecycleBinSettings,
   notification: NotificationSettings,
   llm: LlmSettings,
   update: UpdateSettings,

@@ -48,6 +48,8 @@ import { vpnRoutes } from './modules/vpn/index.js';
 import { snmpRoutes } from './modules/snmp/index.js';
 import { appupdateRoutes } from './modules/appupdate/index.js';
 import { upsRoutes } from './modules/ups/index.js';
+import { recyclebinRoutes } from './modules/recyclebin/index.js';
+import { usbbackupRoutes } from './modules/usbbackup/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -131,7 +133,9 @@ export function createApp(): express.Express {
   app.use('/api', vpnRoutes);
   app.use('/api', snmpRoutes);
   app.use('/api', upsRoutes);
+  app.use('/api', usbbackupRoutes);
   app.use('/api', appupdateRoutes);
+  app.use('/api', recyclebinRoutes);
   app.use('/api', auditRoutes);
 
   // 404 处理

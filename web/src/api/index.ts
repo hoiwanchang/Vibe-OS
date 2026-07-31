@@ -150,6 +150,13 @@ import type {
   AppUpdateStatus,
   AppUpdateAvailable,
   AppUpdateHistoryEntry,
+  UsbDevice,
+  UsbBackupConfig,
+  UsbBackupStatus,
+  UsbBackupHistoryEntry,
+  RecycleBinConfig,
+  RecycleBinFile,
+  RecycleBinStats,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1604,4 +1611,26 @@ export const appUpdateApi = {
   available: () => request<AppUpdateAvailable[]>({ url: '/appupdate/available' }),
   apply: (appId: string) => request<void>({ url: `/appupdate/apply/${appId}`, method: 'post' }),
   history: () => request<AppUpdateHistoryEntry[]>({ url: '/appupdate/history' }),
+};
+
+/* ---------- Phase 8: USB Backup ---------- */
+
+export const usbBackupApi = {
+  devices: () => request<UsbDevice[]>({ url: '/usbbackup/devices' }),
+  getConfig: () => request<UsbBackupConfig>({ url: '/usbbackup/config' }),
+  updateConfig: (data: UsbBackupConfig) => request<UsbBackupConfig>({ url: '/usbbackup/config', method: 'put', data }),
+  execute: (deviceName: string) => request<void>({ url: '/usbbackup/execute', method: 'post', data: { device: deviceName } }),
+  status: () => request<UsbBackupStatus>({ url: '/usbbackup/status' }),
+  history: () => request<UsbBackupHistoryEntry[]>({ url: '/usbbackup/history' }),
+};
+
+/* ---------- Phase 8: Recycle Bin ---------- */
+
+export const recycleBinApi = {
+  getConfig: () => request<RecycleBinConfig>({ url: '/recyclebin/config' }),
+  updateConfig: (data: RecycleBinConfig) => request<RecycleBinConfig>({ url: '/recyclebin/config', method: 'put', data }),
+  files: (folder?: string) => request<RecycleBinFile[]>({ url: '/recyclebin/files', params: folder ? { folder } : undefined }),
+  restore: (id: string) => request<void>({ url: `/recyclebin/restore/${id}`, method: 'post' }),
+  empty: (folder?: string) => request<void>({ url: '/recyclebin/empty', method: 'delete', params: folder ? { folder } : undefined }),
+  stats: () => request<RecycleBinStats>({ url: '/recyclebin/stats' }),
 };

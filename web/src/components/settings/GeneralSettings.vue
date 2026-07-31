@@ -2,17 +2,25 @@
 /**
  * 常规设置：主机名、描述、时区、语言、NTP
  */
-import { computed, onMounted, reactive } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
 import { setLocale, type AppLocale } from '@/i18n';
+import { getStoredTheme, setTheme, type ThemeMode } from '@/utils/theme';
 
 const { t, locale } = useI18n();
 
 const store = useSettingsStore();
 const { settings, saving } = storeToRefs(store);
+
+const themeMode = ref<ThemeMode>(getStoredTheme());
+
+function onThemeChange(val: ThemeMode): void {
+  themeMode.value = val;
+  setTheme(val);
+}
 
 const form = reactive({
   hostname: '',
@@ -84,6 +92,13 @@ async function save(): Promise<void> {
         <el-select v-model="form.locale" style="width: 100%" @change="onLanguageChange">
           <el-option v-for="l in locales" :key="l.value" :label="l.label" :value="l.value" />
         </el-select>
+      </el-form-item>
+      <el-form-item :label="t('settings.general.appearance')">
+        <el-radio-group :model-value="themeMode" @change="(v: string | number | boolean) => onThemeChange(v as ThemeMode)">
+          <el-radio value="dark">{{ t('settings.general.themeDark') }}</el-radio>
+          <el-radio value="light">{{ t('settings.general.themeLight') }}</el-radio>
+          <el-radio value="system">{{ t('settings.general.themeSystem') }}</el-radio>
+        </el-radio-group>
       </el-form-item>
       <el-form-item :label="t('settings.general.ntp')">
         <el-switch v-model="form.ntpEnabled" @change="store.markDirty()" />

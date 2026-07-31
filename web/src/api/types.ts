@@ -1550,3 +1550,69 @@ export interface AppUpdateHistoryEntry {
   updatedAt: string;
   success: boolean;
 }
+
+/* ---------- Phase 8: USB Backup ---------- */
+
+export interface UsbDevice {
+  name: string;
+  size: string;
+  model: string;
+  mountpoint: string | null;
+  fstype: string;
+}
+
+export interface UsbBackupConfig {
+  enabled: boolean;
+  mode: 'copy' | 'rsync' | 'bidirectional';
+  sourcePath: string;
+  autoOnInsert: boolean;
+  excludePatterns: string[];
+}
+
+export interface UsbBackupStatus {
+  running: boolean;
+  progress: number;
+  currentFile: string | null;
+  lastRun: string | null;
+  lastResult: 'success' | 'failed' | null;
+}
+
+export interface UsbBackupHistoryEntry {
+  startedAt: string;
+  finishedAt: string | null;
+  mode: string;
+  filesTransferred: number;
+  bytesTransferred: number;
+  success: boolean;
+  error: string | null;
+}
+
+/* ---------- Phase 8: Recycle Bin ---------- */
+
+export interface RecycleBinFolderConfig {
+  path: string;
+  enabled: boolean;
+  retentionDays: number;
+  maxSizeMB: number;
+  excludeExtensions: string[];
+  excludePaths: string[];
+}
+
+export interface RecycleBinConfig {
+  folders: RecycleBinFolderConfig[];
+}
+
+export interface RecycleBinFile {
+  id: string;
+  originalPath: string;
+  fileName: string;
+  size: number;
+  deletedAt: string;
+  folder: string;
+}
+
+export interface RecycleBinStats {
+  totalFiles: number;
+  totalSize: number;
+  perFolder: { path: string; files: number; size: number }[];
+}

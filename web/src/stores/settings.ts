@@ -45,6 +45,8 @@ export const useSettingsStore = defineStore('settings', () => {
     { id: 'storage', label: t('settings.sections.storage'), icon: 'Coin' },
     { id: 'power', label: t('settings.sections.power'), icon: 'Lightning' },
     { id: 'snmp', label: t('settings.sections.snmp'), icon: 'Monitor' },
+    { id: 'usbbackup', label: t('settings.sections.usbBackup'), icon: 'Upload' },
+    { id: 'recyclebin', label: t('settings.sections.recycleBin'), icon: 'Delete' },
     { id: 'notification', label: t('settings.sections.notification'), icon: 'Bell' },
     { id: 'llm', label: t('settings.sections.llm'), icon: 'MagicStick' },
     { id: 'update', label: t('settings.sections.update'), icon: 'Upload' },
