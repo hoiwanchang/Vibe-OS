@@ -75,6 +75,10 @@ const ALLOWED_COMMANDS = new Set([
   'ffmpeg',
   'vainfo',
   'nvidia-smi',
+  // QoS 带宽控制
+  'tc',
+  // DNS 服务器
+  'dnsmasq',
 ]);
 
 /**

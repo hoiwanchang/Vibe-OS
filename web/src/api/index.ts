@@ -125,6 +125,21 @@ import type {
   MusicAlbum,
   MusicTrack,
   MusicPlaylist,
+  VlanInterface,
+  VlanCreateRequest,
+  BondInterface,
+  BondCreateRequest,
+  VpnServerStatus,
+  VpnServerInitRequest,
+  VpnPeer,
+  VpnPeerCreateRequest,
+  QosRule,
+  QosRuleCreateRequest,
+  QosInterfaceStatus,
+  DnsRecord,
+  DnsRecordCreateRequest,
+  DnsServerConfig,
+  DnsServerConfigUpdateRequest,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1486,4 +1501,56 @@ export const musicApi = {
 
   /** 封面 URL */
   coverUrl: (trackId: string) => `/api/music/tracks/${trackId}/cover`,
+};
+
+/* ---------- Phase 6: VLAN ---------- */
+
+export const vlanApi = {
+  list: () => request<VlanInterface[]>({ url: '/vlan' }),
+  create: (data: VlanCreateRequest) => request<VlanInterface>({ url: '/vlan', method: 'post', data }),
+  remove: (id: string) => request<void>({ url: `/vlan/${id}`, method: 'delete' }),
+  update: (id: string, data: Partial<VlanCreateRequest>) => request<VlanInterface>({ url: `/vlan/${id}`, method: 'put', data }),
+};
+
+/* ---------- Phase 6: LACP / Bonding ---------- */
+
+export const lacpApi = {
+  list: () => request<BondInterface[]>({ url: '/lacp' }),
+  create: (data: BondCreateRequest) => request<BondInterface>({ url: '/lacp', method: 'post', data }),
+  remove: (name: string) => request<void>({ url: `/lacp/${name}`, method: 'delete' }),
+  addMember: (name: string, member: string) => request<BondInterface>({ url: `/lacp/${name}/members`, method: 'post', data: { member } }),
+  removeMember: (name: string, member: string) => request<BondInterface>({ url: `/lacp/${name}/members/${member}`, method: 'delete' }),
+  status: (name: string) => request<BondInterface>({ url: `/lacp/${name}/status` }),
+};
+
+/* ---------- Phase 6: VPN (WireGuard) ---------- */
+
+export const vpnApi = {
+  status: () => request<VpnServerStatus>({ url: '/vpn/status' }),
+  initServer: (data: VpnServerInitRequest) => request<VpnServerStatus>({ url: '/vpn/server', method: 'post', data }),
+  updateServer: (data: Partial<VpnServerInitRequest>) => request<VpnServerStatus>({ url: '/vpn/server', method: 'put', data }),
+  listPeers: () => request<VpnPeer[]>({ url: '/vpn/peers' }),
+  addPeer: (data: VpnPeerCreateRequest) => request<VpnPeer>({ url: '/vpn/peers', method: 'post', data }),
+  removePeer: (pubkey: string) => request<void>({ url: `/vpn/peers/${encodeURIComponent(pubkey)}`, method: 'delete' }),
+  peerConfig: (pubkey: string) => request<string>({ url: `/vpn/peers/${encodeURIComponent(pubkey)}/config` }),
+};
+
+/* ---------- Phase 6: QoS ---------- */
+
+export const qosApi = {
+  listRules: () => request<QosRule[]>({ url: '/qos/rules' }),
+  createRule: (data: QosRuleCreateRequest) => request<QosRule>({ url: '/qos/rules', method: 'post', data }),
+  removeRule: (id: string) => request<void>({ url: `/qos/rules/${id}`, method: 'delete' }),
+  status: () => request<QosInterfaceStatus[]>({ url: '/qos/status' }),
+};
+
+/* ---------- Phase 6: DNS ---------- */
+
+export const dnsApi = {
+  status: () => request<DnsServerConfig>({ url: '/dns/status' }),
+  listRecords: () => request<DnsRecord[]>({ url: '/dns/records' }),
+  addRecord: (data: DnsRecordCreateRequest) => request<DnsRecord>({ url: '/dns/records', method: 'post', data }),
+  removeRecord: (id: string) => request<void>({ url: `/dns/records/${id}`, method: 'delete' }),
+  getConfig: () => request<DnsServerConfig>({ url: '/dns/config' }),
+  updateConfig: (data: DnsServerConfigUpdateRequest) => request<DnsServerConfig>({ url: '/dns/config', method: 'put', data }),
 };

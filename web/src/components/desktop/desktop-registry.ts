@@ -11,6 +11,7 @@ import {
   FolderOpened,
   Grid,
   Headset,
+  Lock,
   Monitor,
   Odometer,
   Picture,
@@ -34,7 +35,7 @@ export interface DesktopAppMeta {
   /** 是否出现在开始菜单 */
   inStartMenu: boolean;
   /** 开始菜单分组 i18n 键（`wm.groups.{key}`） */
-  group?: 'system' | 'network' | 'storage' | 'services';
+  group?: 'system' | 'network' | 'storage' | 'services' | 'media';
 }
 
 /** 应用注册表（有序，决定桌面图标与开始菜单顺序） */
@@ -157,7 +158,15 @@ export const DESKTOP_APPS: DesktopAppMeta[] = [
     icon: Headset,
     onDesktop: true,
     inStartMenu: true,
-    group: 'services',
+    group: 'media',
+  },
+  {
+    id: 'vpn',
+    title: 'vpn',
+    icon: Lock,
+    onDesktop: true,
+    inStartMenu: true,
+    group: 'network',
   },
 ];
 

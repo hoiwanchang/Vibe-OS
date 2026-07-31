@@ -30,6 +30,7 @@ import MonitorView from '@/views/MonitorView.vue';
 import MusicView from '@/views/MusicView.vue';
 import NetworkView from '@/views/NetworkView.vue';
 import PhotosView from '@/views/PhotosView.vue';
+import VpnView from '@/views/VpnView.vue';
 import SchedulerView from '@/views/SchedulerView.vue';
 import SearchView from '@/views/SearchView.vue';
 import SettingsView from '@/views/SettingsView.vue';
@@ -153,6 +154,7 @@ onBeforeUnmount(() => {
         <SearchView v-else-if="win.id === 'search'" />
         <PhotosView v-else-if="win.id === 'photos'" />
         <MusicView v-else-if="win.id === 'music'" />
+        <VpnView v-else-if="win.id === 'vpn'" />
         <MonitorView v-else />
       </AppWindow>
 

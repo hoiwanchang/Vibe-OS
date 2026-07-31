@@ -1316,3 +1316,139 @@ export interface MusicPlaylist {
   trackCount: number;
   createdAt: string;
 }
+
+/* ---------- Phase 6: VLAN ---------- */
+
+export interface VlanInterface {
+  id: string;
+  parentInterface: string;
+  vlanId: number;
+  ipAddress: string | null;
+  state: string;
+  mtu: number;
+}
+
+export interface VlanCreateRequest {
+  parentInterface: string;
+  vlanId: number;
+  ipAddress?: string;
+}
+
+/* ---------- Phase 6: LACP / Bonding ---------- */
+
+export type BondMode = 'balance-rr' | 'active-backup' | '802.3ad';
+
+export interface BondMember {
+  name: string;
+  state: 'up' | 'down';
+  speed: string;
+}
+
+export interface BondInterface {
+  name: string;
+  mode: BondMode;
+  members: BondMember[];
+  ipAddress: string | null;
+  state: string;
+  aggregateSpeed: string;
+}
+
+export interface BondCreateRequest {
+  name: string;
+  mode: BondMode;
+  members: string[];
+}
+
+/* ---------- Phase 6: VPN (WireGuard) ---------- */
+
+export interface VpnPeer {
+  publicKey: string;
+  name: string;
+  allowedIps: string[];
+  lastHandshake: string | null;
+  transferRx: number;
+  transferTx: number;
+}
+
+export interface VpnServerStatus {
+  running: boolean;
+  port: number;
+  subnet: string;
+  publicKey: string;
+  peerCount: number;
+}
+
+export interface VpnServerInitRequest {
+  port: number;
+  subnet: string;
+  dns?: string;
+}
+
+export interface VpnPeerCreateRequest {
+  name: string;
+  allowedIps?: string[];
+}
+
+/* ---------- Phase 6: QoS ---------- */
+
+export type QosDirection = 'ingress' | 'egress';
+export type QosRuleType = 'ip' | 'port' | 'protocol';
+
+export interface QosRule {
+  id: string;
+  interface: string;
+  type: QosRuleType;
+  target: string;
+  direction: QosDirection;
+  rateLimit: string;
+  priority: number;
+}
+
+export interface QosRuleCreateRequest {
+  interface: string;
+  type: QosRuleType;
+  target: string;
+  direction: QosDirection;
+  rateLimit: string;
+  priority?: number;
+}
+
+export interface QosInterfaceStatus {
+  interface: string;
+  rxBytes: number;
+  txBytes: number;
+  rxRate: string;
+  txRate: string;
+}
+
+/* ---------- Phase 6: DNS ---------- */
+
+export type DnsRecordType = 'A' | 'CNAME' | 'PTR';
+
+export interface DnsRecord {
+  id: string;
+  type: DnsRecordType;
+  name: string;
+  value: string;
+  ttl: number;
+}
+
+export interface DnsRecordCreateRequest {
+  type: DnsRecordType;
+  name: string;
+  value: string;
+  ttl?: number;
+}
+
+export interface DnsServerConfig {
+  upstreamServers: string[];
+  listenAddress: string;
+  cacheSize: number;
+  running: boolean;
+}
+
+export interface DnsServerConfigUpdateRequest {
+  upstreamServers: string[];
+  listenAddress?: string;
+  cacheSize?: number;
+}

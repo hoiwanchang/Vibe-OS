@@ -22,7 +22,8 @@ export type DesktopAppId =
   | 'scheduler'
   | 'search'
   | 'photos'
-  | 'music';
+  | 'music'
+  | 'vpn';
 
 /** 窗口几何 */
 export interface WindowRect {
@@ -62,6 +63,7 @@ const DEFAULT_SIZE: Record<DesktopAppId, { w: number; h: number }> = {
   search: { w: 880, h: 600 },
   photos: { w: 960, h: 640 },
   music: { w: 900, h: 600 },
+  vpn: { w: 860, h: 560 },
 };
 
 /**
