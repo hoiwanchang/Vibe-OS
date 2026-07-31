@@ -1452,3 +1452,101 @@ export interface DnsServerConfigUpdateRequest {
   listenAddress?: string;
   cacheSize?: number;
 }
+
+/* ---------- Phase 7: Setup Wizard ---------- */
+
+export interface SetupDisk {
+  name: string;
+  size: string;
+  model: string;
+}
+
+export interface SetupCompleteRequest {
+  admin: {
+    username: string;
+    password: string;
+    enable2fa: boolean;
+  };
+  storage: {
+    disks: string[];
+    poolType: 'single' | 'raid1' | 'raid5';
+    filesystem: 'ext4' | 'btrfs' | 'xfs';
+  };
+  network: {
+    method: 'dhcp' | 'static';
+    ip?: string;
+    netmask?: string;
+    gateway?: string;
+    dns?: string;
+  };
+  services: {
+    smb: boolean;
+    ftp: boolean;
+    dlna: boolean;
+    docker: boolean;
+  };
+}
+
+/* ---------- Phase 7: UPS ---------- */
+
+export interface UpsStatus {
+  online: boolean;
+  batteryCharge: number;
+  load: number;
+  inputVoltage: number;
+  runtime: number;
+  modelName: string;
+}
+
+export interface UpsConfig {
+  shutdownThreshold: number;
+  notifyEmail: string | null;
+}
+
+/* ---------- Phase 7: SNMP ---------- */
+
+export interface SnmpStatus {
+  running: boolean;
+  version: string;
+}
+
+export interface SnmpConfig {
+  community: string;
+  listenAddress: string;
+  enabledGroups: string[];
+}
+
+export interface SnmpOidData {
+  cpu: number;
+  memoryUsed: number;
+  memoryTotal: number;
+  diskUsed: number;
+  diskTotal: number;
+  netRx: number;
+  netTx: number;
+  temperature: number | null;
+}
+
+/* ---------- Phase 7: App Update ---------- */
+
+export interface AppUpdateStatus {
+  lastCheck: string | null;
+  mode: 'manual' | 'auto';
+  maintenanceWindow: string | null;
+}
+
+export interface AppUpdateAvailable {
+  appId: string;
+  appName: string;
+  currentVersion: string;
+  latestVersion: string;
+}
+
+export interface AppUpdateHistoryEntry {
+  appId: string;
+  appName: string;
+  fromVersion: string;
+  toVersion: string;
+  updatedAt: string;
+  success: boolean;
+}

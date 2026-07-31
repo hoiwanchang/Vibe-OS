@@ -140,6 +140,16 @@ import type {
   DnsRecordCreateRequest,
   DnsServerConfig,
   DnsServerConfigUpdateRequest,
+  SetupDisk,
+  SetupCompleteRequest,
+  UpsStatus,
+  UpsConfig,
+  SnmpStatus,
+  SnmpConfig,
+  SnmpOidData,
+  AppUpdateStatus,
+  AppUpdateAvailable,
+  AppUpdateHistoryEntry,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -1553,4 +1563,45 @@ export const dnsApi = {
   removeRecord: (id: string) => request<void>({ url: `/dns/records/${id}`, method: 'delete' }),
   getConfig: () => request<DnsServerConfig>({ url: '/dns/config' }),
   updateConfig: (data: DnsServerConfigUpdateRequest) => request<DnsServerConfig>({ url: '/dns/config', method: 'put', data }),
+};
+
+/* ---------- Phase 7: Setup Wizard ---------- */
+
+export const setupApi = {
+  disks: () => request<SetupDisk[]>({ url: '/setup/disks' }),
+  complete: (data: SetupCompleteRequest) => request<void>({ url: '/setup/complete', method: 'post', data }),
+};
+
+/* ---------- Phase 7: UPS ---------- */
+
+export const upsApi = {
+  status: () => request<UpsStatus>({ url: '/ups/status' }),
+  getConfig: () => request<UpsConfig>({ url: '/ups/config' }),
+  updateConfig: (data: UpsConfig) => request<UpsConfig>({ url: '/ups/config', method: 'put', data }),
+  testShutdown: () => request<void>({ url: '/ups/test-shutdown', method: 'post' }),
+  history: () => request<{ events: string[] }>({ url: '/ups/history' }),
+};
+
+/* ---------- Phase 7: SNMP ---------- */
+
+export const snmpApi = {
+  status: () => request<SnmpStatus>({ url: '/snmp/status' }),
+  start: () => request<void>({ url: '/snmp/start', method: 'post' }),
+  stop: () => request<void>({ url: '/snmp/stop', method: 'post' }),
+  restart: () => request<void>({ url: '/snmp/restart', method: 'post' }),
+  getConfig: () => request<SnmpConfig>({ url: '/snmp/config' }),
+  updateConfig: (data: SnmpConfig) => request<SnmpConfig>({ url: '/snmp/config', method: 'put', data }),
+  oids: () => request<SnmpOidData>({ url: '/snmp/oids' }),
+};
+
+/* ---------- Phase 7: App Update ---------- */
+
+export const appUpdateApi = {
+  status: () => request<AppUpdateStatus>({ url: '/appupdate/status' }),
+  updateConfig: (data: { mode: 'manual' | 'auto'; maintenanceWindow?: string }) =>
+    request<AppUpdateStatus>({ url: '/appupdate/config', method: 'put', data }),
+  check: () => request<void>({ url: '/appupdate/check', method: 'post' }),
+  available: () => request<AppUpdateAvailable[]>({ url: '/appupdate/available' }),
+  apply: (appId: string) => request<void>({ url: `/appupdate/apply/${appId}`, method: 'post' }),
+  history: () => request<AppUpdateHistoryEntry[]>({ url: '/appupdate/history' }),
 };

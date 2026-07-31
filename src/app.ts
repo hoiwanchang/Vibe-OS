@@ -39,11 +39,15 @@ import { mediaRoutes } from './modules/media/index.js';
 import { transcodeRoutes } from './modules/transcode/index.js';
 import { musicRoutes } from './modules/music/index.js';
 import { photosRoutes } from './modules/photos/index.js';
+import { setupRoutes } from './modules/setup/index.js';
 import { vlanRoutes } from './modules/vlan/index.js';
 import { lacpRoutes } from './modules/lacp/index.js';
 import { qosRoutes } from './modules/qos/index.js';
 import { dnsRoutes } from './modules/dns/index.js';
 import { vpnRoutes } from './modules/vpn/index.js';
+import { snmpRoutes } from './modules/snmp/index.js';
+import { appupdateRoutes } from './modules/appupdate/index.js';
+import { upsRoutes } from './modules/ups/index.js';
 
 /**
  * 创建并配置 Express 应用实例
@@ -119,11 +123,15 @@ export function createApp(): express.Express {
   app.use('/api', transcodeRoutes);
   app.use('/api', musicRoutes);
   app.use('/api', photosRoutes);
+  app.use('/api', setupRoutes);
   app.use('/api', vlanRoutes);
   app.use('/api', lacpRoutes);
   app.use('/api', qosRoutes);
   app.use('/api', dnsRoutes);
   app.use('/api', vpnRoutes);
+  app.use('/api', snmpRoutes);
+  app.use('/api', upsRoutes);
+  app.use('/api', appupdateRoutes);
   app.use('/api', auditRoutes);
 
   // 404 处理

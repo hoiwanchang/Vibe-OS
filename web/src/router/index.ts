@@ -21,6 +21,12 @@ const router = createRouter({
       meta: { public: true },
     },
     {
+      path: '/setup',
+      name: 'setup',
+      component: () => import('@/views/SetupWizard.vue'),
+      meta: { public: true },
+    },
+    {
       path: '/',
       name: 'desktop',
       component: () => import('@/views/DesktopView.vue'),

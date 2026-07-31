@@ -1,16 +1,20 @@
 <script setup lang="ts">
 /**
- * 电源管理：UPS、定时开关机、空闲关机、WoL
+ * 电源管理：UPS（NUT 实时状态）、定时开关机、空闲关机、WoL
  */
-import { onMounted, reactive } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { ElMessage } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
+import { upsApi } from '@/api';
+import type { UpsStatus } from '@/api/types';
 
 const { t } = useI18n();
 const store = useSettingsStore();
 const { settings, saving } = storeToRefs(store);
+
+const upsStatus = ref<UpsStatus | null>(null);
 
 const form = reactive({
   upsEnabled: false,
@@ -34,11 +38,21 @@ onMounted(async () => {
     form.idleShutdown = { ...p.idleShutdown };
     form.wakeOnLan = p.wakeOnLan;
   }
+  // 获取 UPS 实时状态
+  try {
+    upsStatus.value = await upsApi.status();
+  } catch { /* NUT 未安装或 UPS 未连接 */ }
 });
 
 async function save(): Promise<void> {
   try {
     await store.saveSection('power', { ...form });
+    // 同步关机阈值到 UPS 模块
+    if (form.upsEnabled) {
+      try {
+        await upsApi.updateConfig({ shutdownThreshold: form.upsShutdownThreshold, notifyEmail: null });
+      } catch { /* 非关键 */ }
+    }
     ElMessage.success(t('settings.power.saved'));
   } catch (err) {
     ElMessage.error(err instanceof Error ? err.message : String(err));
@@ -49,6 +63,38 @@ async function save(): Promise<void> {
 <template>
   <div class="nx-panel settings-section">
     <div class="nx-panel-title">{{ t('settings.power.upsSection') }}</div>
+
+    <!-- UPS 实时状态卡片 -->
+    <div v-if="upsStatus" class="ups-status-card">
+      <div class="ups-status-row">
+        <span class="ups-label">{{ t('settings.power.upsOnline') }}</span>
+        <el-tag :type="upsStatus.online ? 'success' : 'danger'" size="small">
+          {{ upsStatus.online ? t('common.online') : t('common.offline') }}
+        </el-tag>
+      </div>
+      <div class="ups-status-row">
+        <span class="ups-label">{{ t('settings.power.upsBattery') }}</span>
+        <el-progress :percentage="upsStatus.batteryCharge" :stroke-width="14" :color="upsStatus.batteryCharge < 20 ? '#f56c6c' : '#67c23a'" style="flex: 1" />
+      </div>
+      <div class="ups-status-row">
+        <span class="ups-label">{{ t('settings.power.upsLoad') }}</span>
+        <span class="nx-mono">{{ upsStatus.load }}%</span>
+      </div>
+      <div class="ups-status-row">
+        <span class="ups-label">{{ t('settings.power.upsVoltage') }}</span>
+        <span class="nx-mono">{{ upsStatus.inputVoltage }}V</span>
+      </div>
+      <div class="ups-status-row">
+        <span class="ups-label">{{ t('settings.power.upsRuntime') }}</span>
+        <span class="nx-mono">{{ Math.floor(upsStatus.runtime / 60) }} min</span>
+      </div>
+      <div class="ups-status-row">
+        <span class="ups-label">{{ t('settings.power.upsModel') }}</span>
+        <span class="nx-mono">{{ upsStatus.modelName }}</span>
+      </div>
+    </div>
+    <el-alert v-else type="info" :closable="false" show-icon :title="t('settings.power.upsNotDetected')" style="margin-bottom: 16px" />
+
     <el-form label-position="top" class="settings-form">
       <el-form-item :label="t('settings.power.upsConnected')">
         <el-switch v-model="form.upsEnabled" @change="store.markDirty()" />
@@ -119,3 +165,25 @@ async function save(): Promise<void> {
     </el-form>
   </div>
 </template>
+
+<style scoped>
+.ups-status-card {
+  padding: 14px 16px;
+  border: 1px solid var(--nx-border-faint);
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.ups-status-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.ups-label {
+  width: 80px;
+  font-size: 12px;
+  color: var(--nx-text-dim);
+  flex-shrink: 0;
+}
+</style>

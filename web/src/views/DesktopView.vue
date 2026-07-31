@@ -67,6 +67,9 @@ onMounted(async () => {
     booted.value = true;
   }, 1300);
 
+  // Ctrl+K 全局搜索
+  window.addEventListener('keydown', onGlobalKeydown);
+
   // 统一轮询（桌面级，供任务栏与各窗口共用）
   await system.fetchAll();
   pollTimer = setInterval(() => {
@@ -75,9 +78,18 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKeydown);
   if (pollTimer) clearInterval(pollTimer);
   if (bootTimer) clearTimeout(bootTimer);
 });
+
+/** Ctrl+K / Cmd+K 打开全局搜索窗口 */
+function onGlobalKeydown(e: KeyboardEvent): void {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    wm.open('search');
+  }
+}
 
 /**
  * 硬件 critical 告警 → 全局弹窗（仅新告警弹一次）

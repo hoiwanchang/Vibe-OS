@@ -79,6 +79,11 @@ const ALLOWED_COMMANDS = new Set([
   'tc',
   // DNS 服务器
   'dnsmasq',
+  // UPS 电源管理（NUT）
+  'upsc',
+  // SNMP 监控
+  'snmpd',
+  'snmpwalk',
 ]);
 
 /**
