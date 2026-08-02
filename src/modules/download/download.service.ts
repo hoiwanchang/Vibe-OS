@@ -85,7 +85,17 @@ export async function listTasks(): Promise<DownloadTask[]> {
 /** 添加下载任务 */
 export async function addTask(urls: string[], targetDir?: string, headers?: Record<string, string>): Promise<string[]> {
   const opts: Record<string, string> = {};
-  if (targetDir) opts['dir'] = targetDir;
+  if (targetDir) {
+    // [安全加固] 下载目录必须在 /data/ 内，防止写入系统路径
+    const path = await import('node:path');
+    const { DATA_ROOT } = await import('../../config.js');
+    const resolved = path.resolve(targetDir);
+    const dataRoot = path.resolve(DATA_ROOT);
+    if (!resolved.startsWith(dataRoot + path.sep) && resolved !== dataRoot) {
+      throw new AppError(403, 'FORBIDDEN', `下载目录必须在 ${DATA_ROOT} 内`);
+    }
+    opts['dir'] = resolved;
+  }
   if (headers) {
     opts['header'] = Object.entries(headers).map(([k, v]) => `${k}: ${v}`).join('\n');
   }

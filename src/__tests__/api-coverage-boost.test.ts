@@ -312,7 +312,7 @@ describe('覆盖率补充', () => {
 
     it('POST /api/scheduler/jobs/:id/run 应执行', async () => {
       mockReadFile.mockImplementation((p: string) => {
-        if (String(p).includes('jobs.json')) return Promise.resolve(JSON.stringify([{ id: 'j1', name: 'test', command: 'echo ok', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
+        if (String(p).includes('jobs.json')) return Promise.resolve(JSON.stringify([{ id: 'j1', name: 'test', command: 'df -h', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
         return Promise.reject(new Error('ENOENT'));
       });
       mockExecuteCommand.mockResolvedValue({ exitCode: 0, stdout: 'ok', stderr: '' });

@@ -342,7 +342,7 @@ describe('新模块 API 集成测试', () => {
     });
 
     it('POST /api/scheduler/jobs 应创建任务', async () => {
-      const res = await request(app).post('/api/scheduler/jobs').send({ name: 'test', command: 'echo hi', schedule: '0 * * * *' });
+      const res = await request(app).post('/api/scheduler/jobs').send({ name: 'test', command: 'df -h', schedule: '0 * * * *' });
       expect(res.status).toBe(201);
       expect(res.body.data.job.name).toBe('test');
     });

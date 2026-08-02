@@ -69,8 +69,12 @@ async function saveConfig(cfg: RecycleBinConfig): Promise<void> {
   await fs.writeFile(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf-8');
 }
 
-/** 获取共享文件夹的回收站目录 */
+/** 获取共享文件夹的回收站目录（含路径穿越防护） */
 function getShareTrashDir(shareName: string): string {
+  // [安全加固] shareName 不得包含路径分隔符或 ..，防止穿越到 TRASH_ROOT 外
+  if (/[/\\]|\.\./.test(shareName)) {
+    throw AppError.badRequest('INVALID_SHARE', `共享文件夹名非法: ${shareName}`);
+  }
   return path.join(TRASH_ROOT, shareName);
 }
 
@@ -191,9 +195,9 @@ export async function restoreFile(id: string): Promise<RestoreResult> {
     throw AppError.notFound(`回收站文件 [${id}]`);
   }
 
-  // 确保目标目录存在
+  // 确保目标目录存在（使用 fs.mkdir 代替 bash -c，避免命令注入）
   const targetDir = path.dirname(file.originalPath);
-  await executeCommand('bash', ['-c', `mkdir -p "${targetDir}"`]);
+  await fs.mkdir(targetDir, { recursive: true });
 
   // 移动文件回原位
   const result = await executeCommand('mv', [
@@ -237,10 +241,10 @@ export async function emptyRecycleBin(
     deletedCount += files.length;
     freedBytes += files.reduce((sum, f) => sum + f.sizeBytes, 0);
 
-    // 清空回收站目录
-    await executeCommand('rm', ['-rf', trashDir]);
+    // 清空回收站目录（使用 fs.rm 代替 bash -c，避免命令注入）
+    await fs.rm(trashDir, { recursive: true, force: true });
     // 重新创建空目录
-    await executeCommand('bash', ['-c', `mkdir -p "${trashDir}"`]);
+    await fs.mkdir(trashDir, { recursive: true });
   }
 
   return { deletedCount, freedBytes };

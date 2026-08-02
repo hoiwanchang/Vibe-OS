@@ -12,7 +12,7 @@ import type { ScheduledJob, JobExecution } from './scheduler.types.js';
 const JOBS_FILE = `${VIBEOS_APP_DIR}/scheduler/jobs.json`;
 const LOGS_DIR = `${VIBEOS_APP_DIR}/scheduler/logs`;
 
-/** 破坏性命令黑名单 */
+/** 破坏性命令黑名单（纵深防御，白名单之后二次校验） */
 const DANGEROUS_PATTERNS = [
   /rm\s+(-[a-zA-Z]*f[a-zA-Z]*\s+)?\//,
   /mkfs/,
@@ -21,6 +21,58 @@ const DANGEROUS_PATTERNS = [
   /chmod\s+777\s+\//,
   /:(){ :|:& };:/,
 ];
+
+/**
+ * [安全加固] 命令白名单前缀：仅允许以下命令开头的计划任务。
+ * 黑名单极易绕过（base64 -d|bash、python -c、curl|sh 等），
+ * 改为白名单机制，只有明确列出的命令前缀才被允许执行。
+ */
+const ALLOWED_COMMAND_PREFIXES = [
+  // 备份与同步
+  'rsync ', '/usr/bin/rsync ',
+  'tar ', '/usr/bin/tar ',
+  // 文件清理（限定 /data 路径）
+  'find /data',
+  // 磁盘与系统监控
+  'df ', 'du ', 'smartctl ',
+  'docker ', 'tailscale ',
+  // 脚本（限定 /opt/vibeos 或 /data 路径）
+  'bash /opt/vibeos/', 'bash /data/',
+  '/opt/vibeos/', '/data/',
+  // 系统维护
+  'apt-get update', 'apt-get upgrade',
+  'systemctl restart', 'systemctl reload',
+  'journalctl',
+];
+
+/** 校验命令安全性（白名单前缀 + 黑名单双重校验） */
+function assertSafeCommand(command: string): void {
+  const trimmed = command.trim();
+
+  // 白名单前缀校验
+  const allowed = ALLOWED_COMMAND_PREFIXES.some((prefix) =>
+    trimmed.startsWith(prefix),
+  );
+  if (!allowed) {
+    throw AppError.forbidden(
+      `计划任务命令不在允许列表中。允许的命令前缀: ${ALLOWED_COMMAND_PREFIXES.join(', ')}`,
+    );
+  }
+
+  // 黑名单二次校验（纵深防御）
+  for (const pattern of DANGEROUS_PATTERNS) {
+    if (pattern.test(trimmed)) {
+      throw AppError.forbidden(`命令包含危险操作，已被拒绝: ${trimmed}`);
+    }
+  }
+
+  // 禁止反引号和危险命令替换（防止白名单命令后追加恶意操作）
+  if (/`/.test(trimmed) || /\$\(\s*(curl|wget|nc|python|perl|ruby|base64)/.test(trimmed)) {
+    throw AppError.forbidden(
+      '命令包含危险的 shell 操作（反引号/危险命令替换），已被拒绝',
+    );
+  }
+}
 
 async function loadJobs(): Promise<ScheduledJob[]> {
   try {
@@ -42,15 +94,6 @@ async function loadExecutions(jobId: string): Promise<JobExecution[]> {
 async function saveExecutions(jobId: string, execs: JobExecution[]): Promise<void> {
   await fs.mkdir(LOGS_DIR, { recursive: true });
   await fs.writeFile(`${LOGS_DIR}/${jobId}.json`, JSON.stringify(execs, null, 2), 'utf-8');
-}
-
-/** 校验命令安全性 */
-function assertSafeCommand(command: string): void {
-  for (const pattern of DANGEROUS_PATTERNS) {
-    if (pattern.test(command)) {
-      throw AppError.forbidden(`命令包含危险操作，已被拒绝: ${command}`);
-    }
-  }
 }
 
 /** 列出计划任务 */

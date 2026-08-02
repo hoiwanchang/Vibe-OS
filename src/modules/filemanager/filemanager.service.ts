@@ -43,6 +43,7 @@ async function snapshotBeforeOverwrite(uid: number, relativePath: string): Promi
 
 /**
  * 解析并校验用户空间内的相对路径
+ * [安全加固] 对已存在路径执行 realpath 解析 symlink，防止符号链接穿越
  * @param uid - 用户 UID
  * @param relativePath - 相对于 /data/{uid}/ 的路径
  * @returns 绝对路径
@@ -65,6 +66,33 @@ export function resolveUserPath(uid: number, relativePath: string): string {
   }
 
   return resolved;
+}
+
+/**
+ * 异步版路径校验（含 symlink 解析）
+ * 对已存在的路径调用 fs.realpath 解析符号链接后再次校验前缀，
+ * 防止 /data/{uid}/evil -> /etc 类型的 symlink 穿越攻击。
+ * @param uid - 用户 UID
+ * @param relativePath - 相对于 /data/{uid}/ 的路径
+ * @returns 绝对路径
+ */
+export async function resolveUserPathReal(uid: number, relativePath: string): Promise<string> {
+  const resolved = resolveUserPath(uid, relativePath);
+  const userRoot = path.join(DATA_ROOT, String(uid));
+  try {
+    const real = await fs.realpath(resolved);
+    if (!real.startsWith(userRoot + path.sep) && real !== userRoot) {
+      throw AppError.forbidden(
+        `符号链接穿越检测: 路径实际指向 [${real}]，不在 /data/${uid}/ 内`,
+      );
+    }
+    return real;
+  } catch (err) {
+    if ((err as NodeJS.ErrnoException).code === 'ENOENT') {
+      return resolved;
+    }
+    throw err;
+  }
 }
 
 /**

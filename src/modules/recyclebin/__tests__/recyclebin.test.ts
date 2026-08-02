@@ -12,6 +12,7 @@ vi.mock('node:fs/promises', () => ({
   readFile: (...args: unknown[]) => mockReadFile(...args),
   writeFile: (...args: unknown[]) => mockWriteFile(...args),
   mkdir: (...args: unknown[]) => mockMkdir(...args),
+  rm: vi.fn().mockResolvedValue(undefined),
 }));
 
 const mockExecuteCommand = vi.fn();
