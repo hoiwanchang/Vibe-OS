@@ -82,9 +82,9 @@ describe('authMiddleware', () => {
   const mockNext = vi.fn() as NextFunction;
   const mockRes = {} as Response;
 
-  it('未配置 API_TOKEN 时应跳过认证', () => {
+  it('未配置 API_TOKEN 时应跳过认证', async () => {
     const req = { headers: {} } as Request;
-    authMiddleware(req, mockRes, mockNext);
+    await authMiddleware(req, mockRes, mockNext);
     expect(mockNext).toHaveBeenCalledWith();
   });
 });

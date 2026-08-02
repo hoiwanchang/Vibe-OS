@@ -11,7 +11,8 @@ import { ElMessage, ElMessageBox } from 'element-plus';
 import { Connection, Plus } from '@element-plus/icons-vue';
 import { useI18n } from 'vue-i18n';
 import { useNetworkStore } from '@/stores/network';
-import type { FirewallRuleRequest, InterfaceConfigRequest, NetInterface } from '@/api/types';
+import type { FirewallRuleRequest, InterfaceConfigRequest, NetInterface, VlanInterface, BondInterface, QosRule, DnsRecord } from '@/api/types';
+import { vlanApi, lacpApi, qosApi, dnsApi } from '@/api';
 import { formatTime } from '@/utils/format';
 
 const network = useNetworkStore();
@@ -183,12 +184,136 @@ async function addWolDevice(): Promise<void> {
 /** MAC 格式校验提示 */
 const macValid = computed(() => /^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$/.test(wolMac.value.trim()));
 
+/* ---------- Phase 6: VLAN ---------- */
+const vlanList = ref<VlanInterface[]>([]);
+const vlanDialogVisible = ref(false);
+const vlanForm = reactive({ parentInterface: '', vlanId: 10, ipAddress: '' });
+
+async function loadVlans() {
+  try {
+    const res = await vlanApi.list();
+    vlanList.value = res ?? [];
+  } catch { /* ignore */ }
+}
+
+async function createVlan() {
+  try {
+    await vlanApi.create({ parentInterface: vlanForm.parentInterface, vlanId: vlanForm.vlanId, ipAddress: vlanForm.ipAddress || undefined });
+    ElMessage.success(t('network.vlanCreated'));
+    vlanDialogVisible.value = false;
+    await loadVlans();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+async function removeVlan(id: string) {
+  await ElMessageBox.confirm(t('common.confirmDelete'), { type: 'warning' });
+  try {
+    await vlanApi.remove(id);
+    ElMessage.success(t('common.deleted'));
+    await loadVlans();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+/* ---------- Phase 6: LACP ---------- */
+const lacpList = ref<BondInterface[]>([]);
+const lacpDialogVisible = ref(false);
+const lacpForm = reactive({ name: 'bond0', mode: '802.3ad' as const, members: '' });
+
+async function loadLacp() {
+  try {
+    const res = await lacpApi.list();
+    lacpList.value = res ?? [];
+  } catch { /* ignore */ }
+}
+
+async function createLacp() {
+  try {
+    await lacpApi.create({ name: lacpForm.name, mode: lacpForm.mode, members: lacpForm.members.split(',').map((s) => s.trim()).filter(Boolean) });
+    ElMessage.success(t('network.lacpCreated'));
+    lacpDialogVisible.value = false;
+    await loadLacp();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+async function removeLacp(name: string) {
+  await ElMessageBox.confirm(t('common.confirmDelete'), { type: 'warning' });
+  try {
+    await lacpApi.remove(name);
+    ElMessage.success(t('common.deleted'));
+    await loadLacp();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+/* ---------- Phase 6: QoS ---------- */
+const qosRules = ref<QosRule[]>([]);
+const qosDialogVisible = ref(false);
+const qosForm = reactive({ interface: 'eth0', type: 'ip' as const, target: '', direction: 'egress' as const, rateLimit: '10mbit', priority: 1 });
+
+async function loadQos() {
+  try {
+    const res = await qosApi.listRules();
+    qosRules.value = res ?? [];
+  } catch { /* ignore */ }
+}
+
+async function createQosRule() {
+  try {
+    await qosApi.createRule({ interface: qosForm.interface, type: qosForm.type, target: qosForm.target, direction: qosForm.direction, rateLimit: qosForm.rateLimit, priority: qosForm.priority });
+    ElMessage.success(t('network.qosCreated'));
+    qosDialogVisible.value = false;
+    await loadQos();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+async function removeQosRule(id: string) {
+  await ElMessageBox.confirm(t('common.confirmDelete'), { type: 'warning' });
+  try {
+    await qosApi.removeRule(id);
+    ElMessage.success(t('common.deleted'));
+    await loadQos();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+/* ---------- Phase 6: DNS ---------- */
+const dnsRecords = ref<DnsRecord[]>([]);
+const dnsDialogVisible = ref(false);
+const dnsForm = reactive({ type: 'A' as const, name: '', value: '', ttl: 3600 });
+
+async function loadDns() {
+  try {
+    const res = await dnsApi.listRecords();
+    dnsRecords.value = res ?? [];
+  } catch { /* ignore */ }
+}
+
+async function createDnsRecord() {
+  try {
+    await dnsApi.addRecord({ type: dnsForm.type, name: dnsForm.name, value: dnsForm.value, ttl: dnsForm.ttl });
+    ElMessage.success(t('network.dnsCreated'));
+    dnsDialogVisible.value = false;
+    await loadDns();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
+async function removeDnsRecord(id: string) {
+  await ElMessageBox.confirm(t('common.confirmDelete'), { type: 'warning' });
+  try {
+    await dnsApi.removeRecord(id);
+    ElMessage.success(t('common.deleted'));
+    await loadDns();
+  } catch { ElMessage.error(t('common.operationFailed')); }
+}
+
 onMounted(() => {
   void network.fetchInterfaces();
   void network.fetchDns();
   void network.fetchFirewall();
   void network.fetchPorts();
   void network.fetchWolDevices();
+  void loadVlans();
+  void loadLacp();
+  void loadQos();
+  void loadDns();
 });
 </script>
 
@@ -334,6 +459,98 @@ onMounted(() => {
           </div>
         </div>
       </el-tab-pane>
+
+      <!-- Phase 6: VLAN -->
+      <el-tab-pane name="vlan">
+        <template #label><span class="nv-tab-label">{{ t('network.tabVlan') }}</span></template>
+        <div class="nv-section">
+          <div class="nv-section__header">
+            <el-button size="small" :icon="Plus" @click="vlanDialogVisible = true">{{ t('network.vlanAdd') }}</el-button>
+          </div>
+          <el-table :data="vlanList" size="small" class="nx-mono">
+            <el-table-column prop="parentInterface" label="Parent" width="120" />
+            <el-table-column prop="vlanId" label="VLAN ID" width="90" />
+            <el-table-column prop="ipAddress" label="IP" width="150" />
+            <el-table-column prop="state" label="State" width="90" />
+            <el-table-column prop="mtu" label="MTU" width="80" />
+            <el-table-column label="" width="80">
+              <template #default="{ row }">
+                <el-button size="small" type="danger" text @click="removeVlan(row.id)">{{ t('common.delete') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-tab-pane>
+
+      <!-- Phase 6: LACP -->
+      <el-tab-pane name="lacp">
+        <template #label><span class="nv-tab-label">{{ t('network.tabLacp') }}</span></template>
+        <div class="nv-section">
+          <div class="nv-section__header">
+            <el-button size="small" :icon="Plus" @click="lacpDialogVisible = true">{{ t('network.lacpAdd') }}</el-button>
+          </div>
+          <el-table :data="lacpList" size="small" class="nx-mono">
+            <el-table-column prop="name" label="Name" width="120" />
+            <el-table-column prop="mode" label="Mode" width="120" />
+            <el-table-column prop="aggregateSpeed" label="Speed" width="100" />
+            <el-table-column prop="state" label="State" width="90" />
+            <el-table-column label="Members">
+              <template #default="{ row }">
+                <el-tag v-for="m in row.members" :key="m.name" size="small" class="nv-tag" :type="m.state === 'up' ? 'success' : 'danger'">{{ m.name }}</el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="" width="80">
+              <template #default="{ row }">
+                <el-button size="small" type="danger" text @click="removeLacp(row.name)">{{ t('common.delete') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-tab-pane>
+
+      <!-- Phase 6: QoS -->
+      <el-tab-pane name="qos">
+        <template #label><span class="nv-tab-label">{{ t('network.tabQos') }}</span></template>
+        <div class="nv-section">
+          <div class="nv-section__header">
+            <el-button size="small" :icon="Plus" @click="qosDialogVisible = true">{{ t('network.qosAdd') }}</el-button>
+          </div>
+          <el-table :data="qosRules" size="small" class="nx-mono">
+            <el-table-column prop="interface" label="Interface" width="100" />
+            <el-table-column prop="type" label="Type" width="80" />
+            <el-table-column prop="target" label="Target" width="150" />
+            <el-table-column prop="direction" label="Dir" width="80" />
+            <el-table-column prop="rateLimit" label="Rate" width="100" />
+            <el-table-column prop="priority" label="Prio" width="60" />
+            <el-table-column label="" width="80">
+              <template #default="{ row }">
+                <el-button size="small" type="danger" text @click="removeQosRule(row.id)">{{ t('common.delete') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-tab-pane>
+
+      <!-- Phase 6: DNS -->
+      <el-tab-pane name="dns">
+        <template #label><span class="nv-tab-label">{{ t('network.tabDns') }}</span></template>
+        <div class="nv-section">
+          <div class="nv-section__header">
+            <el-button size="small" :icon="Plus" @click="dnsDialogVisible = true">{{ t('network.dnsAdd') }}</el-button>
+          </div>
+          <el-table :data="dnsRecords" size="small" class="nx-mono">
+            <el-table-column prop="type" label="Type" width="80" />
+            <el-table-column prop="name" label="Name" width="200" />
+            <el-table-column prop="value" label="Value" width="200" />
+            <el-table-column prop="ttl" label="TTL" width="80" />
+            <el-table-column label="" width="80">
+              <template #default="{ row }">
+                <el-button size="small" type="danger" text @click="removeDnsRecord(row.id)">{{ t('common.delete') }}</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </el-tab-pane>
     </el-tabs>
 
     <!-- 接口配置对话框 -->
@@ -409,6 +626,110 @@ onMounted(() => {
       <template #footer>
         <el-button @click="ruleDialogVisible = false">{{ t('common.cancel') }}</el-button>
         <el-button type="primary" @click="submitRule">{{ t('common.add') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Phase 6: VLAN 对话框 -->
+    <el-dialog v-model="vlanDialogVisible" :title="t('network.vlanAdd')" width="420px" append-to-body>
+      <el-form label-width="110px" size="small">
+        <el-form-item label="Parent">
+          <el-input v-model="vlanForm.parentInterface" placeholder="eth0" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="VLAN ID">
+          <el-input-number v-model="vlanForm.vlanId" :min="1" :max="4094" />
+        </el-form-item>
+        <el-form-item label="IP (optional)">
+          <el-input v-model="vlanForm.ipAddress" placeholder="192.168.10.1/24" class="nx-mono" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="vlanDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="createVlan">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Phase 6: LACP 对话框 -->
+    <el-dialog v-model="lacpDialogVisible" :title="t('network.lacpAdd')" width="420px" append-to-body>
+      <el-form label-width="110px" size="small">
+        <el-form-item label="Name">
+          <el-input v-model="lacpForm.name" placeholder="bond0" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="Mode">
+          <el-select v-model="lacpForm.mode">
+            <el-option label="802.3ad (LACP)" value="802.3ad" />
+            <el-option label="balance-rr" value="balance-rr" />
+            <el-option label="active-backup" value="active-backup" />
+            <el-option label="balance-xor" value="balance-xor" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Members">
+          <el-input v-model="lacpForm.members" placeholder="eth0,eth1" class="nx-mono" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="lacpDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="createLacp">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Phase 6: QoS 对话框 -->
+    <el-dialog v-model="qosDialogVisible" :title="t('network.qosAdd')" width="420px" append-to-body>
+      <el-form label-width="110px" size="small">
+        <el-form-item label="Interface">
+          <el-input v-model="qosForm.interface" placeholder="eth0" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="Type">
+          <el-select v-model="qosForm.type">
+            <el-option label="IP" value="ip" />
+            <el-option label="Port" value="port" />
+            <el-option label="Protocol" value="protocol" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Target">
+          <el-input v-model="qosForm.target" placeholder="192.168.1.0/24" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="Direction">
+          <el-select v-model="qosForm.direction">
+            <el-option label="Egress" value="egress" />
+            <el-option label="Ingress" value="ingress" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Rate Limit">
+          <el-input v-model="qosForm.rateLimit" placeholder="10mbit" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="Priority">
+          <el-input-number v-model="qosForm.priority" :min="1" :max="10" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="qosDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="createQosRule">{{ t('common.confirm') }}</el-button>
+      </template>
+    </el-dialog>
+
+    <!-- Phase 6: DNS 对话框 -->
+    <el-dialog v-model="dnsDialogVisible" :title="t('network.dnsAdd')" width="420px" append-to-body>
+      <el-form label-width="110px" size="small">
+        <el-form-item label="Type">
+          <el-select v-model="dnsForm.type">
+            <el-option label="A" value="A" />
+            <el-option label="CNAME" value="CNAME" />
+            <el-option label="PTR" value="PTR" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="Name">
+          <el-input v-model="dnsForm.name" placeholder="nas.local" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="Value">
+          <el-input v-model="dnsForm.value" placeholder="192.168.1.100" class="nx-mono" />
+        </el-form-item>
+        <el-form-item label="TTL">
+          <el-input-number v-model="dnsForm.ttl" :min="60" :max="86400" :step="300" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="dnsDialogVisible = false">{{ t('common.cancel') }}</el-button>
+        <el-button type="primary" @click="createDnsRecord">{{ t('common.confirm') }}</el-button>
       </template>
     </el-dialog>
   </div>

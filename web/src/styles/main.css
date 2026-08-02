@@ -101,6 +101,111 @@ html.dark {
 }
 
 /* ============================================================
+   亮色主题（html.light）
+   ============================================================ */
+html.light {
+  --nx-bg: #f5f5f5;
+  --nx-bg-raised: #ffffff;
+  --nx-bg-sunken: #ebebeb;
+  --nx-surface: #ffffff;
+  --nx-surface-hover: #f0f0f0;
+
+  --nx-border: #d4d4d4;
+  --nx-border-strong: #b0b0b0;
+  --nx-border-faint: #e2e2e2;
+
+  --nx-text: #1a1a1a;
+  --nx-text-dim: #666666;
+  --nx-text-faint: #999999;
+
+  --nx-amber: #c78600;
+  --nx-amber-dim: rgba(199, 134, 0, 0.10);
+  --nx-red: #d32f2f;
+  --nx-red-dim: rgba(211, 47, 47, 0.08);
+  --nx-green: #2e7d32;
+  --nx-green-dim: rgba(46, 125, 50, 0.08);
+
+  --nx-primary: var(--nx-amber);
+  --nx-teal: var(--nx-green);
+  --nx-violet: var(--nx-amber);
+
+  /* Element Plus 亮色覆盖 */
+  --el-color-primary: var(--nx-amber);
+  --el-color-primary-light-3: #d49b1a;
+  --el-color-primary-light-5: #e0b04d;
+  --el-color-primary-light-7: #ebc580;
+  --el-color-primary-light-8: #f2d5a3;
+  --el-color-primary-light-9: #f9e8c6;
+  --el-color-primary-dark-2: #a06c00;
+
+  --el-color-success: var(--nx-green);
+  --el-color-danger: var(--nx-red);
+  --el-color-warning: var(--nx-amber);
+
+  --el-bg-color: var(--nx-bg-raised);
+  --el-bg-color-overlay: var(--nx-surface);
+  --el-bg-color-page: var(--nx-bg);
+
+  --el-text-color-primary: var(--nx-text);
+  --el-text-color-regular: #444444;
+  --el-text-color-secondary: var(--nx-text-dim);
+  --el-text-color-placeholder: var(--nx-text-faint);
+
+  --el-border-color: var(--nx-border);
+  --el-border-color-light: var(--nx-border-faint);
+  --el-border-color-lighter: var(--nx-border-faint);
+  --el-border-color-dark: var(--nx-border-strong);
+
+  --el-fill-color: #f0f0f0;
+  --el-fill-color-light: #f5f5f5;
+  --el-fill-color-lighter: #fafafa;
+  --el-fill-color-blank: var(--nx-bg-raised);
+
+  --el-mask-color: rgba(0, 0, 0, 0.4);
+
+  --el-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  --el-box-shadow-light: 0 4px 16px rgba(0, 0, 0, 0.08);
+}
+
+/* 亮色主题：桌面点阵背景 */
+html.light .nx-desktop {
+  background-image: radial-gradient(circle, #d8d8d8 1px, transparent 1px);
+}
+
+/* 亮色主题：窗口阴影减轻 */
+html.light .wm-window {
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+html.light .wm-window--focused {
+  box-shadow: 0 0 0 1px var(--nx-amber), 0 12px 40px rgba(0, 0, 0, 0.16);
+}
+
+/* 亮色主题：小组件背景 */
+html.light .nx-widget {
+  background: rgba(255, 255, 255, 0.88);
+}
+html.light .nx-widget--clickable:hover {
+  background: rgba(255, 255, 255, 0.95);
+}
+
+/* 亮色主题：滚动条 */
+html.light ::-webkit-scrollbar-track {
+  background: var(--nx-bg-sunken);
+}
+html.light ::-webkit-scrollbar-thumb {
+  background: var(--nx-border);
+}
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: var(--nx-amber);
+}
+
+/* 亮色主题：选中色 */
+html.light ::selection {
+  background: var(--nx-amber);
+  color: #fff;
+}
+
+/* ============================================================
    全局基底
    ============================================================ */
 * {

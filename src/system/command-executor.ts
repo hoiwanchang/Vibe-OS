@@ -41,6 +41,8 @@ const ALLOWED_COMMANDS = new Set([
   'umount',
   'blkid',
   'wipefs',
+  // LUKS 卷加密
+  'cryptsetup',
   // 共享文件夹
   'smbcontrol',
   'testparm',
@@ -63,6 +65,29 @@ const ALLOWED_COMMANDS = new Set([
   'aria2c',
   // 计划任务
   'bash',
+  // FTP/SFTP 日志
+  'journalctl',
+  // DLNA/UPnP 媒体服务器
+  'minidlnad',
+  'pgrep',
+  'kill',
+  // 视频转码
+  'ffmpeg',
+  'vainfo',
+  'nvidia-smi',
+  // QoS 带宽控制
+  'tc',
+  // DNS 服务器
+  'dnsmasq',
+  // UPS 电源管理（NUT）
+  'upsc',
+  // SNMP 监控
+  'snmpd',
+  'snmpwalk',
+  // 回收站
+  'find',
+  'mv',
+  'rm',
 ]);
 
 /**

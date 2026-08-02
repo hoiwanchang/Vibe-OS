@@ -271,7 +271,7 @@ describe('scheduler.service 剩余分支', () => {
   beforeEach(() => { vi.clearAllMocks(); });
 
   it('runJob 非零退出码应标记失败', async () => {
-    mockReadFile.mockResolvedValue(JSON.stringify([{ id: 'j1', name: 'test', command: 'exit 1', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
+    mockReadFile.mockResolvedValue(JSON.stringify([{ id: 'j1', name: 'test', command: 'df /nonexistent', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
     mockExecuteCommand.mockResolvedValue({ exitCode: 1, stdout: '', stderr: 'command failed' });
     const exec = await schedulerService.runJob('j1');
     expect(exec.status).toBe('failed');
@@ -279,7 +279,7 @@ describe('scheduler.service 剩余分支', () => {
   });
 
   it('runJob stdout 超 10KB 应截断', async () => {
-    mockReadFile.mockResolvedValue(JSON.stringify([{ id: 'j1', name: 'test', command: 'echo big', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
+    mockReadFile.mockResolvedValue(JSON.stringify([{ id: 'j1', name: 'test', command: 'df -h', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
     const bigOutput = 'x'.repeat(20 * 1024);
     mockExecuteCommand.mockResolvedValue({ exitCode: 0, stdout: bigOutput, stderr: '' });
     const exec = await schedulerService.runJob('j1');

@@ -34,6 +34,17 @@ import type {
   TailscaleStatusResponse,
   UserListResponse,
   WolDevice,
+  VersionListResult,
+  VersionPolicyConfig,
+  SearchResult,
+  SearchStatus,
+  FilePreviewResult,
+  FtpStatus,
+  FtpLogEntry,
+  ProxyRule,
+  ProxyCert,
+  DdnsStatus,
+  DdnsHistoryEntry,
 } from './types';
 
 const now = () => new Date().toISOString();
@@ -970,4 +981,137 @@ export function demoSshKeys(): SshKeysResult {
       },
     ],
   };
+}
+
+/* ---------- Phase 1: 文件版本控制 ---------- */
+
+/** 模拟文件版本历史（3 个版本，含大小与时间差异） */
+export function demoVersionList(path: string): VersionListResult {
+  const filename = path.split('/').pop() ?? path;
+  return {
+    path,
+    total: 3,
+    versions: [
+      { version: 3, filename, size: 4823, createdAt: '2026-07-29T14:22:10.000Z', filePath: path },
+      { version: 2, filename, size: 4510, createdAt: '2026-07-28T09:05:44.000Z', filePath: path },
+      { version: 1, filename, size: 4096, createdAt: '2026-07-25T16:48:02.000Z', filePath: path },
+    ],
+  };
+}
+
+/** 模拟默认版本策略（多版本旋转） */
+export function demoVersionPolicy(): VersionPolicyConfig {
+  return { mode: 'multiversion', maxVersions: 32, maxDays: 30 };
+}
+
+/* ---------- Phase 1: 全文搜索 ---------- */
+
+/** 模拟搜索结果（命中关键词并带上下文摘要） */
+export function demoSearchResult(q: string): SearchResult {
+  const kw = q.trim() || 'vibeos';
+  return {
+    total: 2,
+    page: 1,
+    size: 20,
+    results: [
+      {
+        filename: 'notes.md',
+        path: 'files/docs/notes.md',
+        size: 2048,
+        mtime: '2026-07-29T10:12:00.000Z',
+        snippet: `…本文档介绍 ${kw} 的部署流程，包含离线安装与…`,
+      },
+      {
+        filename: 'deploy.log',
+        path: 'files/logs/deploy.log',
+        size: 8192,
+        mtime: '2026-07-28T22:41:00.000Z',
+        snippet: `[INFO] 初始化 ${kw} 数据目录 /data/vibeos …`,
+      },
+    ],
+  };
+}
+
+/** 模拟索引状态 */
+export function demoSearchStatus(): SearchStatus {
+  return { indexedFiles: 1284, totalBytes: 5368709120, lastIndexed: now() };
+}
+
+/* ---------- Phase 1: 文件预览 ---------- */
+
+/** 模拟文件预览（按扩展名推断类型） */
+export function demoFilePreview(path: string): FilePreviewResult {
+  const ext = path.split('.').pop()?.toLowerCase() ?? '';
+  const imageExts = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg'];
+  const videoExts = ['mp4', 'webm', 'mkv', 'mov'];
+  const audioExts = ['mp3', 'wav', 'flac', 'ogg'];
+  if (imageExts.includes(ext)) {
+    return { kind: 'image', mimeType: `image/${ext === 'svg' ? 'svg+xml' : ext}`, size: 102400 };
+  }
+  if (ext === 'pdf') {
+    return { kind: 'pdf', mimeType: 'application/pdf', size: 204800 };
+  }
+  if (videoExts.includes(ext)) {
+    return { kind: 'video', mimeType: `video/${ext}`, size: 10485760 };
+  }
+  if (audioExts.includes(ext)) {
+    return { kind: 'audio', mimeType: `audio/${ext}`, size: 3145728 };
+  }
+  return {
+    kind: 'text',
+    mimeType: 'text/plain',
+    size: 512,
+    truncated: false,
+    content: `# ${path.split('/').pop() ?? path}\n\n这是演示模式下的文件预览内容。\n连接后端后将返回真实文件内容。`,
+  };
+}
+
+/* ---------- Phase 2: FTP/SFTP ---------- */
+
+export function demoFtpStatus(): FtpStatus {
+  return {
+    ftp: { running: false, pid: null },
+    sftp: { running: true, pid: 1234 },
+    config: {
+      enabled: false, port: 21, passivePortMin: 30000, passivePortMax: 30100,
+      anonymousEnabled: false, tlsEnabled: false, maxClients: 50, banner: 'Vibe OS FTP',
+    },
+    sftpConfig: { enabled: true, port: 22, chrootEnabled: true },
+  };
+}
+
+export function demoFtpLogs(): { logs: FtpLogEntry[]; total: number } {
+  return {
+    logs: [
+      { timestamp: '2026-07-31 10:00:01', user: 'admin', ip: '192.168.1.10', action: 'LOGIN', path: '/', result: 'success' },
+      { timestamp: '2026-07-31 10:00:05', user: 'admin', ip: '192.168.1.10', action: 'UPLOAD', path: '/files/test.txt', result: 'success' },
+      { timestamp: '2026-07-31 10:01:12', user: 'guest', ip: '192.168.1.99', action: 'LOGIN', path: '/', result: 'failure' },
+    ],
+    total: 3,
+  };
+}
+
+/* ---------- Phase 2: 反向代理 ---------- */
+
+export function demoProxyRules(): ProxyRule[] {
+  return [
+    { id: 'r1', domain: 'nas.local', path: '/', target: '127.0.0.1:3000', https: true, websocket: false, enabled: true, createdAt: '2026-07-01' },
+    { id: 'r2', domain: 'app.nas.local', path: '/api', target: '127.0.0.1:8080', https: false, websocket: true, enabled: true, createdAt: '2026-07-15' },
+  ];
+}
+
+export function demoProxyCerts(): ProxyCert[] {
+  return [
+    { id: 'c1', domain: 'nas.local', issuer: 'Vibe OS CA', notAfter: '2027-07-01', selfSigned: true },
+  ];
+}
+
+/* ---------- Phase 2: DDNS ---------- */
+
+export function demoDdnsStatus(): DdnsStatus {
+  return { enabled: false, online: false, currentIp: null, lastUpdate: null, lastError: null };
+}
+
+export function demoDdnsHistory(): DdnsHistoryEntry[] {
+  return [];
 }

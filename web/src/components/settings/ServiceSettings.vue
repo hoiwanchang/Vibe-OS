@@ -7,6 +7,7 @@ import { useI18n } from 'vue-i18n';
 import { ElMessage, ElMessageBox } from 'element-plus';
 import { storeToRefs } from 'pinia';
 import { useSettingsStore } from '@/stores/settings';
+import FtpSettings from '@/components/settings/FtpSettings.vue';
 
 const { t } = useI18n();
 const store = useSettingsStore();
@@ -97,6 +98,11 @@ async function restart(name: string): Promise<void> {
       :title="t('settings.services.coreServiceTip')"
       style="margin-top: 12px"
     />
+
+    <!-- Phase 2: FTP/SFTP 配置 -->
+    <div style="margin-top: 24px; border-top: 1px solid var(--nx-border-faint); padding-top: 16px">
+      <FtpSettings />
+    </div>
   </div>
 </template>
 

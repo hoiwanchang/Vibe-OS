@@ -89,6 +89,20 @@ vi.mock('../config.js', () => ({
   PORT: 3000,
   HOST: '127.0.0.1',
   API_TOKEN: '',
+  AUTH_DISABLED: true,
+  OIDC_ISSUER: 'http://127.0.0.1:3000',
+  ADMIN_PASSWORD: 'vibeos',
+  SESSION_TTL_MS: 86400000,
+  LOGIN_MAX_ATTEMPTS: 5,
+  LOGIN_LOCK_MS: 900000,
+  ACCESS_TOKEN_TTL_S: 3600,
+  REFRESH_TOKEN_TTL_MS: 2592000000,
+  AUTH_CODE_TTL_MS: 600000,
+  SESSION_COOKIE_NAME: 'vibeos.sid',
+  IS_PRODUCTION: false,
+  SSH_TARGET_USER: 'vibeuser',
+  SSH_AUTHORIZED_KEYS_FILE: '',
+  APP_SUBDIRS: ['models', 'data', 'logs'],
 }));
 
 import { createApp } from '../app.js';
@@ -328,7 +342,7 @@ describe('新模块 API 集成测试', () => {
     });
 
     it('POST /api/scheduler/jobs 应创建任务', async () => {
-      const res = await request(app).post('/api/scheduler/jobs').send({ name: 'test', command: 'echo hi', schedule: '0 * * * *' });
+      const res = await request(app).post('/api/scheduler/jobs').send({ name: 'test', command: 'df -h', schedule: '0 * * * *' });
       expect(res.status).toBe(201);
       expect(res.body.data.job.name).toBe('test');
     });

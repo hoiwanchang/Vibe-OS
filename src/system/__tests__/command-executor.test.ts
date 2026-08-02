@@ -23,7 +23,7 @@ describe('command-executor', () => {
 
   describe('executeCommand', () => {
     it('应拒绝白名单外的命令', async () => {
-      await expect(executeCommand('rm', ['-rf', '/'])).rejects.toThrow('不在允许列表中');
+      await expect(executeCommand('mkfs', ['-t', 'ext4', '/dev/sda'])).rejects.toThrow('不在允许列表中');
     });
 
     it('应成功执行白名单内的命令', async () => {

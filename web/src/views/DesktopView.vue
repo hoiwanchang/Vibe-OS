@@ -27,8 +27,12 @@ import DashboardView from '@/views/DashboardView.vue';
 import DownloadView from '@/views/DownloadView.vue';
 import FilesView from '@/views/FilesView.vue';
 import MonitorView from '@/views/MonitorView.vue';
+import MusicView from '@/views/MusicView.vue';
 import NetworkView from '@/views/NetworkView.vue';
+import PhotosView from '@/views/PhotosView.vue';
+import VpnView from '@/views/VpnView.vue';
 import SchedulerView from '@/views/SchedulerView.vue';
+import SearchView from '@/views/SearchView.vue';
 import SettingsView from '@/views/SettingsView.vue';
 import SharingView from '@/views/SharingView.vue';
 import StorageView from '@/views/StorageView.vue';
@@ -63,6 +67,9 @@ onMounted(async () => {
     booted.value = true;
   }, 1300);
 
+  // Ctrl+K 全局搜索
+  window.addEventListener('keydown', onGlobalKeydown);
+
   // 统一轮询（桌面级，供任务栏与各窗口共用）
   await system.fetchAll();
   pollTimer = setInterval(() => {
@@ -71,9 +78,18 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  window.removeEventListener('keydown', onGlobalKeydown);
   if (pollTimer) clearInterval(pollTimer);
   if (bootTimer) clearTimeout(bootTimer);
 });
+
+/** Ctrl+K / Cmd+K 打开全局搜索窗口 */
+function onGlobalKeydown(e: KeyboardEvent): void {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+    e.preventDefault();
+    wm.open('search');
+  }
+}
 
 /**
  * 硬件 critical 告警 → 全局弹窗（仅新告警弹一次）
@@ -147,6 +163,10 @@ onBeforeUnmount(() => {
         <DownloadView v-else-if="win.id === 'download'" />
         <NetworkView v-else-if="win.id === 'network'" />
         <SchedulerView v-else-if="win.id === 'scheduler'" />
+        <SearchView v-else-if="win.id === 'search'" />
+        <PhotosView v-else-if="win.id === 'photos'" />
+        <MusicView v-else-if="win.id === 'music'" />
+        <VpnView v-else-if="win.id === 'vpn'" />
         <MonitorView v-else />
       </AppWindow>
 

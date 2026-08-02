@@ -4,10 +4,18 @@
  */
 import { createApp } from './app.js';
 import { PORT, HOST } from './config.js';
+import * as authService from './modules/auth/auth.service.js';
+import * as oidcKeys from './modules/oidc/oidc.keys.js';
+import * as oauthClientService from './modules/oauth-clients/oauth-clients.service.js';
 
 const app = createApp();
 
 app.listen(PORT, HOST, () => {
-  console.log(`[Vibe OS] 服务已启动: http://${HOST}:${PORT}`);
-  console.log(`[Vibe OS] 健康检查: http://${HOST}:${PORT}/api/health`);
+  console.log(`Vibe OS 后端服务已启动: http://${HOST}:${PORT}`);
 });
+
+// 初始化认证和 OIDC
+await authService.initAuth();
+await oidcKeys.ensureKeys();
+await oauthClientService.initPresetClients();
+console.log('[init] auth + OIDC keys + preset clients 就绪');

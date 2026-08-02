@@ -11,11 +11,31 @@
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { storeToRefs } from 'pinia';
 import { useI18n } from 'vue-i18n';
+import { useRouter } from 'vue-router';
 import { demoActive } from '@/api/state';
-import NotificationBell from '@/components/desktop/NotificationBell.vue';
+import { useAuthStore } from '@/stores/auth';
 import { useSystemStore } from '@/stores/system';
 import { useWmStore } from '@/stores/wm';
 import type { DesktopAppId } from '@/stores/wm';
+import NotificationBell from '@/components/desktop/NotificationBell.vue';
+
+const auth = useAuthStore();
+const router = useRouter();
+
+function handleUserCmd(cmd: string) {
+  if (cmd === 'logout') {
+    auth.logout();
+    router.push('/login');
+  } else if (cmd === 'password') {
+    const newPwd = prompt('输入新密码（≥6位）：');
+    if (newPwd && newPwd.length >= 6) {
+      const oldPwd = prompt('输入当前密码：');
+      if (oldPwd) {
+        auth.changePassword(oldPwd, newPwd).then(() => router.push('/login'));
+      }
+    }
+  }
+}
 
 defineProps<{
   /** 开始菜单是否展开（用于高亮品牌按钮） */
@@ -130,6 +150,19 @@ watch(now, tick, { immediate: true });
     <!-- 时钟 -->
     <div class="nx-taskbar__clock">
       {{ dateText }}&nbsp;&nbsp;{{ clockText }}
+    </div>
+
+    <!-- 用户菜单 -->
+    <div class="nx-taskbar__user">
+      <el-dropdown trigger="click" @command="handleUserCmd">
+        <span class="nx-taskbar__user-btn">{{ auth.currentUser?.username ?? '—' }}</span>
+        <template #dropdown>
+          <el-dropdown-menu>
+            <el-dropdown-item command="password">修改密码</el-dropdown-item>
+            <el-dropdown-item command="logout" divided>登出</el-dropdown-item>
+          </el-dropdown-menu>
+        </template>
+      </el-dropdown>
     </div>
   </div>
 </template>

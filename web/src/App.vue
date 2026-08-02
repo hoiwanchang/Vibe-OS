@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * 根组件：强制暗色主题（NAS 控制台定位）
+ * 根组件：主题初始化（深色/浅色/跟随系统）
  * ElConfigProvider 驱动 Element Plus 组件文案随 i18n locale 联动
  */
 import { computed } from 'vue';
@@ -8,8 +8,9 @@ import { useI18n } from 'vue-i18n';
 import { ElConfigProvider } from 'element-plus';
 import zhCn from 'element-plus/es/locale/lang/zh-cn';
 import en from 'element-plus/es/locale/lang/en';
+import { initTheme } from '@/utils/theme';
 
-document.documentElement.classList.add('dark');
+initTheme();
 
 const { locale } = useI18n();
 

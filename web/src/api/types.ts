@@ -847,3 +847,772 @@ export interface AboutInfo {
   dataRoot: string;
   license: string;
 }
+
+/* ---------- Phase 1: 文件版本控制 ---------- */
+
+export type VersionPolicyMode = 'off' | 'simple' | 'multiversion';
+
+export interface VersionPolicyConfig {
+  mode: VersionPolicyMode;
+  maxVersions: number;
+  maxDays: number;
+}
+
+export interface VersionEntry {
+  version: number;
+  filename: string;
+  size: number;
+  createdAt: string;
+  filePath: string;
+}
+
+export interface VersionListResult {
+  versions: VersionEntry[];
+  path: string;
+  total: number;
+}
+
+export interface VersionRestoreResult {
+  restored: string;
+  version: number;
+  size: number;
+}
+
+export interface VersionDeleteResult {
+  deleted: string;
+  version: number;
+}
+
+/* ---------- Phase 1: 全文搜索 ---------- */
+
+export interface SearchResultItem {
+  filename: string;
+  path: string;
+  size: number;
+  mtime: string;
+  snippet: string;
+}
+
+export interface SearchResult {
+  results: SearchResultItem[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface SearchStatus {
+  indexedFiles: number;
+  totalBytes: number;
+  lastIndexed: string | null;
+}
+
+/* ---------- Phase 1: 文件预览与缩略图 ---------- */
+
+export type PreviewKind = 'image' | 'text' | 'pdf' | 'video' | 'audio' | 'unsupported';
+
+export interface FilePreviewResult {
+  kind: PreviewKind;
+  mimeType: string;
+  size: number;
+  content?: string;
+  truncated?: boolean;
+}
+
+export interface FileThumbnailResult {
+  url: string;
+  mimeType: string;
+  size: number;
+  cached: boolean;
+}
+
+/* ---------- Phase 2: FTP/SFTP ---------- */
+
+export interface FtpConfig {
+  enabled: boolean;
+  port: number;
+  passivePortMin: number;
+  passivePortMax: number;
+  anonymousEnabled: boolean;
+  tlsEnabled: boolean;
+  maxClients: number;
+  banner: string;
+}
+
+export interface SftpConfig {
+  enabled: boolean;
+  port: number;
+  chrootEnabled: boolean;
+}
+
+export interface FtpStatus {
+  ftp: { running: boolean; pid: number | null };
+  sftp: { running: boolean; pid: number | null };
+  config: FtpConfig;
+  sftpConfig: SftpConfig;
+}
+
+export interface FtpUserPermission {
+  uid: number;
+  enabled: boolean;
+  rootDir: string;
+  bandwidthLimitKbps: number;
+}
+
+export interface FtpLogEntry {
+  timestamp: string;
+  user: string;
+  ip: string;
+  action: string;
+  path: string;
+  result: 'success' | 'failure';
+}
+
+/* ---------- Phase 2: 反向代理 ---------- */
+
+export interface ProxyRule {
+  id: string;
+  domain: string;
+  path: string;
+  target: string;
+  https: boolean;
+  websocket: boolean;
+  enabled: boolean;
+  createdAt: string;
+}
+
+export interface ProxyRuleInput {
+  domain: string;
+  path: string;
+  target: string;
+  https?: boolean;
+  websocket?: boolean;
+  enabled?: boolean;
+}
+
+export interface ProxyCert {
+  id: string;
+  domain: string;
+  issuer: string;
+  notAfter: string;
+  selfSigned: boolean;
+}
+
+/* ---------- Phase 2: DDNS ---------- */
+
+export type DdnsProvider = 'cloudflare' | 'aliyun' | 'custom';
+
+export interface DdnsConfig {
+  enabled: boolean;
+  provider: DdnsProvider;
+  domain: string;
+  recordName: string;
+  apiKey: string;
+  apiSecret: string;
+  customUrl: string;
+  intervalMinutes: number;
+}
+
+export interface DdnsStatus {
+  enabled: boolean;
+  online: boolean;
+  currentIp: string | null;
+  lastUpdate: string | null;
+  lastError: string | null;
+}
+
+export interface DdnsHistoryEntry {
+  timestamp: string;
+  ip: string;
+  success: boolean;
+  message: string;
+}
+
+/* ---------- Phase 3: 2FA / TOTP ---------- */
+
+export interface TwoFactorSetupResult {
+  secret: string;
+  otpauthUri: string;
+  qrCodeDataUri: string;
+}
+
+export interface TwoFactorStatus {
+  enabled: boolean;
+  force2fa: boolean;
+}
+
+export interface BackupCodesResult {
+  codes: string[];
+  generatedAt: string;
+}
+
+/* ---------- Phase 3: 审计日志 ---------- */
+
+export interface AuditLogEntry {
+  id: number;
+  uid: number | null;
+  username: string;
+  method: string;
+  path: string;
+  ip: string;
+  statusCode: number;
+  sensitive: boolean;
+  timestamp: string;
+}
+
+export interface AuditLogQuery {
+  user?: string;
+  action?: string;
+  from?: string;
+  to?: string;
+  page?: number;
+  size?: number;
+}
+
+export interface AuditLogResult {
+  logs: AuditLogEntry[];
+  total: number;
+  page: number;
+  size: number;
+}
+
+export interface AuditStats {
+  todayTotal: number;
+  todayLogins: number;
+  todaySensitive: number;
+  totalEntries: number;
+}
+
+/* ---------- Phase 3: IP 封禁 ---------- */
+
+export interface BannedIpEntry {
+  ip: string;
+  reason: string;
+  bannedAt: string;
+  expiresAt: string | null;
+  auto: boolean;
+}
+
+export interface SecurityPolicy {
+  maxAttempts: number;
+  banDurationHours: number;
+  whitelist: string[];
+}
+
+/* ---------- Phase 4: RAID 管理 ---------- */
+
+export type RaidLevel = 'raid0' | 'raid1' | 'raid5' | 'raid6' | 'raid10';
+export type RaidState = 'online' | 'degraded' | 'rebuilding' | 'inactive';
+
+export interface RaidArray {
+  name: string;
+  level: RaidLevel;
+  devices: string[];
+  spares: string[];
+  state: RaidState;
+  totalBytes: number;
+  usedBytes: number;
+  syncProgress: number | null;
+}
+
+export interface RaidCreateRequest {
+  name: string;
+  level: RaidLevel;
+  devices: string[];
+  spares?: string[];
+}
+
+/* ---------- Phase 4: LUKS 卷加密 ---------- */
+
+export interface LuksVolume {
+  name: string;
+  device: string;
+  active: boolean;
+  cipher: string;
+  keySize: number;
+  autoUnlock: boolean;
+}
+
+export interface LuksCreateRequest {
+  device: string;
+  passphrase?: string;
+  keyfile?: boolean;
+}
+
+/* ---------- Phase 4: SSD 缓存 ---------- */
+
+export type SsdCacheMode = 'read' | 'write' | 'readwrite';
+
+export interface SsdCacheEntry {
+  name: string;
+  ssdDevice: string;
+  poolDevice: string;
+  mode: SsdCacheMode;
+  hitRate: number;
+  temperature: number | null;
+  lifePercent: number | null;
+}
+
+export interface SsdCacheCreateRequest {
+  ssdDevice: string;
+  poolDevice: string;
+  mode: SsdCacheMode;
+}
+
+/* ---------- Phase 4: iSCSI Target ---------- */
+
+export interface IscsiLun {
+  lunId: number;
+  backingStore: string;
+  sizeBytes: number;
+}
+
+export interface IscsiTarget {
+  iqn: string;
+  luns: IscsiLun[];
+  connections: number;
+  chapEnabled: boolean;
+  initiatorWhitelist: string[];
+}
+
+export interface IscsiTargetCreateRequest {
+  iqn: string;
+  luns: Array<{ backingStore: string; sizeBytes: number }>;
+  chapUser?: string;
+  chapPassword?: string;
+  initiatorWhitelist?: string[];
+}
+
+/* ---------- Phase 5: DLNA 媒体服务 ---------- */
+
+export type MediaSourceType = 'video' | 'music' | 'photo';
+
+export interface MediaSource {
+  path: string;
+  type: MediaSourceType;
+}
+
+export interface MediaConfig {
+  sources: MediaSource[];
+  inotify: boolean;
+  port: number;
+}
+
+export interface MediaStatus {
+  running: boolean;
+  videoCount: number;
+  musicCount: number;
+  photoCount: number;
+  lastScan: string | null;
+}
+
+export interface MediaClient {
+  name: string;
+  ip: string;
+  type: string;
+  connectedAt: string;
+}
+
+/* ---------- Phase 5: 照片管理 ---------- */
+
+export interface PhotoItem {
+  id: string;
+  path: string;
+  filename: string;
+  width: number;
+  height: number;
+  takenAt: string | null;
+  camera: string | null;
+  gps: { lat: number; lng: number } | null;
+}
+
+export interface PhotoTimelineGroup {
+  date: string;
+  photos: PhotoItem[];
+}
+
+export interface PhotoAlbum {
+  id: string;
+  name: string;
+  description: string;
+  coverId: string | null;
+  photoCount: number;
+  createdAt: string;
+}
+
+export interface PhotoShareLink {
+  token: string;
+  photoIds: string[];
+  expiresAt: string;
+  url: string;
+}
+
+/* ---------- Phase 5: 视频转码 ---------- */
+
+export type TranscodePreset = '1080p' | '720p' | '480p' | 'original';
+export type TranscodeHwAccel = 'auto' | 'vaapi' | 'nvenc' | 'none';
+export type TranscodeStatus = 'queued' | 'running' | 'completed' | 'failed' | 'cancelled';
+
+export interface TranscodeTask {
+  id: string;
+  inputPath: string;
+  outputPath: string;
+  preset: TranscodePreset;
+  hwAccel: TranscodeHwAccel;
+  status: TranscodeStatus;
+  progress: number;
+  createdAt: string;
+  error: string | null;
+}
+
+export interface TranscodeCreateRequest {
+  inputPath: string;
+  outputPath?: string;
+  preset: TranscodePreset;
+  hwAccel?: TranscodeHwAccel;
+}
+
+export interface HwAccelInfo {
+  vaapi: boolean;
+  nvenc: boolean;
+  recommended: TranscodeHwAccel;
+}
+
+/* ---------- Phase 5: 音乐串流 ---------- */
+
+export interface MusicArtist {
+  id: string;
+  name: string;
+  albumCount: number;
+  trackCount: number;
+}
+
+export interface MusicAlbum {
+  id: string;
+  name: string;
+  artistId: string;
+  artistName: string;
+  year: number | null;
+  coverPath: string | null;
+  trackCount: number;
+}
+
+export interface MusicTrack {
+  id: string;
+  title: string;
+  artistId: string;
+  artistName: string;
+  albumId: string;
+  albumName: string;
+  trackNumber: number;
+  duration: number;
+  format: string;
+  path: string;
+}
+
+export interface MusicPlaylist {
+  id: string;
+  name: string;
+  trackIds: string[];
+  trackCount: number;
+  createdAt: string;
+}
+
+/* ---------- Phase 6: VLAN ---------- */
+
+export interface VlanInterface {
+  id: string;
+  parentInterface: string;
+  vlanId: number;
+  ipAddress: string | null;
+  state: string;
+  mtu: number;
+}
+
+export interface VlanCreateRequest {
+  parentInterface: string;
+  vlanId: number;
+  ipAddress?: string;
+}
+
+/* ---------- Phase 6: LACP / Bonding ---------- */
+
+export type BondMode = 'balance-rr' | 'active-backup' | '802.3ad';
+
+export interface BondMember {
+  name: string;
+  state: 'up' | 'down';
+  speed: string;
+}
+
+export interface BondInterface {
+  name: string;
+  mode: BondMode;
+  members: BondMember[];
+  ipAddress: string | null;
+  state: string;
+  aggregateSpeed: string;
+}
+
+export interface BondCreateRequest {
+  name: string;
+  mode: BondMode;
+  members: string[];
+}
+
+/* ---------- Phase 6: VPN (WireGuard) ---------- */
+
+export interface VpnPeer {
+  publicKey: string;
+  name: string;
+  allowedIps: string[];
+  lastHandshake: string | null;
+  transferRx: number;
+  transferTx: number;
+}
+
+export interface VpnServerStatus {
+  running: boolean;
+  port: number;
+  subnet: string;
+  publicKey: string;
+  peerCount: number;
+}
+
+export interface VpnServerInitRequest {
+  port: number;
+  subnet: string;
+  dns?: string;
+}
+
+export interface VpnPeerCreateRequest {
+  name: string;
+  allowedIps?: string[];
+}
+
+/* ---------- Phase 6: QoS ---------- */
+
+export type QosDirection = 'ingress' | 'egress';
+export type QosRuleType = 'ip' | 'port' | 'protocol';
+
+export interface QosRule {
+  id: string;
+  interface: string;
+  type: QosRuleType;
+  target: string;
+  direction: QosDirection;
+  rateLimit: string;
+  priority: number;
+}
+
+export interface QosRuleCreateRequest {
+  interface: string;
+  type: QosRuleType;
+  target: string;
+  direction: QosDirection;
+  rateLimit: string;
+  priority?: number;
+}
+
+export interface QosInterfaceStatus {
+  interface: string;
+  rxBytes: number;
+  txBytes: number;
+  rxRate: string;
+  txRate: string;
+}
+
+/* ---------- Phase 6: DNS ---------- */
+
+export type DnsRecordType = 'A' | 'CNAME' | 'PTR';
+
+export interface DnsRecord {
+  id: string;
+  type: DnsRecordType;
+  name: string;
+  value: string;
+  ttl: number;
+}
+
+export interface DnsRecordCreateRequest {
+  type: DnsRecordType;
+  name: string;
+  value: string;
+  ttl?: number;
+}
+
+export interface DnsServerConfig {
+  upstreamServers: string[];
+  listenAddress: string;
+  cacheSize: number;
+  running: boolean;
+}
+
+export interface DnsServerConfigUpdateRequest {
+  upstreamServers: string[];
+  listenAddress?: string;
+  cacheSize?: number;
+}
+
+/* ---------- Phase 7: Setup Wizard ---------- */
+
+export interface SetupDisk {
+  name: string;
+  size: string;
+  model: string;
+}
+
+export interface SetupCompleteRequest {
+  admin: {
+    username: string;
+    password: string;
+    enable2fa: boolean;
+  };
+  storage: {
+    disks: string[];
+    poolType: 'single' | 'raid1' | 'raid5';
+    filesystem: 'ext4' | 'btrfs' | 'xfs';
+  };
+  network: {
+    method: 'dhcp' | 'static';
+    ip?: string;
+    netmask?: string;
+    gateway?: string;
+    dns?: string;
+  };
+  services: {
+    smb: boolean;
+    ftp: boolean;
+    dlna: boolean;
+    docker: boolean;
+  };
+}
+
+/* ---------- Phase 7: UPS ---------- */
+
+export interface UpsStatus {
+  online: boolean;
+  batteryCharge: number;
+  load: number;
+  inputVoltage: number;
+  runtime: number;
+  modelName: string;
+}
+
+export interface UpsConfig {
+  shutdownThreshold: number;
+  notifyEmail: string | null;
+}
+
+/* ---------- Phase 7: SNMP ---------- */
+
+export interface SnmpStatus {
+  running: boolean;
+  version: string;
+}
+
+export interface SnmpConfig {
+  community: string;
+  listenAddress: string;
+  enabledGroups: string[];
+}
+
+export interface SnmpOidData {
+  cpu: number;
+  memoryUsed: number;
+  memoryTotal: number;
+  diskUsed: number;
+  diskTotal: number;
+  netRx: number;
+  netTx: number;
+  temperature: number | null;
+}
+
+/* ---------- Phase 7: App Update ---------- */
+
+export interface AppUpdateStatus {
+  lastCheck: string | null;
+  mode: 'manual' | 'auto';
+  maintenanceWindow: string | null;
+}
+
+export interface AppUpdateAvailable {
+  appId: string;
+  appName: string;
+  currentVersion: string;
+  latestVersion: string;
+}
+
+export interface AppUpdateHistoryEntry {
+  appId: string;
+  appName: string;
+  fromVersion: string;
+  toVersion: string;
+  updatedAt: string;
+  success: boolean;
+}
+
+/* ---------- Phase 8: USB Backup ---------- */
+
+export interface UsbDevice {
+  name: string;
+  size: string;
+  model: string;
+  mountpoint: string | null;
+  fstype: string;
+}
+
+export interface UsbBackupConfig {
+  enabled: boolean;
+  mode: 'copy' | 'rsync' | 'bidirectional';
+  sourcePath: string;
+  autoOnInsert: boolean;
+  excludePatterns: string[];
+}
+
+export interface UsbBackupStatus {
+  running: boolean;
+  progress: number;
+  currentFile: string | null;
+  lastRun: string | null;
+  lastResult: 'success' | 'failed' | null;
+}
+
+export interface UsbBackupHistoryEntry {
+  startedAt: string;
+  finishedAt: string | null;
+  mode: string;
+  filesTransferred: number;
+  bytesTransferred: number;
+  success: boolean;
+  error: string | null;
+}
+
+/* ---------- Phase 8: Recycle Bin ---------- */
+
+export interface RecycleBinFolderConfig {
+  path: string;
+  enabled: boolean;
+  retentionDays: number;
+  maxSizeMB: number;
+  excludeExtensions: string[];
+  excludePaths: string[];
+}
+
+export interface RecycleBinConfig {
+  folders: RecycleBinFolderConfig[];
+}
+
+export interface RecycleBinFile {
+  id: string;
+  originalPath: string;
+  fileName: string;
+  size: number;
+  deletedAt: string;
+  folder: string;
+}
+
+export interface RecycleBinStats {
+  totalFiles: number;
+  totalSize: number;
+  perFolder: { path: string; files: number; size: number }[];
+}

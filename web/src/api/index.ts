@@ -77,6 +77,86 @@ import type {
   SettingsLogLine,
   SettingsLogSource,
   SystemSettings,
+  VersionListResult,
+  VersionPolicyConfig,
+  VersionRestoreResult,
+  VersionDeleteResult,
+  SearchResult,
+  SearchStatus,
+  FilePreviewResult,
+  FtpConfig,
+  FtpStatus,
+  FtpUserPermission,
+  FtpLogEntry,
+  ProxyRule,
+  ProxyRuleInput,
+  ProxyCert,
+  DdnsConfig,
+  DdnsStatus,
+  DdnsHistoryEntry,
+  TwoFactorSetupResult,
+  TwoFactorStatus,
+  BackupCodesResult,
+  AuditLogQuery,
+  AuditLogResult,
+  AuditStats,
+  BannedIpEntry,
+  SecurityPolicy,
+  RaidArray,
+  RaidCreateRequest,
+  LuksVolume,
+  LuksCreateRequest,
+  SsdCacheEntry,
+  SsdCacheCreateRequest,
+  IscsiTarget,
+  IscsiTargetCreateRequest,
+  IscsiLun,
+  MediaStatus,
+  MediaConfig,
+  MediaClient,
+  PhotoItem,
+  PhotoTimelineGroup,
+  PhotoAlbum,
+  PhotoShareLink,
+  TranscodeTask,
+  TranscodeCreateRequest,
+  HwAccelInfo,
+  MusicArtist,
+  MusicAlbum,
+  MusicTrack,
+  MusicPlaylist,
+  VlanInterface,
+  VlanCreateRequest,
+  BondInterface,
+  BondCreateRequest,
+  VpnServerStatus,
+  VpnServerInitRequest,
+  VpnPeer,
+  VpnPeerCreateRequest,
+  QosRule,
+  QosRuleCreateRequest,
+  QosInterfaceStatus,
+  DnsRecord,
+  DnsRecordCreateRequest,
+  DnsServerConfig,
+  DnsServerConfigUpdateRequest,
+  SetupDisk,
+  SetupCompleteRequest,
+  UpsStatus,
+  UpsConfig,
+  SnmpStatus,
+  SnmpConfig,
+  SnmpOidData,
+  AppUpdateStatus,
+  AppUpdateAvailable,
+  AppUpdateHistoryEntry,
+  UsbDevice,
+  UsbBackupConfig,
+  UsbBackupStatus,
+  UsbBackupHistoryEntry,
+  RecycleBinConfig,
+  RecycleBinFile,
+  RecycleBinStats,
 } from './types';
 
 /* ---------- 系统 / 指标 ---------- */
@@ -342,6 +422,98 @@ export const filesApi = {
       url: '/files/trash/empty',
       method: 'delete',
       params: { uid },
+    }),
+
+  /* ---------- Phase 1: 版本控制 ---------- */
+
+  /** 列出文件版本历史 */
+  versions: (uid: number, path: string) =>
+    request<VersionListResult>(
+      { url: '/files/versions', params: { uid, path } },
+      () => demo.demoVersionList(path),
+    ),
+
+  /** 版本下载 URL */
+  versionDownloadUrl: (uid: number, path: string, version: number) =>
+    `/api/files/versions/download?uid=${uid}&path=${encodeURIComponent(path)}&version=${version}`,
+
+  /** 恢复指定版本 */
+  restoreVersion: (uid: number, path: string, version: number) =>
+    request<VersionRestoreResult>({
+      url: '/files/versions/restore',
+      method: 'post',
+      data: { uid, path, version },
+    }),
+
+  /** 删除指定版本 */
+  deleteVersion: (uid: number, path: string, version: number) =>
+    request<VersionDeleteResult>({
+      url: '/files/versions',
+      method: 'delete',
+      params: { uid, path, version },
+    }),
+
+  /** 获取版本策略 */
+  versionPolicy: (share: string) =>
+    request<VersionPolicyConfig>(
+      { url: '/files/versions/policy', params: { share } },
+      () => demo.demoVersionPolicy(),
+    ),
+
+  /** 设置版本策略 */
+  setVersionPolicy: (share: string, policy: Partial<VersionPolicyConfig>) =>
+    request<VersionPolicyConfig>({
+      url: '/files/versions/policy',
+      method: 'put',
+      data: { share, ...policy },
+    }),
+
+  /* ---------- Phase 1: 预览与缩略图 ---------- */
+
+  /** 获取文件预览（按 MIME 分发） */
+  preview: (uid: number, path: string) =>
+    request<FilePreviewResult>(
+      { url: '/files/preview', params: { uid, path } },
+      () => demo.demoFilePreview(path),
+    ),
+
+  /** 缩略图 URL（图片文件 256px） */
+  thumbnailUrl: (uid: number, path: string) =>
+    `/api/files/thumbnail?uid=${uid}&path=${encodeURIComponent(path)}`,
+};
+
+/* ---------- Phase 1: 全文搜索 ---------- */
+
+export const searchApi = {
+  /** 全文搜索 */
+  search: (params: {
+    uid: number;
+    q: string;
+    type?: string;
+    path?: string;
+    from?: string;
+    to?: string;
+    page?: number;
+    size?: number;
+  }) =>
+    request<SearchResult>(
+      { url: '/search', params },
+      () => demo.demoSearchResult(params.q),
+    ),
+
+  /** 索引状态 */
+  status: (uid: number) =>
+    request<SearchStatus>(
+      { url: '/search/status', params: { uid } },
+      () => demo.demoSearchStatus(),
+    ),
+
+  /** 手动重建索引 */
+  reindex: (uid: number) =>
+    request<{ indexed: number; durationMs: number }>({
+      url: '/search/reindex',
+      method: 'post',
+      data: { uid },
     }),
 };
 
@@ -997,4 +1169,468 @@ export const settingsApi = {
   /** 关机 */
   shutdown: () =>
     request<{ shuttingDown: boolean }>({ url: '/system/shutdown', method: 'post' }),
+};
+
+/* ---------- Phase 2: FTP/SFTP ---------- */
+
+export const ftpApi = {
+  /** 获取 FTP/SFTP 服务状态 */
+  getStatus: () => request<FtpStatus>({ url: '/ftp/status' }),
+
+  /** 更新 FTP 配置 */
+  updateConfig: (config: Partial<FtpConfig>) =>
+    request<FtpConfig>({ url: '/ftp/config', method: 'put', data: config }),
+
+  /** 启动 FTP 服务 */
+  start: () => request<{ started: boolean }>({ url: '/ftp/start', method: 'post' }),
+
+  /** 停止 FTP 服务 */
+  stop: () => request<{ stopped: boolean }>({ url: '/ftp/stop', method: 'post' }),
+
+  /** 重启 FTP 服务 */
+  restart: () => request<{ restarted: boolean }>({ url: '/ftp/restart', method: 'post' }),
+
+  /** 获取连接日志 */
+  getLogs: (params?: { page?: number; size?: number }) =>
+    request<{ logs: FtpLogEntry[]; total: number }>({ url: '/ftp/logs', params }),
+
+  /** 更新用户 FTP 权限 */
+  updateUser: (uid: number, perm: Partial<FtpUserPermission>) =>
+    request<FtpUserPermission>({ url: `/ftp/users/${uid}`, method: 'put', data: perm }),
+};
+
+/* ---------- Phase 2: 反向代理 ---------- */
+
+export const proxyApi = {
+  /** 规则列表 */
+  getRules: () => request<ProxyRule[]>({ url: '/proxy/rules' }),
+
+  /** 创建规则 */
+  createRule: (input: ProxyRuleInput) =>
+    request<ProxyRule>({ url: '/proxy/rules', method: 'post', data: input }),
+
+  /** 更新规则 */
+  updateRule: (id: string, input: Partial<ProxyRuleInput>) =>
+    request<ProxyRule>({ url: `/proxy/rules/${id}`, method: 'put', data: input }),
+
+  /** 删除规则 */
+  deleteRule: (id: string) =>
+    request<{ deleted: boolean }>({ url: `/proxy/rules/${id}`, method: 'delete' }),
+
+  /** 重载 nginx */
+  reload: () => request<{ reloaded: boolean }>({ url: '/proxy/reload', method: 'post' }),
+
+  /** 证书列表 */
+  getCerts: () => request<ProxyCert[]>({ url: '/proxy/certs' }),
+
+  /** 生成/上传证书 */
+  createCert: (payload: { domain: string; selfSigned?: boolean }) =>
+    request<ProxyCert>({ url: '/proxy/certs', method: 'post', data: payload }),
+};
+
+/* ---------- Phase 2: DDNS ---------- */
+
+export const ddnsApi = {
+  /** 获取 DDNS 状态 */
+  getStatus: () => request<DdnsStatus>({ url: '/ddns/status' }),
+
+  /** 更新 DDNS 配置 */
+  updateConfig: (config: Partial<DdnsConfig>) =>
+    request<DdnsConfig>({ url: '/ddns/config', method: 'put', data: config }),
+
+  /** 手动触发更新 */
+  update: () => request<{ updated: boolean; ip: string }>({ url: '/ddns/update', method: 'post' }),
+
+  /** 更新历史 */
+  getHistory: () => request<DdnsHistoryEntry[]>({ url: '/ddns/history' }),
+};
+
+/* ---------- Phase 3: 2FA / TOTP ---------- */
+
+export const twoFactorApi = {
+  /** 获取 2FA 状态 */
+  getStatus: () => request<TwoFactorStatus>({ url: '/auth/2fa/status' }),
+
+  /** 生成 secret + 二维码 */
+  setup: () => request<TwoFactorSetupResult>({ url: '/auth/2fa/setup', method: 'post' }),
+
+  /** 验证 TOTP 码并启用 */
+  verify: (code: string) =>
+    request<{ enabled: boolean }>({ url: '/auth/2fa/verify', method: 'post', data: { code } }),
+
+  /** 关闭 2FA（需密码） */
+  disable: (password: string) =>
+    request<{ disabled: boolean }>({ url: '/auth/2fa/disable', method: 'post', data: { password } }),
+
+  /** 查看备用码 */
+  getBackupCodes: () => request<BackupCodesResult>({ url: '/auth/2fa/backup-codes' }),
+
+  /** 重新生成备用码 */
+  regenerateBackupCodes: () =>
+    request<BackupCodesResult>({ url: '/auth/2fa/regenerate', method: 'post' }),
+
+  /** 2FA 登录验证 */
+  login: (pendingToken: string, code: string) =>
+    request<{ token: string }>({ url: '/auth/2fa/login', method: 'post', data: { pendingToken, code } }),
+};
+
+/* ---------- Phase 3: 审计日志 ---------- */
+
+export const auditApi = {
+  /** 查询审计日志 */
+  getLogs: (params?: AuditLogQuery) =>
+    request<AuditLogResult>({ url: '/audit/logs', params }),
+
+  /** 统计摘要 */
+  getStats: () => request<AuditStats>({ url: '/audit/stats' }),
+
+  /** 导出 */
+  export: (format: 'csv' | 'json') =>
+    request<Blob>({ url: '/audit/export', method: 'post', data: { format }, responseType: 'blob' }),
+};
+
+/* ---------- Phase 3: IP 封禁 ---------- */
+
+export const securityApi = {
+  /** 封禁列表 */
+  getBanned: () => request<BannedIpEntry[]>({ url: '/security/banned' }),
+
+  /** 手动封禁 */
+  ban: (ip: string, reason?: string) =>
+    request<BannedIpEntry>({ url: '/security/ban', method: 'post', data: { ip, reason } }),
+
+  /** 解封 */
+  unban: (ip: string) =>
+    request<{ unbanned: boolean }>({ url: `/security/ban/${ip}`, method: 'delete' }),
+
+  /** 获取封禁策略 */
+  getPolicy: () => request<SecurityPolicy>({ url: '/security/policy' }),
+
+  /** 更新封禁策略 */
+  updatePolicy: (policy: Partial<SecurityPolicy>) =>
+    request<SecurityPolicy>({ url: '/security/policy', method: 'put', data: policy }),
+};
+
+/* ---------- Phase 4: RAID 管理 ---------- */
+
+export const raidApi = {
+  /** 列出所有 RAID 阵列 */
+  list: () => request<RaidArray[]>({ url: '/storage/raid' }),
+
+  /** 创建阵列 */
+  create: (data: RaidCreateRequest) =>
+    request<RaidArray>({ url: '/storage/raid', method: 'post', data }),
+
+  /** 阵列详情 */
+  get: (name: string) => request<RaidArray>({ url: `/storage/raid/${name}` }),
+
+  /** 添加磁盘 */
+  addDisk: (name: string, device: string) =>
+    request<RaidArray>({ url: `/storage/raid/${name}/add`, method: 'post', data: { device } }),
+
+  /** 移除磁盘 */
+  removeDisk: (name: string, device: string) =>
+    request<RaidArray>({ url: `/storage/raid/${name}/remove`, method: 'post', data: { device } }),
+
+  /** 触发重建 */
+  rebuild: (name: string) =>
+    request<{ started: boolean }>({ url: `/storage/raid/${name}/rebuild`, method: 'post' }),
+
+  /** 删除阵列 */
+  remove: (name: string) =>
+    request<{ removed: boolean }>({ url: `/storage/raid/${name}`, method: 'delete' }),
+};
+
+/* ---------- Phase 4: LUKS 卷加密 ---------- */
+
+export const luksApi = {
+  /** 列出所有加密卷 */
+  list: () => request<LuksVolume[]>({ url: '/luks/status' }),
+
+  /** 创建加密卷 */
+  create: (data: LuksCreateRequest) =>
+    request<LuksVolume>({ url: '/luks/create', method: 'post', data }),
+
+  /** 解锁卷 */
+  open: (device: string, name: string, passphrase?: string) =>
+    request<{ opened: boolean }>({ url: '/luks/open', method: 'post', data: { device, name, passphrase } }),
+
+  /** 锁定卷 */
+  close: (name: string) =>
+    request<{ closed: boolean }>({ url: '/luks/close', method: 'post', data: { name } }),
+
+  /** 单个卷详情 */
+  get: (name: string) => request<LuksVolume>({ url: `/luks/${name}` }),
+
+  /** 生成 keyfile */
+  generateKeyfile: (name: string) =>
+    request<{ path: string }>({ url: '/luks/keyfile', method: 'post', data: { name } }),
+
+  /** 配置开机自动解锁 */
+  setAutoUnlock: (name: string, enabled: boolean) =>
+    request<{ updated: boolean }>({ url: '/luks/autounlock', method: 'put', data: { name, enabled } }),
+};
+
+/* ---------- Phase 4: SSD 缓存 ---------- */
+
+export const ssdCacheApi = {
+  /** 缓存状态列表 */
+  list: () => request<SsdCacheEntry[]>({ url: '/ssd-cache/status' }),
+
+  /** 配置 SSD 缓存 */
+  create: (data: SsdCacheCreateRequest) =>
+    request<SsdCacheEntry>({ url: '/ssd-cache/create', method: 'post', data }),
+
+  /** 移除缓存 */
+  remove: (name: string) =>
+    request<{ removed: boolean }>({ url: `/ssd-cache/${name}`, method: 'delete' }),
+
+  /** 单个缓存详情 */
+  get: (name: string) => request<SsdCacheEntry>({ url: `/ssd-cache/${name}` }),
+};
+
+/* ---------- Phase 4: iSCSI Target ---------- */
+
+export const iscsiApi = {
+  /** 列出所有 Target */
+  listTargets: () => request<IscsiTarget[]>({ url: '/iscsi/targets' }),
+
+  /** 创建 Target */
+  createTarget: (data: IscsiTargetCreateRequest) =>
+    request<IscsiTarget>({ url: '/iscsi/targets', method: 'post', data }),
+
+  /** 删除 Target */
+  deleteTarget: (iqn: string) =>
+    request<{ removed: boolean }>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}`, method: 'delete' }),
+
+  /** Target 详情 */
+  getTarget: (iqn: string) =>
+    request<IscsiTarget>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}` }),
+
+  /** 添加 LUN */
+  addLun: (iqn: string, backingStore: string, sizeBytes: number) =>
+    request<IscsiLun>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}/lun`, method: 'post', data: { backingStore, sizeBytes } }),
+
+  /** 移除 LUN */
+  removeLun: (iqn: string, lunId: number) =>
+    request<{ removed: boolean }>({ url: `/iscsi/targets/${encodeURIComponent(iqn)}/lun/${lunId}`, method: 'delete' }),
+};
+
+/* ---------- Phase 5: DLNA 媒体服务 ---------- */
+
+export const mediaApi = {
+  /** DLNA 服务状态 */
+  getStatus: () => request<MediaStatus>({ url: '/media/status' }),
+
+  /** 媒体库配置 */
+  updateConfig: (config: MediaConfig) =>
+    request<MediaConfig>({ url: '/media/config', method: 'put', data: config }),
+
+  /** 重新扫描 */
+  rescan: () => request<{ started: boolean }>({ url: '/media/rescan', method: 'post' }),
+
+  /** 已连接客户端 */
+  getClients: () => request<MediaClient[]>({ url: '/media/clients' }),
+};
+
+/* ---------- Phase 5: 照片管理 ---------- */
+
+export const photosApi = {
+  /** 照片库（时间线） */
+  getLibrary: (params?: { page?: number; pageSize?: number; year?: number; month?: number }) =>
+    request<PhotoTimelineGroup[]>({ url: '/photos/library', params }),
+
+  /** 相册列表 */
+  getAlbums: () => request<PhotoAlbum[]>({ url: '/photos/albums' }),
+
+  /** 创建相册 */
+  createAlbum: (data: { name: string; description?: string }) =>
+    request<PhotoAlbum>({ url: '/photos/albums', method: 'post', data }),
+
+  /** 删除相册 */
+  deleteAlbum: (id: string) =>
+    request<{ removed: boolean }>({ url: `/photos/albums/${id}`, method: 'delete' }),
+
+  /** 添加照片到相册 */
+  addPhotosToAlbum: (albumId: string, photoIds: string[]) =>
+    request<{ added: number }>({ url: `/photos/albums/${albumId}/photos`, method: 'post', data: { photoIds } }),
+
+  /** 照片详情 */
+  getPhoto: (id: string) => request<PhotoItem>({ url: `/photos/${id}` }),
+
+  /** 生成共享链接 */
+  createShare: (data: { photoIds: string[]; expiresInHours: number }) =>
+    request<PhotoShareLink>({ url: '/photos/share', method: 'post', data }),
+};
+
+/* ---------- Phase 5: 视频转码 ---------- */
+
+export const transcodeApi = {
+  /** 转码任务列表 */
+  getTasks: () => request<TranscodeTask[]>({ url: '/transcode/tasks' }),
+
+  /** 创建转码任务 */
+  createTask: (data: TranscodeCreateRequest) =>
+    request<TranscodeTask>({ url: '/transcode/tasks', method: 'post', data }),
+
+  /** 任务详情 */
+  getTask: (id: string) => request<TranscodeTask>({ url: `/transcode/tasks/${id}` }),
+
+  /** 取消/删除任务 */
+  deleteTask: (id: string) =>
+    request<{ removed: boolean }>({ url: `/transcode/tasks/${id}`, method: 'delete' }),
+
+  /** 检测硬件加速 */
+  getHwAccel: () => request<HwAccelInfo>({ url: '/transcode/hwaccel' }),
+};
+
+/* ---------- Phase 5: 音乐串流 ---------- */
+
+export const musicApi = {
+  /** 艺术家列表 */
+  getArtists: () => request<MusicArtist[]>({ url: '/music/artists' }),
+
+  /** 专辑列表 */
+  getAlbums: (params?: { artistId?: string }) =>
+    request<MusicAlbum[]>({ url: '/music/albums', params }),
+
+  /** 曲目列表 */
+  getTracks: (params?: { artistId?: string; albumId?: string; page?: number; pageSize?: number }) =>
+    request<MusicTrack[]>({ url: '/music/tracks', params }),
+
+  /** 播放列表 */
+  getPlaylists: () => request<MusicPlaylist[]>({ url: '/music/playlists' }),
+
+  /** 创建播放列表 */
+  createPlaylist: (data: { name: string; trackIds: string[] }) =>
+    request<MusicPlaylist>({ url: '/music/playlists', method: 'post', data }),
+
+  /** 删除播放列表 */
+  deletePlaylist: (id: string) =>
+    request<{ removed: boolean }>({ url: `/music/playlists/${id}`, method: 'delete' }),
+
+  /** 更新播放列表 */
+  updatePlaylist: (id: string, data: { name?: string; trackIds?: string[] }) =>
+    request<MusicPlaylist>({ url: `/music/playlists/${id}`, method: 'put', data }),
+
+  /** 音频流 URL */
+  streamUrl: (trackId: string) => `/api/music/tracks/${trackId}/stream`,
+
+  /** 封面 URL */
+  coverUrl: (trackId: string) => `/api/music/tracks/${trackId}/cover`,
+};
+
+/* ---------- Phase 6: VLAN ---------- */
+
+export const vlanApi = {
+  list: () => request<VlanInterface[]>({ url: '/vlan' }),
+  create: (data: VlanCreateRequest) => request<VlanInterface>({ url: '/vlan', method: 'post', data }),
+  remove: (id: string) => request<void>({ url: `/vlan/${id}`, method: 'delete' }),
+  update: (id: string, data: Partial<VlanCreateRequest>) => request<VlanInterface>({ url: `/vlan/${id}`, method: 'put', data }),
+};
+
+/* ---------- Phase 6: LACP / Bonding ---------- */
+
+export const lacpApi = {
+  list: () => request<BondInterface[]>({ url: '/lacp' }),
+  create: (data: BondCreateRequest) => request<BondInterface>({ url: '/lacp', method: 'post', data }),
+  remove: (name: string) => request<void>({ url: `/lacp/${name}`, method: 'delete' }),
+  addMember: (name: string, member: string) => request<BondInterface>({ url: `/lacp/${name}/members`, method: 'post', data: { member } }),
+  removeMember: (name: string, member: string) => request<BondInterface>({ url: `/lacp/${name}/members/${member}`, method: 'delete' }),
+  status: (name: string) => request<BondInterface>({ url: `/lacp/${name}/status` }),
+};
+
+/* ---------- Phase 6: VPN (WireGuard) ---------- */
+
+export const vpnApi = {
+  status: () => request<VpnServerStatus>({ url: '/vpn/status' }),
+  initServer: (data: VpnServerInitRequest) => request<VpnServerStatus>({ url: '/vpn/server', method: 'post', data }),
+  updateServer: (data: Partial<VpnServerInitRequest>) => request<VpnServerStatus>({ url: '/vpn/server', method: 'put', data }),
+  listPeers: () => request<VpnPeer[]>({ url: '/vpn/peers' }),
+  addPeer: (data: VpnPeerCreateRequest) => request<VpnPeer>({ url: '/vpn/peers', method: 'post', data }),
+  removePeer: (pubkey: string) => request<void>({ url: `/vpn/peers/${encodeURIComponent(pubkey)}`, method: 'delete' }),
+  peerConfig: (pubkey: string) => request<string>({ url: `/vpn/peers/${encodeURIComponent(pubkey)}/config` }),
+};
+
+/* ---------- Phase 6: QoS ---------- */
+
+export const qosApi = {
+  listRules: () => request<QosRule[]>({ url: '/qos/rules' }),
+  createRule: (data: QosRuleCreateRequest) => request<QosRule>({ url: '/qos/rules', method: 'post', data }),
+  removeRule: (id: string) => request<void>({ url: `/qos/rules/${id}`, method: 'delete' }),
+  status: () => request<QosInterfaceStatus[]>({ url: '/qos/status' }),
+};
+
+/* ---------- Phase 6: DNS ---------- */
+
+export const dnsApi = {
+  status: () => request<DnsServerConfig>({ url: '/dns/status' }),
+  listRecords: () => request<DnsRecord[]>({ url: '/dns/records' }),
+  addRecord: (data: DnsRecordCreateRequest) => request<DnsRecord>({ url: '/dns/records', method: 'post', data }),
+  removeRecord: (id: string) => request<void>({ url: `/dns/records/${id}`, method: 'delete' }),
+  getConfig: () => request<DnsServerConfig>({ url: '/dns/config' }),
+  updateConfig: (data: DnsServerConfigUpdateRequest) => request<DnsServerConfig>({ url: '/dns/config', method: 'put', data }),
+};
+
+/* ---------- Phase 7: Setup Wizard ---------- */
+
+export const setupApi = {
+  disks: () => request<SetupDisk[]>({ url: '/setup/disks' }),
+  complete: (data: SetupCompleteRequest) => request<void>({ url: '/setup/complete', method: 'post', data }),
+};
+
+/* ---------- Phase 7: UPS ---------- */
+
+export const upsApi = {
+  status: () => request<UpsStatus>({ url: '/ups/status' }),
+  getConfig: () => request<UpsConfig>({ url: '/ups/config' }),
+  updateConfig: (data: UpsConfig) => request<UpsConfig>({ url: '/ups/config', method: 'put', data }),
+  testShutdown: () => request<void>({ url: '/ups/test-shutdown', method: 'post' }),
+  history: () => request<{ events: string[] }>({ url: '/ups/history' }),
+};
+
+/* ---------- Phase 7: SNMP ---------- */
+
+export const snmpApi = {
+  status: () => request<SnmpStatus>({ url: '/snmp/status' }),
+  start: () => request<void>({ url: '/snmp/start', method: 'post' }),
+  stop: () => request<void>({ url: '/snmp/stop', method: 'post' }),
+  restart: () => request<void>({ url: '/snmp/restart', method: 'post' }),
+  getConfig: () => request<SnmpConfig>({ url: '/snmp/config' }),
+  updateConfig: (data: SnmpConfig) => request<SnmpConfig>({ url: '/snmp/config', method: 'put', data }),
+  oids: () => request<SnmpOidData>({ url: '/snmp/oids' }),
+};
+
+/* ---------- Phase 7: App Update ---------- */
+
+export const appUpdateApi = {
+  status: () => request<AppUpdateStatus>({ url: '/appupdate/status' }),
+  updateConfig: (data: { mode: 'manual' | 'auto'; maintenanceWindow?: string }) =>
+    request<AppUpdateStatus>({ url: '/appupdate/config', method: 'put', data }),
+  check: () => request<void>({ url: '/appupdate/check', method: 'post' }),
+  available: () => request<AppUpdateAvailable[]>({ url: '/appupdate/available' }),
+  apply: (appId: string) => request<void>({ url: `/appupdate/apply/${appId}`, method: 'post' }),
+  history: () => request<AppUpdateHistoryEntry[]>({ url: '/appupdate/history' }),
+};
+
+/* ---------- Phase 8: USB Backup ---------- */
+
+export const usbBackupApi = {
+  devices: () => request<UsbDevice[]>({ url: '/usbbackup/devices' }),
+  getConfig: () => request<UsbBackupConfig>({ url: '/usbbackup/config' }),
+  updateConfig: (data: UsbBackupConfig) => request<UsbBackupConfig>({ url: '/usbbackup/config', method: 'put', data }),
+  execute: (deviceName: string) => request<void>({ url: '/usbbackup/execute', method: 'post', data: { device: deviceName } }),
+  status: () => request<UsbBackupStatus>({ url: '/usbbackup/status' }),
+  history: () => request<UsbBackupHistoryEntry[]>({ url: '/usbbackup/history' }),
+};
+
+/* ---------- Phase 8: Recycle Bin ---------- */
+
+export const recycleBinApi = {
+  getConfig: () => request<RecycleBinConfig>({ url: '/recyclebin/config' }),
+  updateConfig: (data: RecycleBinConfig) => request<RecycleBinConfig>({ url: '/recyclebin/config', method: 'put', data }),
+  files: (folder?: string) => request<RecycleBinFile[]>({ url: '/recyclebin/files', params: folder ? { folder } : undefined }),
+  restore: (id: string) => request<void>({ url: `/recyclebin/restore/${id}`, method: 'post' }),
+  empty: (folder?: string) => request<void>({ url: '/recyclebin/empty', method: 'delete', params: folder ? { folder } : undefined }),
+  stats: () => request<RecycleBinStats>({ url: '/recyclebin/stats' }),
 };

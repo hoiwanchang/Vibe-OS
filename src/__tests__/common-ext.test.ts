@@ -7,6 +7,19 @@ import type { Request, Response, NextFunction } from 'express';
 // 设置 API_TOKEN 环境变量以测试认证逻辑
 vi.mock('../config.js', () => ({
   API_TOKEN: 'test-secret-token',
+  AUTH_DISABLED: false,
+  OIDC_ISSUER: 'http://127.0.0.1:3000',
+  ADMIN_PASSWORD: 'vibeos',
+  SESSION_TTL_MS: 86400000,
+  LOGIN_MAX_ATTEMPTS: 5,
+  LOGIN_LOCK_MS: 900000,
+  ACCESS_TOKEN_TTL_S: 3600,
+  REFRESH_TOKEN_TTL_MS: 2592000000,
+  AUTH_CODE_TTL_MS: 600000,
+  SESSION_COOKIE_NAME: 'vibeos.sid',
+  IS_PRODUCTION: false,
+  SSH_TARGET_USER: 'vibeuser',
+  SSH_AUTHORIZED_KEYS_FILE: '',
   DATA_ROOT: '/data',
   VIBEOS_APP_DIR: '/data/vibeos',
   SECRETS_DIR: '/data/vibeos/secrets',
@@ -31,27 +44,27 @@ describe('authMiddleware（带 Token）', () => {
     vi.clearAllMocks();
   });
 
-  it('有效 Bearer token 应通过认证', () => {
+  it('有效 Bearer token 应通过认证', async () => {
     const req = { headers: { authorization: 'Bearer test-secret-token' } } as unknown as Request;
-    authMiddleware(req, mockRes, mockNext);
+    await authMiddleware(req, mockRes, mockNext);
     expect(mockNext).toHaveBeenCalledWith();
   });
 
-  it('无效 token 应返回 401', () => {
+  it('无效 token 应返回 401', async () => {
     const req = { headers: { authorization: 'Bearer wrong-token' } } as unknown as Request;
-    authMiddleware(req, mockRes, mockNext);
+    await authMiddleware(req, mockRes, mockNext);
     expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
   });
 
-  it('缺少 Authorization 头应返回 401', () => {
+  it('缺少 Authorization 头应返回 401', async () => {
     const req = { headers: {} } as unknown as Request;
-    authMiddleware(req, mockRes, mockNext);
+    await authMiddleware(req, mockRes, mockNext);
     expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
   });
 
-  it('非 Bearer 格式应返回 401', () => {
+  it('非 Bearer 格式应返回 401', async () => {
     const req = { headers: { authorization: 'Basic abc123' } } as unknown as Request;
-    authMiddleware(req, mockRes, mockNext);
+    await authMiddleware(req, mockRes, mockNext);
     expect(mockNext).toHaveBeenCalledWith(expect.objectContaining({ statusCode: 401 }));
   });
 });

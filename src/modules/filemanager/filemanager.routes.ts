@@ -49,4 +49,10 @@ router.get('/files/trash', asyncHandler(controller.handleListTrash));
 /** DELETE /api/files/trash/empty */
 router.delete('/files/trash/empty', asyncHandler(controller.handleEmptyTrash));
 
+/** GET /api/files/preview */
+router.get('/files/preview', asyncHandler(controller.handlePreview));
+
+/** GET /api/files/thumbnail */
+router.get('/files/thumbnail', asyncHandler(controller.handleThumbnail));
+
 export default router;
