@@ -8,7 +8,7 @@ import { computed } from 'vue';
 import { ElMessageBox } from 'element-plus';
 import { useI18n } from 'vue-i18n';
 import {
-  Setting, User, Connection, Operation, Lock, Coin,
+  Setting, User, Connection, Operation, Lock, Coin, Key,
   Lightning, Bell, Upload, Document, InfoFilled, MagicStick, Monitor, Delete,
 } from '@element-plus/icons-vue';
 import { storeToRefs } from 'pinia';
@@ -37,7 +37,7 @@ const { activeSection, sectionList, dirty } = storeToRefs(store);
 const { t } = useI18n();
 
 const iconMap: Record<string, typeof Setting> = {
-  Setting, User, Connection, Operation, Lock, Coin,
+  Setting, User, Connection, Operation, Lock, Coin, Key,
   Lightning, Bell, Upload, Document, InfoFilled, MagicStick, Monitor, Delete,
 };
 
