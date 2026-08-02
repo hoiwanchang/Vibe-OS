@@ -96,7 +96,7 @@ async function switchSection(id: string): Promise<void> {
     </nav>
 
     <div class="settings-content">
-      <component :is="currentComponent" />
+      <component :is="currentComponent" :key="activeSection" />
     </div>
   </div>
 </template>
