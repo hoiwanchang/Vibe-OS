@@ -4,6 +4,7 @@
  */
 import express from 'express';
 import cookieParser from 'cookie-parser';
+import { APP_VERSION } from './common/version.js';
 import { authGuard } from './common/auth-middleware.js';
 import { sessionMiddleware } from './common/session-middleware.js';
 import { errorHandler } from './common/error-handler.js';
@@ -75,7 +76,7 @@ export function createApp(): express.Express {
       success: true,
       data: {
         service: 'vibeos-backend',
-        version: '0.1.0',
+        version: APP_VERSION,
         timestamp: new Date().toISOString(),
       },
     });

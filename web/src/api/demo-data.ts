@@ -338,7 +338,7 @@ export function demoLogs(name: string): ContainerLogResult {
 
 /** 模拟健康检查 */
 export function demoHealth(): HealthInfo {
-  return { service: 'vibeos-backend', version: '0.1.0', timestamp: now() };
+  return { service: 'vibeos-backend', version: '0.2.2', timestamp: now() };
 }
 
 /* ============================================================
@@ -896,7 +896,7 @@ export function demoServices(): ManagedService[] {
 
 export function demoAbout(): AboutInfo {
   return {
-    version: '0.1.0',
+    version: '0.2.2',
     buildDate: '2026-07-27',
     nodeVersion: 'v22.16.0',
     osVersion: 'Debian 13 (Trixie)',
