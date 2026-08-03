@@ -38,8 +38,26 @@ jobs:
     outputs:
       iso_name: ${{ steps.find.outputs.iso_name }}
     steps:
-      - name: 从 workflow_run 下载 ISO artifact
+      - name: 检查 Build ISO run 是否产出了 ISO artifact
         if: github.event_name == 'workflow_run'
+        id: check
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 被门控跳过（should-build 判定不构建）的 Build ISO run 没有 artifact，
+          # 此时 QEMU 验证无 ISO 可用，优雅跳过而非报错。
+          ARTIFACTS=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.event.workflow_run.id }}/artifacts" \
+            --jq '.artifacts[].name')
+          if echo "$ARTIFACTS" | grep -q '^vibeos-iso$'; then
+            echo "iso_available=true" >> "$GITHUB_OUTPUT"
+            echo "✅ Build ISO run 含 vibeos-iso artifact"
+          else
+            echo "iso_available=false" >> "$GITHUB_OUTPUT"
+            echo "⚠️ Build ISO run 未产出 ISO artifact（可能被门控跳过），跳过 QEMU 验证"
+          fi
+
+      - name: 从 workflow_run 下载 ISO artifact
+        if: github.event_name == 'workflow_run' && steps.check.outputs.iso_available == 'true'
         uses: actions/download-artifact@v4
         with:
           name: vibeos-iso
@@ -68,6 +86,7 @@ jobs:
 
       - name: 定位 ISO 文件
         id: find
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.iso_available == 'true'
         run: |
           ISO_FILE=$(ls iso-download/vibeos-*.iso 2>/dev/null | head -n1)
           if [[ -z "$ISO_FILE" ]]; then
@@ -78,6 +97,7 @@ jobs:
           echo "找到 ISO: $ISO_FILE ($(du -h "$ISO_FILE" | cut -f1))"
 
       - name: SHA256 校验
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.iso_available == 'true'
         run: |
           cd iso-download
           if [[ -f vibeos-*.iso.sha256 ]]; then
@@ -87,6 +107,7 @@ jobs:
           fi
 
       - name: 上传 ISO 供后续 Job 使用
+        if: github.event_name == 'workflow_dispatch' || steps.check.outputs.iso_available == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: iso-for-qemu
@@ -98,6 +119,7 @@ jobs:
   # --------------------------------------------------------------------------
   qemu-install-bios:
     needs: fetch-iso
+    if: needs.fetch-iso.outputs.iso_name != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -353,6 +375,7 @@ jobs:
   # --------------------------------------------------------------------------
   qemu-install-uefi:
     needs: fetch-iso
+    if: needs.fetch-iso.outputs.iso_name != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

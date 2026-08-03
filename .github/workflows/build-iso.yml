@@ -246,9 +246,18 @@ jobs:
           REPORT_FILE=$(ls release-iso/*-verification-report.md 2>/dev/null | head -n1)
           VERIFY_STATUS="未知"
           if [[ -n "$REPORT_FILE" ]]; then
-            if grep -q "总体结论: ✅" "$REPORT_FILE"; then VERIFY_STATUS="✅ QEMU 实机安装验证通过"; fi
-            if grep -q "总体结论: ⚠️" "$REPORT_FILE"; then VERIFY_STATUS="⚠️ QEMU 验证有警告，详见验证报告"; fi
-            if grep -q "总体结论: ❌" "$REPORT_FILE"; then VERIFY_STATUS="❌ QEMU 验证失败，详见验证报告"; fi
+            # 验证报告实际格式：「结构检查总体: ✅ 通过」「initrd 固件注入检查: ✅ 已注入」
+            STRUCT_OK=false
+            FW_OK=false
+            grep -q "结构检查总体: ✅" "$REPORT_FILE" && STRUCT_OK=true
+            grep -q "固件注入检查: ✅" "$REPORT_FILE" && FW_OK=true
+            if grep -q "❌" "$REPORT_FILE"; then
+              VERIFY_STATUS="❌ 静态验证存在失败项，详见验证报告"
+            elif [[ "$STRUCT_OK" = true && "$FW_OK" = true ]]; then
+              VERIFY_STATUS="✅ 静态验证通过（结构检查 + 固件注入全绿，QEMU 实装结果见 QEMU Verify workflow）"
+            elif [[ "$STRUCT_OK" = true || "$FW_OK" = true ]]; then
+              VERIFY_STATUS="⚠️ 静态验证部分通过，详见验证报告"
+            fi
           fi
 
           NOTES_FILE="$(mktemp)"
