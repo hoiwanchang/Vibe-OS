@@ -30,7 +30,7 @@ describe('计划任务', () => {
   describe('createJob', () => {
     it('应创建任务', async () => {
       mockReadFile.mockRejectedValue(new Error('ENOENT'));
-      const job = await service.createJob({ name: 'cleanup', command: 'echo hello', schedule: '0 3 * * *' });
+      const job = await service.createJob({ name: 'cleanup', command: 'rsync -a /data/src/ /data/dst/', schedule: '0 3 * * *' });
       expect(job.name).toBe('cleanup');
       expect(job.enabled).toBe(true);
     });
@@ -51,7 +51,7 @@ describe('计划任务', () => {
   describe('runJob', () => {
     it('成功执行应返回 success', async () => {
       mockReadFile.mockImplementation((p: string) => {
-        if (p.includes('jobs.json')) return Promise.resolve(JSON.stringify([{ id: 'j1', name: 'test', command: 'echo ok', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
+        if (p.includes('jobs.json')) return Promise.resolve(JSON.stringify([{ id: 'j1', name: 'test', command: 'rsync -a /data/a/ /data/b/', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
         return Promise.reject(new Error('ENOENT'));
       });
       mockExecuteCommand.mockResolvedValue({ exitCode: 0, stdout: 'ok\n', stderr: '' });
@@ -62,7 +62,7 @@ describe('计划任务', () => {
 
     it('失败执行应返回 failed', async () => {
       mockReadFile.mockImplementation((p: string) => {
-        if (p.includes('jobs.json')) return Promise.resolve(JSON.stringify([{ id: 'j1', name: 'test', command: 'exit 1', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
+        if (p.includes('jobs.json')) return Promise.resolve(JSON.stringify([{ id: 'j1', name: 'test', command: 'rsync --bad-flag', schedule: '* * * * *', enabled: true, lastRun: null, lastStatus: null, nextRun: null }]));
         return Promise.reject(new Error('ENOENT'));
       });
       mockExecuteCommand.mockResolvedValue({ exitCode: 1, stdout: '', stderr: 'error' });
