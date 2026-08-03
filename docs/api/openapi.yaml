@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Vibe OS Backend API
   description: 开源私有 AI NAS 系统后端服务接口文档
-  version: 0.1.0
+  version: 0.2.2
   contact:
     email: icm@sustech.edu.cn
 

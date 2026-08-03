@@ -5,6 +5,7 @@ export default defineConfig({
     globals: true,
     environment: 'node',
     include: ['src/**/__tests__/**/*.test.ts'],
+    setupFiles: ['./vitest.setup.ts'],
     env: {
       VIBEOS_AUTH_DISABLED: 'true',
     },

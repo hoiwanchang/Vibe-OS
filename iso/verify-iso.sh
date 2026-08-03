@@ -23,23 +23,33 @@ gen_sha() {
   log "SHA256: $SHA_VALUE"
 }
 
-# --- 2. 结构检查（用 xorriso 列出 ISO 内容）---
+# --- 2. 结构检查（实际提取关键文件，比解析 -find 列表更可靠）---
 inspect_structure() {
   log "检查 ISO 内部结构"
   STRUCT_OK=true
+  PRESEED_OK=false
+  VMLINUZ_OK=false
+  INITRD_OK=false
   if command -v xorriso >/dev/null 2>&1; then
-    ISO_LISTING="$(xorriso -indev "$ISO" -find / 2>/dev/null || echo '')"
+    local tmp; tmp="$(mktemp -d)"
     for need in /vibeos/preseed.cfg /install.amd/vmlinuz /install.amd/initrd.gz; do
-      if echo "$ISO_LISTING" | grep -q "$need"; then
-        log "  ✓ 存在: $need"
+      local target="${tmp}$(echo "$need" | tr '/' '_')"
+      if xorriso -osirrox on -indev "$ISO" -extract "$need" "$target" >/dev/null 2>&1 \
+        && [[ -s "$target" ]]; then
+        log "  ✓ 存在: $need ($(du -h "$target" | cut -f1))"
+        case "$need" in
+          /vibeos/preseed.cfg)   PRESEED_OK=true ;;
+          /install.amd/vmlinuz)  VMLINUZ_OK=true ;;
+          /install.amd/initrd.gz) INITRD_OK=true ;;
+        esac
       else
         log "  ✗ 缺失: $need"
         STRUCT_OK=false
       fi
     done
+    rm -rf "$tmp"
   else
     log "  xorriso 不可用，跳过结构检查"
-    ISO_LISTING="(xorriso unavailable)"
   fi
 }
 
@@ -85,9 +95,9 @@ gen_report() {
 
 | 必需组件 | 状态 |
 |----------|------|
-| /vibeos/preseed.cfg | $([ "$STRUCT_OK" = true ] && echo "✅" || echo "见下") |
-| /install.amd/vmlinuz | — |
-| /install.amd/initrd.gz | — |
+| /vibeos/preseed.cfg | $([ "$PRESEED_OK" = true ] && echo "✅ 存在" || echo "❌ 缺失") |
+| /install.amd/vmlinuz | $([ "$VMLINUZ_OK" = true ] && echo "✅ 存在" || echo "❌ 缺失") |
+| /install.amd/initrd.gz | $([ "$INITRD_OK" = true ] && echo "✅ 存在" || echo "❌ 缺失") |
 
 结构检查总体: $([ "$STRUCT_OK" = true ] && echo "✅ 通过" || echo "⚠️ 存在缺失")
 

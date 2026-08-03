@@ -9,6 +9,7 @@ import { join, resolve, normalize } from 'node:path';
 import { promisify } from 'node:util';
 import { VIBEOS_APP_DIR, COMMAND_TIMEOUT_MS, SSH_TARGET_USER } from '../../config.js';
 import { AppError } from '../../common/app-error.js';
+import { APP_VERSION } from '../../common/version.js';
 import {
   getCertStatus,
   generateSelfSignedCert,
@@ -96,7 +97,7 @@ function defaultSettings(): SystemSettings {
       autoInstall: false,
       channel: 'stable',
       lastCheck: null,
-      currentVersion: '0.1.0',
+      currentVersion: APP_VERSION,
     },
   };
 }

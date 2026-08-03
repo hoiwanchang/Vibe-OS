@@ -14,7 +14,7 @@ on:
     # GitHub cron 使用 UTC。北京时间周六 02:00 = UTC 周五 18:00
     - cron: '0 18 * * 5'
   push:
-    branches: [main, 'feat/**', 'fix/**', 'refactor/**']
+    branches: [master, 'feat/**', 'fix/**', 'refactor/**', 'release/**']
   workflow_dispatch:
     inputs:
       version:
@@ -87,7 +87,7 @@ jobs:
     steps:
       - name: 安装系统依赖
         run: |
-          apt-get update && apt-get install -y curl git
+          apt-get update && apt-get install -y curl git build-essential
           curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
           apt-get install -y nodejs
           corepack enable
@@ -201,6 +201,11 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: 检出代码（完整历史，用于生成 changelog）
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: 下载 ISO 产物
         uses: actions/download-artifact@v4
         with:
@@ -213,22 +218,76 @@ jobs:
           name: vibeos-runtime
           path: release-runtime
 
-      - name: 创建 Release 并上传
+      - name: 生成 Release 说明并上传
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           VERSION="${{ github.event.inputs.version || format('{0}-weekly', github.run_id) }}"
           TAG="iso-${VERSION}"
           ISO_FILE=$(ls release-iso/vibeos-*.iso | head -n1)
+          PKG_VERSION=$(node -p "require('./package.json').version")
 
-          # 若 tag 已存在则复用，否则创建
+          # 自上一个 iso-* tag 以来的提交；首个 tag 则取最近 30 条
+          PREV_TAG=$(git tag -l 'iso-*' --sort=-creatordate | grep -v "^${TAG}$" | head -n1 || true)
+          if [[ -n "$PREV_TAG" ]]; then
+            RANGE="${PREV_TAG}..HEAD"
+            RANGE_LABEL="自 ${PREV_TAG} 以来"
+          else
+            RANGE="HEAD~30..HEAD"
+            RANGE_LABEL="最近 30 条提交"
+          fi
+          CHANGELOG=$(git log "$RANGE" --pretty=format:'- %s (%h)' --no-merges | head -n 40)
+          if [[ -z "$CHANGELOG" ]]; then
+            CHANGELOG="- 例行构建，无代码变更"
+          fi
+
+          SHA_VALUE=$(cut -d' ' -f1 release-iso/*.iso.sha256 2>/dev/null || sha256sum "$ISO_FILE" | cut -d' ' -f1)
+          ISO_SIZE=$(du -h "$ISO_FILE" | cut -f1)
+          REPORT_FILE=$(ls release-iso/*-verification-report.md 2>/dev/null | head -n1)
+          VERIFY_STATUS="未知"
+          if [[ -n "$REPORT_FILE" ]]; then
+            if grep -q "总体结论: ✅" "$REPORT_FILE"; then VERIFY_STATUS="✅ QEMU 实机安装验证通过"; fi
+            if grep -q "总体结论: ⚠️" "$REPORT_FILE"; then VERIFY_STATUS="⚠️ QEMU 验证有警告，详见验证报告"; fi
+            if grep -q "总体结论: ❌" "$REPORT_FILE"; then VERIFY_STATUS="❌ QEMU 验证失败，详见验证报告"; fi
+          fi
+
+          NOTES_FILE="$(mktemp)"
+          cat > "$NOTES_FILE" <<EOF
+          # Vibe OS ISO ${VERSION}
+
+          > 后端版本 v${PKG_VERSION} · 构建于 $(date -Iseconds) · commit \`${GITHUB_SHA:0:7}\`
+          > ${VERIFY_STATUS}
+
+          ## 本次构建变更（${RANGE_LABEL}）
+
+          ${CHANGELOG}
+
+          ## 产物
+
+          | 文件 | 说明 |
+          |------|------|
+          | vibeos-${VERSION}-amd64.iso | 可安装 ISO（${ISO_SIZE}），含消费级网卡驱动、无人值守安装 |
+          | vibeos-${VERSION}-amd64.iso.sha256 | ISO 校验和：\`${SHA_VALUE}\` |
+          | vibeos-${VERSION}-amd64-verification-report.md | QEMU 自动验证报告（BIOS + UEFI 双模式安装测试） |
+          | vibeos-runtime.tar.gz | 运行时包（后端 + Web 控制台） |
+
+          ## 安装方式
+
+          1. 下载 ISO，刻录到 U 盘或挂载为虚拟光驱
+          2. 启动即进入无人值守安装（自动分区 → 安装 → 配置 Vibe OS 服务）
+          3. 安装完成后重启，通过 \`http://<主机IP>:3000\` 访问 Web 控制台
+
+          详细安装说明与验证结果见附件验证报告。
+          EOF
+
           if gh release view "$TAG" --repo "${{ github.repository }}" >/dev/null 2>&1; then
-            echo "Release $TAG 已存在，追加资产"
+            echo "Release $TAG 已存在，更新说明与资产"
+            gh release edit "$TAG" --repo "${{ github.repository }}" --notes-file "$NOTES_FILE"
           else
             gh release create "$TAG" \
               --repo "${{ github.repository }}" \
-              --title "Vibe OS ISO ${VERSION}" \
-              --notes "自动构建于 $(date -Iseconds)。含消费级网卡驱动、无人值守安装、运行时自愈。SHA256 与验证报告见附件。" \
+              --title "Vibe OS ISO ${VERSION} (v${PKG_VERSION})" \
+              --notes-file "$NOTES_FILE" \
               --target "${{ github.sha }}"
           fi
 
@@ -241,4 +300,5 @@ jobs:
             release-runtime/vibeos-runtime.tar.gz \
             release-runtime/vibeos-runtime.tar.gz.sha256
 
+          rm -f "$NOTES_FILE"
           echo "已发布: $TAG"
